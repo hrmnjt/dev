@@ -1,18 +1,16 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-DOWNLOAD_URL="https://download.mozilla.org/?product=firefox-devedition-latest-ssl&os=osx&lang=en-US"
 ARCHIVE_NAME="FirefoxDeveloperEdition.dmg"
+DOWNLOAD_URL="https://download.mozilla.org/?product=firefox-devedition-latest-ssl&os=osx&lang=en-US"
 INSTALL_DIR="/Applications"
 
 TEMP_DIR=$(mktemp -d)
 cd "$TEMP_DIR"
-echo "Downloading Firefox Developer Edition..."
 curl -L "$DOWNLOAD_URL" -o "$ARCHIVE_NAME"
 
 hdiutil mount "$ARCHIVE_NAME" > /dev/null
 
-echo "Installing to $INSTALL_DIR..."
 cp -R "/Volumes/Firefox Developer Edition/Firefox Developer Edition.app" "$INSTALL_DIR/"
 
 hdiutil unmount "/Volumes/Firefox Developer Edition/" > /dev/null
