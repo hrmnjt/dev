@@ -1,2 +1,9 @@
 hrmnjt dev environment
 
+TODO
+- ensure SSH key created and configured
+- ensure git installed
+- maybe use homebrew for installing apps instead of dmgs
+- install monodraw
+- install vscode-insiders (currently for worklog)
+- install thunderbird
