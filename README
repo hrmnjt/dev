@@ -1,29 +1,27 @@
 hrmnjt dev environment
+======================
 
-TODO
-- ensure SSH key created and configured
-- ensure git installed
-- maybe use homebrew for installing apps instead of dmgs
-- install monodraw
-- install vscode-insiders (currently for worklog)
-- install thunderbird
-
----------------------------------------------------------------------------------------
 S E T T I N G   U P   M A C B O O K   A I R
----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
 
 Install stuff
-=============
+-------------
+Magically assume below software is installed
 
+Must have:
 - Ghostty
 - Firefox Developer Edition
 - Thunderbird
 - Zed
 - Neovim
 
+More that I use/like:
+- Monodraw
+- VSCodium (right now for worklog, till I migrate to neovim completely)
+
 
 Browser
-=======
+-------
 
 Download Firefox Developer Edition so that I don’t have to deal with Safari
 anymore.
@@ -41,7 +39,8 @@ On Settings > Desktop & Dock > Default web browser: Firefox Developer Edition
 
 
 SSH Key for Github
-==================
+------------------
+
 Create new SSH key for Github and store passphrase on Bitwarden
 ```
 ssh-keygen -t ed25519 -a 100 -f ~/.ssh/id_ed25519_github_YYYYMMDD -C "USERNAME@HOSTNAME"
@@ -77,7 +76,7 @@ ssh git@github.com
 
 
 System Preferences (aka. Settings)
-==================================
+----------------------------------
 
 iCloud sign in
 
@@ -95,7 +94,7 @@ Settings (in that order)
 
 
 Clone github.com/hrmnjt/dev
-===========================
+---------------------------
 
 Go to /tmp and clone hrmnjt/dev.
 
