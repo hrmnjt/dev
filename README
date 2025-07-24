@@ -92,3 +92,15 @@ Desktop & Dock
 - Show suggested and recent apps in Dock: Off
 Also, remove all stock icons and keep Ghostty, Firefox, Thunderbird, Zed, and
 Settings (in that order)
+
+
+Clone github.com/hrmnjt/dev
+===========================
+
+Go to /tmp and clone hrmnjt/dev.
+
+Set git config to work with Git
+```
+git config user.name "hrmnjt"
+git config user.email "MYEMAIL@ADDRESS"
+```
