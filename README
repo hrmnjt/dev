@@ -19,6 +19,37 @@ More that I use/like:
 - Monodraw
 - VSCodium (right now for worklog, till I migrate to neovim completely)
 
+I'm using Homebrew right now and maybe we can switch to something else later on
+```
+# install homebrew
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# add shellenv eval to zprofile (imports various paths like HOMEBREW_PREFIX,
+# HOMEBREW_CELLAR, HOMEBREW_REPOSITORY, and so on)
+echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> /Users/USERNAME/.zprofile
+# add an option to not update homebrew everytime I install something
+echo 'export HOMEBREW_NO_AUTO_UPDATE=1' >> /Users/USERNAME/.zprofile
+```
+
+Now install software that we need
+```
+# firefox developer edition
+brew install --cask firefox@developer-edition
+
+# ghostty
+brew install --cask ghostty
+
+# zed (till I full jump to neovim)
+brew install --cask zed
+
+# thunderbird
+brew install --cask thunderbird
+
+# neovim
+brew install neovim
+```
+TODO: I can create a Brewfile by doing `brew bundle dump` and version
+control it
 
 Browser
 -------
@@ -103,3 +134,7 @@ Set git config to work with Git
 git config user.name "hrmnjt"
 git config user.email "MYEMAIL@ADDRESS"
 ```
+
+
+Installing JetBrains Mono
+-------------------------
