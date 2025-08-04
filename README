@@ -135,6 +135,30 @@ git config user.name "hrmnjt"
 git config user.email "MYEMAIL@ADDRESS"
 ```
 
+Alt-tab
+-------
+Install AltTab `brew install --cask alt-tab`
+and change settings for alttab
+- open at login
+- change shortcuts to use `command` instead of `option`
 
-Installing JetBrains Mono
--------------------------
+eza
+---
+`brew install eza`
+and change ~/.zshrc to add alias `alias l='eza --all --long --git'`
+
+Jetbrains Mono
+--------------
+`brew install --cask font-jetbrains-mono`
+and change ghostty config to use jetbrains mono
+`font-family = JetBrains Mono`
+
+
+Starship (prompt)
+-----------------
+`brew install starship`
+and add below to end of ~/.zshrc
+`eval "$(starship init zsh)"`
+and use plain-text-symbol preset
+`starship preset plain-text-symbols -o ~/.config/starship.toml`
+
