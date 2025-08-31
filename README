@@ -3,10 +3,10 @@ hrmnjt dev environment
 
 Let's make a plan of how I want to manage stuff
 
-| Problem       | Approach to try                                                             |
-| ------------- | --------------------------------------------------------------------------- |
+| Problem       | Approach to try                                                        |
+| ------------- | ---------------------------------------------------------------------- |
 | Install tools | On Mac, use Homebrew bundles to install, and upgrade tools when needed |
-| Dotfiles | Use GNU stow to manage dotfiles |
+| Dotfiles      | Use GNU stow to manage dotfiles                                        |
 
 Open items:
 - How to configure Firefox - right now clickops - maybe create list of steps to follow
