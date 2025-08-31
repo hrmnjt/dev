@@ -1,6 +1,21 @@
 hrmnjt dev environment
 ======================
 
+Let's make a plan of how I want to manage stuff
+
+| Problem       | Approach to try                                                             |
+| ------------- | --------------------------------------------------------------------------- |
+| Install tools | On Mac, use Homebrew bundles to install, and upgrade tools when needed |
+| Dotfiles | Use GNU stow to manage dotfiles |
+
+Open items:
+- How to configure Firefox - right now clickops - maybe create list of steps to follow
+- How to create SSH keys? - maybe a script/helper to create sshkey based on inputs
+- How to change MacOS settings? - right now clickops
+
+Need to think better:
+- How to pin, upgrade, and link brew packages?
+
 S E T T I N G   U P   M A C B O O K   A I R
 ----------------------------------------------------------------------------------------
 
@@ -161,4 +176,3 @@ and add below to end of ~/.zshrc
 `eval "$(starship init zsh)"`
 and use plain-text-symbol preset
 `starship preset plain-text-symbols -o ~/.config/starship.toml`
-
