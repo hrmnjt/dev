@@ -1,14 +1,55 @@
-hrmnjt dev environment
-======================
+# hrmnjt dev environment
 
-S E T T I N G   U P   M A C B O O K   A I R
-----------------------------------------------------------------------------------------
+Let's make a plan of how I want to manage stuff
 
-Install stuff
--------------
+| Problem       | Approach to try                                                        |
+| ------------- | ---------------------------------------------------------------------- |
+| Install tools | On Mac, use Homebrew bundles to install, and upgrade tools when needed |
+| Dotfiles      | Use GNU stow to manage dotfiles                                        |
+
+Open items:
+
+- How to configure Firefox - right now clickops - maybe create list of steps to follow
+- How to create SSH keys? - maybe a script/helper to create sshkey based on inputs
+- How to change MacOS settings? - right now clickops
+
+Need to think better:
+
+- How to pin, upgrade, and link brew packages?
+
+## 20250910, Wed
+
+Ensuring `${XDG_CONFIG_HOME}` is set
+```sh
+echo ${XDG_CONFIG_HOME}
+# not set yet
+```
+
+Setting `${XDG_CONFIG_HOME}`
+```sh
+# Checking if ~/.config exists and create if not
+mkdir -p ~/.config
+
+# Creating ~/.zshenv as it doesn't exist by default
+touch ~/.zshenv
+
+# added below line to zshenv
+export XDG_CONFIG_HOME="$HOME/.config"
+
+# save and restart shell
+```
+
+
+
+
+## S E T T I N G   U P   M A C B O O K   A I R
+
+## Install stuff
+
 Magically assume below software is installed
 
 Must have:
+
 - Ghostty
 - Firefox Developer Edition
 - Thunderbird
@@ -16,10 +57,12 @@ Must have:
 - Neovim
 
 More that I use/like:
+
 - Monodraw
 - VSCodium (right now for worklog, till I migrate to neovim completely)
 
 I'm using Homebrew right now and maybe we can switch to something else later on
+
 ```
 # install homebrew
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -32,6 +75,7 @@ echo 'export HOMEBREW_NO_AUTO_UPDATE=1' >> /Users/USERNAME/.zprofile
 ```
 
 Now install software that we need
+
 ```
 # firefox developer edition
 brew install --cask firefox@developer-edition
@@ -48,18 +92,19 @@ brew install --cask thunderbird
 # neovim
 brew install neovim
 ```
+
 TODO: I can create a Brewfile by doing `brew bundle dump` and version
 control it
 
-Browser
--------
+## Browser
 
 Download Firefox Developer Edition so that I don’t have to deal with Safari
 anymore.
 
 Setup:
+
 - Install extensions: uBlock Origin, Privacy Badger, Decentraleyes, Readwise
-Highlighter, Bitwarden
+  Highlighter, Bitwarden
 - Sign in to web.whatsapp.com, and Bitwarden
 - Connect Readwise account
 - Rearrange extensions from Customize Toolbar section
@@ -68,16 +113,16 @@ From new tab, remove background and shortcuts
 
 On Settings > Desktop & Dock > Default web browser: Firefox Developer Edition
 
-
-SSH Key for Github
-------------------
+## SSH Key for Github
 
 Create new SSH key for Github and store passphrase on Bitwarden
+
 ```
 ssh-keygen -t ed25519 -a 100 -f ~/.ssh/id_ed25519_github_YYYYMMDD -C "USERNAME@HOSTNAME"
 ```
 
 Add SSH key to ssh-agent
+
 ```
 # start ssh-agent in background
 eval "$(ssh-agent -s)"
@@ -96,69 +141,68 @@ ssh-add --apple-use-keychain ~/.ssh/id_ed25519_YYYYMMDD
 
 Add SSH key to Github - https://github.com/settings/keys after copying the
 public key from local
+
 ```
 pbcopy < ~/.ssh/id_ed25519_github_YYYYMMDD.pub
 ```
 
 Test out the keys by doing
+
 ```
 ssh git@github.com
 ```
 
-
-System Preferences (aka. Settings)
-----------------------------------
+## System Preferences (aka. Settings)
 
 iCloud sign in
 
 General > Software Update
 
 Desktop & Dock
+
 - Reduce dock icon size
 - Position on screen: Left
 - Minimize windows to application icon: On
 - Automatically hide and show dock: On
 - Animate opening windows: Off
 - Show suggested and recent apps in Dock: Off
-Also, remove all stock icons and keep Ghostty, Firefox, Thunderbird, Zed, and
-Settings (in that order)
+  Also, remove all stock icons and keep Ghostty, Firefox, Thunderbird, Zed, and
+  Settings (in that order)
 
-
-Clone github.com/hrmnjt/dev
----------------------------
+## Clone github.com/hrmnjt/dev
 
 Go to /tmp and clone hrmnjt/dev.
 
 Set git config to work with Git
+
 ```
 git config user.name "hrmnjt"
 git config user.email "MYEMAIL@ADDRESS"
 ```
 
-Alt-tab
--------
+## Alt-tab
+
 Install AltTab `brew install --cask alt-tab`
 and change settings for alttab
+
 - open at login
 - change shortcuts to use `command` instead of `option`
 
-eza
----
+## eza
+
 `brew install eza`
 and change ~/.zshrc to add alias `alias l='eza --all --long --git'`
 
-Jetbrains Mono
---------------
+## Jetbrains Mono
+
 `brew install --cask font-jetbrains-mono`
 and change ghostty config to use jetbrains mono
 `font-family = JetBrains Mono`
 
+## Starship (prompt)
 
-Starship (prompt)
------------------
 `brew install starship`
 and add below to end of ~/.zshrc
 `eval "$(starship init zsh)"`
 and use plain-text-symbol preset
 `starship preset plain-text-symbols -o ~/.config/starship.toml`
-
