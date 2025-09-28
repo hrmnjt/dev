@@ -17,6 +17,31 @@ Need to think better:
 
 - How to pin, upgrade, and link brew packages?
 
+## 20250910, Wed
+
+Ensuring `${XDG_CONFIG_HOME}` is set
+```sh
+echo ${XDG_CONFIG_HOME}
+# not set yet
+```
+
+Setting `${XDG_CONFIG_HOME}`
+```sh
+# Checking if ~/.config exists and create if not
+mkdir -p ~/.config
+
+# Creating ~/.zshenv as it doesn't exist by default
+touch ~/.zshenv
+
+# added below line to zshenv
+export XDG_CONFIG_HOME="$HOME/.config"
+
+# save and restart shell
+```
+
+
+
+
 ## S E T T I N G   U P   M A C B O O K   A I R
 
 ## Install stuff
