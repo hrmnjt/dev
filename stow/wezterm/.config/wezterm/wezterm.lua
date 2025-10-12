@@ -21,7 +21,7 @@ config.font = wezterm.font("JetBrains Mono")
 config.font_size = 18
 
 -- changing color scheme for editor window
-config.color_scheme = 'catppuccin-mocha'
+config.color_scheme = 'Tokyo Night'
 
 -- changing initial geometry of windows (almost full screen)
 config.initial_cols = 128
