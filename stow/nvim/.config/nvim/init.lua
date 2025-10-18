@@ -172,6 +172,10 @@ vim.o.colorcolumn = '80'
 -- added an option to make reflow work for markdown
 vim.o.textwidth = 80
 
+-- add tabstop and shiftwidth
+vim.o.tabstop = 4
+vim.o.shiftwidth = 2
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
