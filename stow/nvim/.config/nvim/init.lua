@@ -166,6 +166,12 @@ vim.o.scrolloff = 10
 -- See `:help 'confirm'`
 vim.o.confirm = true
 
+-- added an option for ruler
+vim.o.colorcolumn = '80'
+
+-- added an option to make reflow work for markdown
+vim.o.textwidth = 80
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
