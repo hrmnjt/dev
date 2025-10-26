@@ -1,3 +1,17 @@
+
+# start ghostty in fullscreen mode
+fullscreen = true
+macos-non-native-fullscreen = visible-menu
+
+# making things bigger
+font-size = 24
+
+# setting fontface for terminal
 font-family = "JetBrains Mono"
-font-size = 18
+
+# theme for ghostty
+theme = Catppuccin Mocha
+
+# cosmetic: nicer icon on macos
 macos-icon = "xray"
+
