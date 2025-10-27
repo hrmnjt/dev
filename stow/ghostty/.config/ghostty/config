@@ -1,7 +1,8 @@
 
 # start ghostty in fullscreen mode
-fullscreen = true
-macos-non-native-fullscreen = visible-menu
+# fullscreen = true
+# macos-non-native-fullscreen = visible-menu
+maximize = true
 
 # making things bigger
 font-size = 24
