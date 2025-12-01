@@ -21,18 +21,24 @@ Each subdirectory mirrors `~` structure: configs go in subdirs like `.config/app
 **Deploy dotfiles:**
 ```bash
 cd stow
-stow */          # symlink all configs to ~
-stow zsh nvim    # symlink specific apps
+stow -t ~ */          # symlink all configs to ~
+stow -t ~ zsh nvim    # symlink specific apps
 ```
 
 **Remove symlinks:**
 ```bash
-stow -D */       # unlink all
+stow -t ~ -D */       # unlink all
 ```
 
 **Preview changes:**
 ```bash
-stow -n */       # dry-run (no changes)
+stow -t ~ -n */       # dry-run (no changes)
+```
+
+Alternatively, create a shell alias for convenience:
+```bash
+alias stow='stow -t ~'
+# Then use: stow */ or stow zsh nvim
 ```
 
 ## Code Style & Conventions
