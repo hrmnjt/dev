@@ -30,6 +30,8 @@ $character"""
 
 palette = 'catppuccin_mocha'
 
+command_timeout = 2000
+
 [os]
 disabled = false
 style = "bg:red fg:crust"
@@ -163,7 +165,7 @@ show_milliseconds = true
 format = " in $duration "
 style = "bg:lavender"
 disabled = false
-show_notifications = true
+show_notifications = false
 min_time_to_notify = 45000
 
 [palettes.catppuccin_mocha]
