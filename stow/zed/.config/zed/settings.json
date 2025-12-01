@@ -4,7 +4,7 @@
   "theme": {
     "mode": "system",
     "light": "One Light",
-    "dark": "Rosé Pine"
+    "dark": "Catppuccin Mocha"
   },
   "wrap_guides": [80, 88, 120],
   "vim_mode": false
