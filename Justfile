@@ -2,8 +2,17 @@
 
 # Deploy all dotfiles to home directory
 stowall:
-    cd stow && stow -t ~ */
+    stow -t ~ */
 
 # Remove all dotfiles symlinks from home directory
 unstowall:
-    cd stow && stow -t ~ -D */
+    stow -t ~ -D */
+
+# Check if all Brewfile packages are installed
+brewcheck:
+    brew bundle check
+
+# Install all packages from Brewfile
+brewinst:
+    brew bundle install
+
