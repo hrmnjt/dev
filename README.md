@@ -1,6 +1,43 @@
 # hrmnjt dev environment
 
-## Setting up `.config` directory
+## Usage
+
+TODO: read Justfile
+
+## ClickOps configuration
+
+- Settings: iCloud sign in
+- Settings: General > Software Update
+- Settings: Desktop & Dock
+    - Reduce dock icon size
+    - Position on screen: Left
+    - Minimize windows to application icon: On
+    - Automatically hide and show dock: On
+    - Animate opening windows: Off
+    - Show suggested and recent apps in Dock: Off
+    - Default web browser: Firefox Developer Edition
+- Firefox
+    - Install extensions: uBlock Origin, Privacy Badger, Decentraleyes, 
+    Readwise Highlighter, Bitwarden
+    - Sign in to web.whatsapp.com, and Bitwarden
+    - Connect Readwise account
+    - Rearrange extensions from Customize Toolbar section
+    - From new tab, remove background and shortcuts
+- Alt-tab: open at login
+- Alt-tab: change shortcuts to use <kbd>cmd</kbd> instead of <kbd>opt</kbd>
+
+
+## TODOs
+
+- [ ] Elegant approach to use `.gitconfig` with folder structure as per [git
+organized](https://hrmnjt.dev/2024/02/18/gitmoreorg/)
+- [ ] Appendix: setting up `.config` directory before doing anything
+- [ ] Appendix: figure out approach for creating SSH keys for Github
+- [ ] Update usage for my reference
+
+---
+
+## Appendix 1: Setting up `.config` directory
 
 Ensuring `${XDG_CONFIG_HOME}` is set
 ```sh
@@ -22,7 +59,7 @@ export XDG_CONFIG_HOME="$HOME/.config"
 # save and restart shell
 ```
 
-## SSH Key for Github
+## Appendix 2: SSH Key for Github
 
 Create new SSH key for Github and store passphrase on Bitwarden
 
@@ -61,32 +98,4 @@ Test out the keys by doing
 ssh git@github.com
 ```
 
-
-## ClickOps configuration
-
-- Settings: iCloud sign in
-- Settings: General > Software Update
-- Settings: Desktop & Dock
-    - Reduce dock icon size
-    - Position on screen: Left
-    - Minimize windows to application icon: On
-    - Automatically hide and show dock: On
-    - Animate opening windows: Off
-    - Show suggested and recent apps in Dock: Off
-    - Default web browser: Firefox Developer Edition
-- Firefox
-    - Install extensions: uBlock Origin, Privacy Badger, Decentraleyes, 
-    Readwise Highlighter, Bitwarden
-    - Sign in to web.whatsapp.com, and Bitwarden
-    - Connect Readwise account
-    - Rearrange extensions from Customize Toolbar section
-    - From new tab, remove background and shortcuts
-- Alt-tab: open at login
-- Alt-tab: change shortcuts to use <kbd>cmd</kbd> instead of <kbd>opt</kbd>
-
-
-## TODOs
-
-- [ ] Elegant approach to use `.gitconfig` with folder structure as per [git
-organized](https://hrmnjt.dev/2024/02/18/gitmoreorg/)
 
