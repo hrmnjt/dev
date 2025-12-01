@@ -4,17 +4,19 @@
 This is a **dotfiles repository** for managing a personal development environment on macOS. Uses **GNU stow** to symlink configuration files from logical directories into home directory.
 
 ## Architecture & Structure
-```
-stow/
-  ├── ghostty/        # Terminal emulator config
-  ├── nvim/           # Neovim configuration (Kickstart-based)
-  ├── zsh/            # Zsh shell config (.zshrc, .zprofile, .zshenv)
-  ├── zed/            # Zed editor settings
-  ├── starship/       # Starship prompt configuration
-  └── wezterm/        # WezTerm terminal config
-```
 
-Each subdirectory mirrors `~` structure: configs go in subdirs like `.config/app-name/` before stow deployment.
+**Configuration directories** (used by stow to symlink to home):
+- `ghostty/` — Terminal emulator config
+- `nvim/` — Neovim configuration (Kickstart-based)
+- `zsh/` — Zsh shell config (.zshrc, .zprofile, .zshenv)
+- `zed/` — Zed editor settings
+- `starship/` — Starship prompt configuration
+- `wezterm/` — WezTerm terminal config
+
+**Package management:**
+- `Brewfile` — Homebrew packages and casks to install
+
+Each config directory mirrors the home directory structure (e.g., `nvim/.config/nvim/init.lua` → `~/.config/nvim/init.lua` when deployed via stow).
 
 ## Key Commands
 
