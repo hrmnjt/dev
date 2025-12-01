@@ -3,6 +3,9 @@
 eval "$(/opt/homebrew/bin/brew shellenv)"
 export HOMEBREW_NO_AUTO_UPDATE=1
 
+# direnv
+eval "$(direnv hook zsh)"
+
 # starship.rs prompt
 # https://starship.rs/guide/
 eval "$(starship init zsh)"
@@ -20,3 +23,6 @@ export FZF_DEFAULT_OPTS=" \
 --color=selected-bg:#45475A \
 --color=border:#6C7086,label:#CDD6F4"
 
+
+# amp
+export PATH="$HOME/.local/bin:$PATH"
