@@ -34,6 +34,15 @@ organized](https://hrmnjt.dev/2024/02/18/gitmoreorg/)
 - [ ] Appendix: setting up `.config` directory before doing anything
 - [ ] Appendix: figure out approach for creating SSH keys for Github
 - [ ] Update usage for my reference
+- [ ] Ampcode's suggestions
+    - Move Justfile overview to top - Replace the TODO at line 5 with a condensed version of the Justfile's project overview. Add that architectural context early so future you understands what this repo does at a glance.
+    - Add explicit "Personal Project" statement - Add a brief note like "This is a personal dotfiles repository tailored to my specific workflow. It may not be directly applicable to others" to set expectations upfront.
+    - Create a Quick Start section - List the core commands from Justfile (just stowall, just brewinst, just brewcheck) with brief descriptions. This bridges the TODO gap you already noted.
+    - Link important dependencies - Add a section highlighting critical prerequisites (Homebrew, GNU stow, XDG_CONFIG_HOME setup) before the appendices so you don't skip them on future machines.
+    - Reorganize the structure - The current flow is: Usage (TODO) → ClickOps → TODOs → Appendices. Reorder to: Overview → Prerequisites → Quick Start → ClickOps → TODOs → Appendices. This creates better narrative flow.
+    - Add Philosophy/Approach note - Document why you chose stow-based approach (vs symlink manually), why configs are split across multiple directories, and the XDG standard approach. This helps future you remember design decisions.
+    - Expand the TODOs section - Some items are unclear (e.g., "Update usage for my reference"). Be more specific about what needs documenting so future you knows exactly what's incomplete.
+    - Note sensitive data handling - The Justfile mentions secrets go to Bitwarden, but README doesn't. Add a brief note about where credentials/keys should go since it's easy to forget.
 
 ---
 
