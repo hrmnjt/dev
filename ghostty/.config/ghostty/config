@@ -6,7 +6,6 @@ maximize = true
 
 # making things bigger
 font-size = 18
-
 # setting fontface for terminal
 font-family = "JetBrains Mono"
 
@@ -15,4 +14,6 @@ theme = Catppuccin Mocha
 
 # cosmetic: nicer icon on macos
 macos-icon = "xray"
+# cosmetic: hiding mouse when editing
+mouse-hide-while-typing = true
 
