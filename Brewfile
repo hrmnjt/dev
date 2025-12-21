@@ -32,6 +32,8 @@ brew "stow"
 brew "telnet"
 # Terminal multiplexer
 brew "tmux"
+# uv
+brew "uv"
 # Smart directory jumper
 brew "zoxide"
 
