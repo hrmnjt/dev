@@ -10,6 +10,8 @@ brew "direnv"
 brew "eza"
 # Fast find alternative
 brew "fd"
+# Image editor
+brew "ffmpeg"
 # Fuzzy finder
 brew "fzf"
 # Markdown viewer
