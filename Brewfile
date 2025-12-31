@@ -14,6 +14,8 @@ brew "fd"
 brew "fzf"
 # Markdown viewer
 brew "glow"
+# Blog SSG
+brew "hugo"
 # Command runner (like make)
 brew "just"
 # Lua package manager
