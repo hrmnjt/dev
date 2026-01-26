@@ -48,3 +48,11 @@ brewcheck:
 brewinst:
     brew bundle install
 
+# List installed packages not in Brewfile
+brewdiff:
+    brew bundle cleanup
+
+# Remove installed packages not in Brewfile
+brewclean:
+    brew bundle cleanup --force
+

@@ -4,6 +4,8 @@
 brew "azure-cli"
 # Cloudflare Tunnel client
 brew "cloudflared"
+# MacOS containers
+brew "container"
 # Environment variable management per directory
 brew "direnv"
 # Modern ls replacement
@@ -47,7 +49,7 @@ cask "alt-tab"
 cask "cyberduck"
 # Database IDE
 cask "dbeaver-community"
-# Firefox DevTools
+# Firefox
 cask "firefox@developer-edition"
 # Monospace font
 cask "font-jetbrains-mono"
@@ -57,6 +59,8 @@ cask "ghostty"
 cask "itsycal"
 # Vector drawing
 cask "monodraw"
+# Browser
+cask "orion"
 # Code editor
 cask "visual-studio-code"
 # Terminal emulator
@@ -79,4 +83,3 @@ cask "microsoft-outlook"
 cask "microsoft-word"
 # Windows App for macOS
 cask "windows-app"
-
