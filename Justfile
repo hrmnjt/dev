@@ -56,3 +56,8 @@ brewdiff:
 brewclean:
     brew bundle cleanup --force
 
+# Create git folder structure for repo organization
+gitsetup:
+    mkdir -p ~/code/github.com/hrmnjt
+    mkdir -p ~/code/work/doh
+
