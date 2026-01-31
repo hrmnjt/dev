@@ -2,7 +2,7 @@
 
 ## Usage
 
-TODO: read Justfile
+Read Justfile
 
 ## ClickOps configuration
 
@@ -29,11 +29,7 @@ TODO: read Justfile
 
 ## TODOs
 
-- [ ] Elegant approach to use `.gitconfig` with folder structure as per [git
-organized](https://hrmnjt.dev/2024/02/18/gitmoreorg/)
-- [ ] Appendix: setting up `.config` directory before doing anything
 - [ ] Appendix: figure out approach for creating SSH keys for Github
-- [ ] Update usage for my reference
 - [ ] Ampcode's suggestions
     - Move Justfile overview to top - Replace the TODO at line 5 with a condensed version of the Justfile's project overview. Add that architectural context early so future you understands what this repo does at a glance.
     - Add explicit "Personal Project" statement - Add a brief note like "This is a personal dotfiles repository tailored to my specific workflow. It may not be directly applicable to others" to set expectations upfront.
@@ -46,29 +42,7 @@ organized](https://hrmnjt.dev/2024/02/18/gitmoreorg/)
 
 ---
 
-## Appendix 1: Setting up `.config` directory
-
-Ensuring `${XDG_CONFIG_HOME}` is set
-```sh
-echo ${XDG_CONFIG_HOME}
-# not set yet
-```
-
-Setting `${XDG_CONFIG_HOME}`
-```sh
-# Checking if ~/.config exists and create if not
-mkdir -p ~/.config
-
-# Creating ~/.zshenv as it doesn't exist by default
-touch ~/.zshenv
-
-# added below line to zshenv
-export XDG_CONFIG_HOME="$HOME/.config"
-
-# save and restart shell
-```
-
-## Appendix 2: SSH Key for Github
+## Appendix: SSH Key for Github
 
 Create new SSH key for Github and store passphrase on Bitwarden
 
