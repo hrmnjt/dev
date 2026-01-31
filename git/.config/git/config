@@ -1,0 +1,22 @@
+[init]
+    defaultBranch = main
+
+[core]
+    excludesFile = ~/.config/git/ignore
+
+# Automatically use personal config in personal repos
+[includeIf "gitdir:~/code/github.com/hrmnjt/"]
+    path = ~/.config/git/config.personal
+
+# Automatically use work config in work repos
+[includeIf "gitdir:~/code/work/"]
+    path = ~/.config/git/config.work
+
+[branch]
+    sort = -committerdate
+
+[rerere]
+    enabled = true
+
+[merge]
+    conflictStyle = zdiff3
