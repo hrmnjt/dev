@@ -61,3 +61,7 @@ gitsetup:
     mkdir -p ~/code/github.com/hrmnjt
     mkdir -p ~/code/work/doh
 
+# Setup .config directory and deploy zsh config (run first on new machines)
+xdgsetup:
+    mkdir -p ~/.config
+    stow -t ~ zsh
