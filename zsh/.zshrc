@@ -17,8 +17,8 @@ alias l='eza --all --git --long --show-symlinks'
 alias pass='cat ~/.pass | pbcopy'
 
 # git folder navigation
-alias cp='cd ~/code/github.com/hrmnjt'
-alias cw='cd ~/code/work/doh'
+alias cdp='cd ~/code/github.com/hrmnjt'
+alias cdw='cd ~/code/work/doh'
 
 export FZF_DEFAULT_OPTS=" \
 --color=bg+:#313244,bg:#1E1E2E,spinner:#F5E0DC,hl:#F38BA8 \
