@@ -40,6 +40,3 @@ Things I might do
     - Reorganize flow: Overview → Prerequisites → Quick Start → ClickOps → TODOs
     - Add Philosophy/Approach note (stow-based, XDG compliance, config separation)
 - [ ] Neovim config organization - init.lua is 35KB monolith, `lua/custom/plugins/init.lua` is empty/unused
-- [ ] Terminal consolidation - maintaining both Ghostty and WezTerm configs; pick one?
-- [ ] WezTerm cleanup - has commented-out workspace switching code
-- [ ] Missing tool configs - direnv, fzf, zoxide, ripgrep installed but no custom configs
