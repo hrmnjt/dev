@@ -13,7 +13,6 @@ font-family = "JetBrains Mono"
 theme = Catppuccin Mocha
 
 # cosmetic: nicer icon on macos
-macos-icon = "xray"
+macos-icon = "blueprint"
 # cosmetic: hiding mouse when editing
 mouse-hide-while-typing = true
-
