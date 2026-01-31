@@ -65,3 +65,7 @@ gitsetup:
 xdgsetup:
     mkdir -p ~/.config
     stow -t ~ zsh
+
+# Generate SSH key for Github and configure ssh-agent
+ghsshkey:
+    ./_scripts/sshsetup.sh
