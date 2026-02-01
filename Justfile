@@ -1,71 +1,49 @@
-# ## Project Overview
-# This is a **dotfiles repository** for managing a personal development environment on macOS.
-# Uses **GNU stow** to symlink configuration files from logical directories into home directory.
-#
-# ## Architecture & Structure
-#
-# **Configuration directories** (used by stow to symlink to home):
-# - `ghostty/` — Terminal emulator config
-# - `nvim/` — Neovim configuration (Kickstart-based)
-# - `zsh/` — Zsh shell config (.zshrc, .zprofile, .zshenv)
-# - `zed/` — Zed editor settings
-# - `starship/` — Starship prompt configuration
-# - `wezterm/` — WezTerm terminal config
-#
-# **Package management:**
-# - `Brewfile` — Homebrew packages and casks to install
-#
-# Each config directory mirrors the home directory structure
-# (e.g., `nvim/.config/nvim/init.lua` → `~/.config/nvim/init.lua` when deployed via stow).
-#
-# ## Package Management Workflow
-#
+# Dotfiles management with GNU stow. See README.md for full documentation.
+
+# --- Stow commands ---
+
+# Deploy all config directories to ~ via symlinks (ghostty, nvim, zsh, zed, starship, wezterm)
+stowall:
+    stow -t ~ */
+
+# Remove all symlinks created by stowall (safe: only removes symlinks, not actual files)
+unstowall:
+    stow -t ~ -D */
+
+# --- Homebrew commands ---
 # 1. Install new packages manually: `brew install <package>`
 # 2. Add package to `Brewfile` with descriptive comment on the line above
 # 3. Commit changes to git
 # 4. On new machines, run `just brewinst` to install all packages
-#
-# ## Important Notes
-#
-# - Requires Homebrew packages: neovim, starship, eza, ghostty, zed, and others in Brewfile
-# - SSH keys stored in `~/.ssh/` (not in version control)
-# - XDG_CONFIG_HOME must be set to `~/.config` in shell environment
-# - All sensitive data (passwords, API keys) go to Bitwarden, not config files
 
-# Deploy all dotfiles to home directory
-stowall:
-    stow -t ~ */
-
-# Remove all dotfiles symlinks from home directory
-unstowall:
-    stow -t ~ -D */
-
-# Check if all Brewfile packages are installed
+# Verify all Brewfile packages are installed (useful before commits or after pulling)
 brewcheck:
     brew bundle check
 
-# Install all packages from Brewfile
+# Install all packages defined in Brewfile (idempotent: skips already installed)
 brewinst:
     brew bundle install
 
-# List installed packages not in Brewfile
+# Show packages installed locally but missing from Brewfile (candidates to add or remove)
 brewdiff:
     brew bundle cleanup
 
-# Remove installed packages not in Brewfile
+# Uninstall packages not in Brewfile (run brewdiff first to preview what gets removed)
 brewclean:
     brew bundle cleanup --force
 
-# Create git folder structure for repo organization
+# --- Setup commands (new machine) ---
+
+# Create directory structure for git repos (github personal + work)
 gitsetup:
     mkdir -p ~/code/github.com/hrmnjt
     mkdir -p ~/code/work/doh
 
-# Setup .config directory and deploy zsh config (run first on new machines)
+# Bootstrap: create ~/.config and deploy zsh (run first - sets XDG_CONFIG_HOME for other configs)
 xdgsetup:
     mkdir -p ~/.config
     stow -t ~ zsh
 
-# Generate SSH key for Github and configure ssh-agent
+# Generate ed25519 SSH key for GitHub, add to ssh-agent, copy pubkey to clipboard
 ghsshkey:
     ./_scripts/sshsetup.sh
