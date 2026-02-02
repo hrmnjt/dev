@@ -28,6 +28,7 @@ brew "hugo"                     # Blog SSG
 
 # Media
 brew "ffmpeg"                   # Image/video editor
+brew "pandoc"                   # Swiss army knife for document conversion
 
 # Cloud & Network
 brew "azure-cli"                # Azure cloud CLI
