@@ -25,6 +25,7 @@ brew "node@22", link: true      # JavaScript runtime
 brew "uv"                       # Python package manager
 brew "luarocks"                 # Lua package manager
 brew "hugo"                     # Blog SSG
+brew "duckdb"
 
 # Media
 brew "ffmpeg"                   # Image/video editor
