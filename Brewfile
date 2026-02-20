@@ -38,6 +38,7 @@ brew "telnet"                   # Network diagnostic tool
 # Experimental
 brew "container"                # MacOS containers
 brew "anomalyco/tap/opencode"
+brew "hledger"
 
 # =============================================================================
 # GUI Applications (Casks)
