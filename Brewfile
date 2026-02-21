@@ -64,6 +64,7 @@ cask "itsycal"                  # Menubar calendar
 cask "cyberduck"                # SFTP/FTP client
 cask "dbeaver-community"        # Database IDE
 cask "monodraw"                 # Vector drawing
+cask "obsidian"                 # trying out an experimental excalidraw
 
 # Fonts
 cask "font-jetbrains-mono"      # Monospace font
