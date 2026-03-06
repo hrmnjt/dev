@@ -1,0 +1,215 @@
+#!/bin/bash
+# vpn.sh — Control Ivanti Secure Access Client VPN from the terminal
+#
+# Problem
+# -------
+# Ivanti Secure Access Client (formerly Pulse Secure) has no CLI on macOS.
+# The only way to manage the VPN is through the GUI — the full app window or
+# the menu bar dropdown. This means repeated clickops throughout the day:
+#   - Connect to access corp infrastructure
+#   - Suspend/disconnect to use sites blocked on corp network
+#   - Resume/reconnect to get back to work
+#
+# Solution
+# --------
+# This script uses AppleScript (osascript) to programmatically click the
+# Ivanti menu bar items — automating the exact same actions you'd do manually.
+# It reads the menu state to determine whether the VPN is connected, suspended,
+# or disconnected, and picks the right action accordingly.
+#
+# On other platforms Ivanti offers CLI tools (pulselauncher on Windows, a CLI
+# client on Linux), but on macOS menu bar automation is the only option.
+#
+# Requirements
+# ------------
+# - macOS with Ivanti Secure Access Client installed and running
+# - Terminal app granted Accessibility permissions:
+#   System Settings → Privacy & Security → Accessibility
+#
+# How it works
+# ------------
+# 1. Clicks the Ivanti menu bar icon to open the dropdown
+# 2. Navigates to the VPN connection submenu ("DOH VPN")
+# 3. Reads available menu items to determine current state
+# 4. Clicks the appropriate action (Connect, Disconnect, Suspend, Resume)
+#
+# The "ignoring application responses" + "killall System Events" pattern is
+# used because System Events can hang when interacting with menu bar extras.
+# Killing it forces a clean restart (macOS respawns it immediately) so
+# subsequent commands work reliably. This is safe and well-documented.
+#
+# Credentials are handled by the Ivanti GUI — if your session has expired,
+# the app pops up its login window automatically. Active sessions persist
+# for ~30 days without re-authentication.
+#
+# Usage
+# -----
+# vpn.sh {connect|c|disconnect|d|suspend|s|resume|r|status|st}
+#
+# Setup — add to ~/.zshrc:
+#   export IVANTI_VPN_NAME="My VPN"
+#   alias vc="bash /path/to/vpn.sh connect"
+#   alias vd="bash /path/to/vpn.sh disconnect"
+#   alias vs="bash /path/to/vpn.sh suspend"
+#   alias vr="bash /path/to/vpn.sh resume"
+#   alias vst="bash /path/to/vpn.sh status"
+
+VPN_NAME="${IVANTI_VPN_NAME:-}"
+if [ -z "$VPN_NAME" ]; then
+  echo "Set IVANTI_VPN_NAME to your VPN connection name."
+  echo "  export IVANTI_VPN_NAME=\"My VPN\""
+  exit 1
+fi
+PROC="Ivanti Secure Access"
+
+# Check if Ivanti is running
+if ! osascript -e 'tell application "System Events" to get name of every process' 2>/dev/null | grep -q "$PROC"; then
+  echo "Ivanti Secure Access Client is not running."
+  echo "Start it from /Applications and try again."
+  exit 1
+fi
+
+# Helper: read VPN state from main dropdown text (does NOT open the submenu,
+# so it can't accidentally trigger a connect/resume as a side effect)
+# Returns: "connected", "suspended", or "disconnected"
+get_vpn_state() {
+  local status_text
+  status_text=$(osascript <<'APPLESCRIPT' 2>/dev/null
+    ignoring application responses
+      tell application "System Events"
+        click menu bar item 1 of menu bar 2 of application process "Ivanti Secure Access"
+      end tell
+    end ignoring
+    delay 0.8
+    do shell script "killall 'System Events' 2>/dev/null; true"
+    delay 0.3
+
+    tell application "System Events"
+      tell application process "Ivanti Secure Access"
+        set itemNames to name of every menu item of menu 1 of menu bar item 1 of menu bar 2
+      end tell
+    end tell
+
+    -- close the menu
+    tell application "System Events" to key code 53
+
+    return itemNames
+APPLESCRIPT
+  )
+
+  if echo "$status_text" | grep -qi "Connected"; then
+    echo "connected"
+  elif echo "$status_text" | grep -qi "Suspended"; then
+    echo "suspended"
+  else
+    echo "disconnected"
+  fi
+}
+
+# Click a specific item in the DOH VPN submenu
+click_vpn_action() {
+  local action="$1"
+  osascript <<APPLESCRIPT 2>/dev/null
+    ignoring application responses
+      tell application "System Events"
+        click menu bar item 1 of menu bar 2 of application process "Ivanti Secure Access"
+      end tell
+    end ignoring
+    delay 0.8
+    do shell script "killall 'System Events' 2>/dev/null; true"
+    delay 0.3
+
+    tell application "System Events"
+      tell application process "Ivanti Secure Access"
+        click menu item "$VPN_NAME" of menu 1 of menu bar item 1 of menu bar 2
+      end tell
+    end tell
+    delay 0.3
+
+    tell application "System Events"
+      tell application process "Ivanti Secure Access"
+        click menu item "$action" of menu "$VPN_NAME" of menu item "$VPN_NAME" of menu 1 of menu bar item 1 of menu bar 2
+      end tell
+    end tell
+APPLESCRIPT
+}
+
+vpn_status() {
+  local state
+  state=$(get_vpn_state)
+  case "$state" in
+    connected)    echo "VPN is connected";    return 0 ;;
+    suspended)    echo "VPN is suspended";    return 2 ;;
+    disconnected) echo "VPN is disconnected"; return 1 ;;
+  esac
+}
+
+vpn_connect() {
+  local state
+  state=$(get_vpn_state)
+  case "$state" in
+    connected)
+      echo "VPN is already connected"
+      return 0 ;;
+    suspended)
+      echo "Resuming $VPN_NAME..."
+      click_vpn_action "Resume" ;;
+    disconnected)
+      echo "Connecting to $VPN_NAME..."
+      click_vpn_action "Connect" ;;
+  esac
+  echo "Connect triggered. GUI will prompt if credentials are needed."
+}
+
+vpn_disconnect() {
+  local state
+  state=$(get_vpn_state)
+  if [ "$state" = "disconnected" ]; then
+    echo "VPN is already disconnected"
+    return 0
+  fi
+  click_vpn_action "Disconnect"
+  echo "Disconnected from $VPN_NAME"
+}
+
+vpn_suspend() {
+  local state
+  state=$(get_vpn_state)
+  case "$state" in
+    connected)
+      echo "Suspending $VPN_NAME..."
+      click_vpn_action "Suspend"
+      echo "VPN suspended" ;;
+    suspended)
+      echo "VPN is already suspended" ;;
+    disconnected)
+      echo "VPN is not connected — nothing to suspend" ;;
+  esac
+}
+
+vpn_resume() {
+  local state
+  state=$(get_vpn_state)
+  case "$state" in
+    suspended)
+      echo "Resuming $VPN_NAME..."
+      click_vpn_action "Resume"
+      echo "VPN resumed" ;;
+    connected)
+      echo "VPN is already connected" ;;
+    disconnected)
+      echo "VPN is not suspended — nothing to resume" ;;
+  esac
+}
+
+case "${1:-}" in
+  connect|c)    vpn_connect ;;
+  disconnect|d) vpn_disconnect ;;
+  suspend|s)    vpn_suspend ;;
+  resume|r)     vpn_resume ;;
+  status|st)    vpn_status ;;
+  *)
+    echo "Usage: vpn {connect|c|disconnect|d|suspend|s|resume|r|status|st}"
+    exit 1
+    ;;
+esac
