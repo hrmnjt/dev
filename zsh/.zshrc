@@ -29,3 +29,10 @@ export FZF_DEFAULT_OPTS=" \
 
 # amp
 export PATH="$HOME/.local/bin:$PATH"
+
+# connect and disconnect ivanti
+alias vc="bash ~/code/work/doh/ivanticli/vpn.sh connect"
+alias vd="bash ~/code/work/doh/ivanticli/vpn.sh disconnect"
+alias vs="bash ~/code/work/doh/ivanticli/vpn.sh suspend"
+alias vr="bash ~/code/work/doh/ivanticli/vpn.sh resume"
+alias vst="bash ~/code/work/doh/ivanticli/vpn.sh status"
