@@ -26,6 +26,7 @@ brew "uv"                       # Python package manager
 brew "luarocks"                 # Lua package manager
 brew "hugo"                     # Blog SSG
 brew "duckdb"
+brew "sinelaw/fresh/fresh-editor" # another terminal editor that I'm trying
 
 # Media
 brew "ffmpeg"                   # Image/video editor
