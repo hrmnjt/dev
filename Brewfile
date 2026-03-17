@@ -26,6 +26,7 @@ brew "uv"                       # Python package manager
 brew "luarocks"                 # Lua package manager
 brew "hugo"                     # Blog SSG
 brew "duckdb"
+brew "sinelaw/fresh/fresh-editor" # another terminal editor that I'm trying
 
 # Media
 brew "ffmpeg"                   # Image/video editor
@@ -57,6 +58,7 @@ cask "zed"                      # Code editor
 cask "firefox@developer-edition" # Firefox
 cask "orion"                    # Browser
 cask "zen"                      # Privacy-focused browser
+cask "brave-browser"			# trying out brave, waiting for ladybird
 
 # Utilities
 cask "alt-tab"                  # macOS window switcher
@@ -65,6 +67,7 @@ cask "cyberduck"                # SFTP/FTP client
 cask "dbeaver-community"        # Database IDE
 cask "monodraw"                 # Vector drawing
 cask "obsidian"                 # trying out an experimental excalidraw
+cask "claude-code"				# Clawde on terminal
 
 # Fonts
 cask "font-jetbrains-mono"      # Monospace font
