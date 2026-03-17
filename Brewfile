@@ -65,6 +65,7 @@ cask "cyberduck"                # SFTP/FTP client
 cask "dbeaver-community"        # Database IDE
 cask "monodraw"                 # Vector drawing
 cask "obsidian"                 # trying out an experimental excalidraw
+cask "claude-code"				# Clawde on terminal
 
 # Fonts
 cask "font-jetbrains-mono"      # Monospace font
