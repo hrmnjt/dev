@@ -41,6 +41,8 @@ brew "telnet"                   # Network diagnostic tool
 brew "container"                # MacOS containers
 brew "anomalyco/tap/opencode"
 brew "hledger"
+tap "databricks/tap"
+brew "databricks/tap/databricks" # Databricks CLI
 
 # =============================================================================
 # GUI Applications (Casks)
