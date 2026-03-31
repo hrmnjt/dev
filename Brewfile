@@ -23,6 +23,7 @@ brew "stow"                     # Symlink manager for dotfiles
 brew "tmux"                     # Terminal multiplexer
 brew "node@22", link: true      # JavaScript runtime
 brew "uv"                       # Python package manager
+brew "gh"                       # Github CLI
 brew "luarocks"                 # Lua package manager
 brew "hugo"                     # Blog SSG
 brew "duckdb"
