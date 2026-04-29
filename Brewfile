@@ -21,7 +21,8 @@ brew "neovim"                   # Text editor
 brew "just"                     # Command runner (like make)
 brew "stow"                     # Symlink manager for dotfiles
 brew "tmux"                     # Terminal multiplexer
-brew "node@22", link: true      # JavaScript runtime
+brew "node"
+
 brew "uv"                       # Python package manager
 brew "gh"                       # Github CLI
 brew "luarocks"                 # Lua package manager
