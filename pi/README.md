@@ -10,6 +10,7 @@ pi/
 │   └── agent/
 │       ├── extensions/
 │       │   ├── answer.ts       # User-initiated Q&A extraction
+│       │   ├── exit.ts           # Graceful terminal exit
 │       │   └── gondolin.ts     # Gondolin VM sandboxing
 │       ├── package.json        # Extension dependencies
 │       ├── settings.json       # pi global settings
@@ -75,6 +76,24 @@ Model: [continues with port 8080, vitest tests]
 ```
 
 **Limitation:** Works in interactive mode only.
+
+---
+
+### exit
+
+Gracefully exit pi with `/exit`. Restores terminal state before quitting to
+avoid the raw-mode corruption that happens with `Ctrl+C` or `process.exit()`.
+
+**When to use it:** Any time you want to cleanly quit pi.
+
+**How to use it:**
+1. Type `/exit` in the pi input
+2. pi shuts down gracefully, restoring your terminal
+
+**Why this exists:**
+The built-in way to quit pi is `Ctrl+D` or `Ctrl+C`, but these can leave the
+terminal in raw mode, causing garbled output on subsequent shell input. This
+extension uses `ctx.shutdown()` for a clean exit.
 
 ---
 
