@@ -1,6 +1,0 @@
-{
-  "defaultProvider": "opencode-go",
-  "defaultModel": "deepseek-v4-pro",
-  "defaultThinkingLevel": "medium",
-  "theme": "catppuccin-mocha"
-}
