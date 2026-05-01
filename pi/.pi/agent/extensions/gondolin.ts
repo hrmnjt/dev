@@ -36,6 +36,28 @@ import {
 import { RealFSProvider, VM } from "@earendil-works/gondolin";
 
 const GUEST_WORKSPACE = "/workspace";
+const GUEST_PI_DOCS = "/pi/docs";
+const GUEST_PI_EXAMPLES = "/pi/examples";
+
+interface PiResources {
+  docs: string;
+  examples: string;
+}
+
+function resolvePiDocs(): PiResources | null {
+  try {
+    // Since this extension is loaded by pi, require.resolve finds the
+    // exact installation (global npm, local project, or npx cache).
+    const pkgJson = require.resolve("@mariozechner/pi-coding-agent/package.json");
+    const root = path.dirname(pkgJson);
+    return {
+      docs: path.join(root, "docs"),
+      examples: path.join(root, "examples"),
+    };
+  } catch {
+    return null;
+  }
+}
 
 function shQuote(value: string): string {
   return "'" + value.replace(/'/g, "'\\''") + "'";
@@ -193,6 +215,7 @@ export default function (pi: ExtensionAPI) {
 
   let vm: VM | null = null;
   let vmStarting: Promise<VM> | null = null;
+  let piResources: PiResources | null = null;
 
   async function ensureVm(ctx?: ExtensionContext) {
     if (vm) return vm;
@@ -213,21 +236,34 @@ export default function (pi: ExtensionAPI) {
         process.env.GONDOLIN_VMM = "krun";
       }
 
+      // Detect pi docs/examples from the host installation
+      piResources = resolvePiDocs();
+
+      const mounts: Record<string, InstanceType<typeof RealFSProvider>> = {
+        [GUEST_WORKSPACE]: new RealFSProvider(localCwd),
+      };
+
+      if (piResources) {
+        mounts[GUEST_PI_DOCS] = new RealFSProvider(piResources.docs);
+        mounts[GUEST_PI_EXAMPLES] = new RealFSProvider(piResources.examples);
+      }
+
       const created = await VM.create({
         vfs: {
-          mounts: {
-            [GUEST_WORKSPACE]: new RealFSProvider(localCwd),
-          },
+          mounts,
         },
       });
 
       vm = created;
+
+      let statusText = `Gondolin: running (${localCwd} -> ${GUEST_WORKSPACE})`;
+      if (piResources) {
+        statusText += `, docs mounted`;
+      }
+
       ctx?.ui.setStatus(
         "gondolin",
-        ctx.ui.theme.fg(
-          "accent",
-          `Gondolin: running (${localCwd} -> ${GUEST_WORKSPACE})`,
-        ),
+        ctx.ui.theme.fg("accent", statusText),
       );
       ctx?.ui.notify(
         `Gondolin VM ready. Host ${localCwd} mounted at ${GUEST_WORKSPACE}`,
@@ -254,6 +290,7 @@ export default function (pi: ExtensionAPI) {
     } finally {
       vm = null;
       vmStarting = null;
+      piResources = null;
     }
   });
 
@@ -308,10 +345,18 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("before_agent_start", async (event, ctx) => {
     await ensureVm(ctx);
-    const modified = event.systemPrompt.replace(
+    let modified = event.systemPrompt.replace(
       `Current working directory: ${localCwd}`,
       `Current working directory: ${GUEST_WORKSPACE} (Gondolin VM, mounted from host: ${localCwd})`,
     );
+
+    if (piResources) {
+      modified += `\n\nPi documentation and examples are mounted in this VM:\n`;
+      modified += `- ${GUEST_PI_DOCS}/ — API documentation (extensions.md, tui.md, skills.md, themes.md, etc.)\n`;
+      modified += `- ${GUEST_PI_EXAMPLES}/ — working extension examples\n`;
+      modified += `Reference these when asked to build or modify pi extensions, themes, or skills.`;
+    }
+
     return { systemPrompt: modified };
   });
 }
