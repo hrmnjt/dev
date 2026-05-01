@@ -1,7 +1,6 @@
 {
   "defaultProvider": "opencode-go",
-  "defaultModel": "kimi-k2.6",
+  "defaultModel": "deepseek-v4-pro",
   "defaultThinkingLevel": "medium",
-  "theme": "catppuccin-mocha",
-  "lastChangelogVersion": "0.71.0"
+  "theme": "catppuccin-mocha"
 }
