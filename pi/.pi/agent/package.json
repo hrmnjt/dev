@@ -1,0 +1,10 @@
+{
+  "name": "@hrmnjt/pi-agent",
+  "private": true,
+  "dependencies": {
+    "@earendil-works/gondolin": "^0.8.0"
+  },
+  "optionalDependencies": {
+    "@earendil-works/gondolin-krun-runner-darwin-arm64": "0.8.0"
+  }
+}
