@@ -28,6 +28,7 @@ brew "gh"                       # Github CLI
 brew "luarocks"                 # Lua package manager
 brew "hugo"                     # Blog SSG
 brew "duckdb"
+brew "qemu"                     # Virtualization for Gondolin sandbox
 brew "sinelaw/fresh/fresh-editor" # another terminal editor that I'm trying
 
 # Media

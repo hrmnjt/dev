@@ -1,0 +1,7 @@
+{
+  "name": "@hrmnjt/pi-agent",
+  "private": true,
+  "dependencies": {
+    "@earendil-works/gondolin": "^0.8.0"
+  }
+}
