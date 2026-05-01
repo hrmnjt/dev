@@ -11,7 +11,8 @@
  * https://github.com/earendil-works/gondolin/blob/main/host/examples/pi-gondolin.ts
  *
  * Requirements:
- *   - QEMU installed (brew install qemu)
+ *   - QEMU installed (brew install qemu) — fallback backend
+ *   - krun runner (auto-installed on Apple Silicon) — preferred backend
  *   - @earendil-works/gondolin installed in ~/.pi/agent/node_modules/
  */
 
@@ -205,6 +206,12 @@ export default function (pi: ExtensionAPI) {
           `Gondolin: starting (mount ${GUEST_WORKSPACE})`,
         ),
       );
+
+      // Use krun (Apple Virtualization.framework) on Apple Silicon for faster boots
+      // Falls back to QEMU automatically if krun is unavailable
+      if (process.platform === "darwin" && process.arch === "arm64") {
+        process.env.GONDOLIN_VMM = "krun";
+      }
 
       const created = await VM.create({
         vfs: {

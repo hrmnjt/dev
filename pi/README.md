@@ -11,7 +11,7 @@ pi/
 │       ├── extensions/
 │       │   ├── answer.ts       # User-initiated Q&A extraction
 │       │   └── gondolin.ts     # Gondolin VM sandboxing
-│       ├── package.json        # Extension dependencies (gondolin)
+│       ├── package.json        # Extension dependencies
 │       ├── settings.json       # pi global settings
 │       └── themes/
 │           └── catppuccin-mocha.json
@@ -27,7 +27,7 @@ stow -t ~ pi
 # Install extension dependencies
 cd ~/.pi/agent && npm install
 
-# Install QEMU (required for Gondolin)
+# Install QEMU (fallback backend for Gondolin)
 brew install qemu   # macOS
 ```
 
@@ -84,7 +84,7 @@ Sandboxes pi's `read`/`write`/`edit`/`bash` tools inside a lightweight Alpine
 Linux micro-VM. Based on the [official example](https://github.com/earendil-works/gondolin/blob/main/host/examples/pi-gondolin.ts).
 
 **Prerequisites:**
-- QEMU installed (`brew install qemu`)
+- QEMU installed (`brew install qemu`) — fallback backend
 - `@earendil-works/gondolin` installed (`cd ~/.pi/agent && npm install`)
 
 **What it does:**
@@ -93,6 +93,14 @@ Linux micro-VM. Based on the [official example](https://github.com/earendil-work
 - Redirects all file and shell tool operations into the sandbox
 - Runs user `!` commands inside the VM too
 - Patches the system prompt so the model sees `/workspace` paths
+
+**Performance on Apple Silicon:**
+
+On M1/M2/M3/M4 Macs, the extension auto-selects the **krun** backend (Apple
+Virtualization.framework) instead of QEMU. This is ~5-10x faster for VM boot
+and noticeably snappier for file operations.
+
+If krun is unavailable, it falls back to QEMU automatically.
 
 **Usage:** Just start `pi` in any project directory. The VM starts automatically.
 
