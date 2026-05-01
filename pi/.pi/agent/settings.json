@@ -2,5 +2,6 @@
   "defaultProvider": "opencode-go",
   "defaultModel": "kimi-k2.6",
   "defaultThinkingLevel": "medium",
-  "theme": "catppuccin-mocha"
+  "theme": "catppuccin-mocha",
+  "lastChangelogVersion": "0.70.6"
 }
