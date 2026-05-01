@@ -33,7 +33,7 @@
     "muted": "overlay1",
     "dim": "overlay0",
     "text": "",
-    "thinkingText": "subtext1",
+    "thinkingText": "overlay0",
     "selectedBg": "surface0",
     "userMessageBg": "mantle",
     "userMessageText": "",
