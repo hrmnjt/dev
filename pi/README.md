@@ -13,6 +13,8 @@ pi/
 │       │   └── gondolin.ts     # Gondolin VM sandboxing
 │       ├── package.json        # Extension dependencies
 │       ├── settings.json       # pi global settings
+│       ├── settings-clean.py   # Git clean filter script
+│       ├── .gitattributes      # Git filter config
 │       └── themes/
 │           └── catppuccin-mocha.json
 └── README.md
@@ -39,6 +41,24 @@ This symlinks into `~/.pi/agent/`:
 
 Machine-local files (`auth.json`, `sessions/`, `git/`, `node_modules/`) stay
 untouched in `~/.pi/agent/`.
+
+## Git clean filter
+
+Pi auto-updates `lastChangelogVersion` in `settings.json` after updates.
+Since `settings.json` is symlinked, those changes show up in `git diff`.
+
+A git clean filter strips this field before every commit, so your repo
+stays clean while pi can still mutate the working copy:
+
+```bash
+# Already configured in .git/config and pi/.pi/agent/.gitattributes
+# Verify it's active:
+git check-attr filter pi/.pi/agent/settings.json
+# → pi/.pi/agent/settings.json: filter: pi-settings
+```
+
+The filter uses `pi/.pi/agent/settings-clean.py` — a small Python script
+that removes `lastChangelogVersion` and outputs valid JSON.
 
 ## Extensions
 
@@ -130,6 +150,6 @@ Run `/reload` in pi to hot-reload extension changes.
 
 ## Note on settings.json
 
-Pi auto-updates `lastChangelogVersion` in `settings.json` after updates. Since
-it's symlinked, those changes show up in `git diff`. Just commit them
-periodically — they're harmless version markers.
+Pi auto-updates `lastChangelogVersion` in `settings.json` after updates.
+The git clean filter strips this field before commits (see above).
+Other settings changes (theme, model, etc.) should be committed normally.
