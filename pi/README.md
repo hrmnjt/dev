@@ -10,12 +10,11 @@ pi/
 │   └── agent/
 │       ├── extensions/
 │       │   ├── answer.ts       # User-initiated Q&A extraction
-│       │   ├── exit.ts           # Graceful terminal exit
+│       │   ├── exit.ts         # Graceful terminal exit
 │       │   └── gondolin.ts     # Gondolin VM sandboxing
 │       ├── package.json        # Extension dependencies
-│       ├── settings.json       # pi global settings
-│       ├── settings-clean.py   # Git clean filter script
-│       ├── .gitattributes      # Git filter config
+│       ├── settings.template.json   # Intentional settings (tracked)
+│       ├── settings.json       # Runtime settings (gitignored)
 │       └── themes/
 │           └── catppuccin-mocha.json
 └── README.md
@@ -167,8 +166,30 @@ Add more resources under `pi/.pi/agent/` and re-stow:
 
 Run `/reload` in pi to hot-reload extension changes.
 
-## Note on settings.json
+## Settings management
 
-Pi auto-updates `lastChangelogVersion` in `settings.json` after updates.
-The git clean filter strips this field before commits (see above).
-Other settings changes (theme, model, etc.) should be committed normally.
+Pi writes volatile values (`defaultModel`, `defaultProvider`,
+`lastChangelogVersion`) to `settings.json` — these change with every model
+switch and update. Only intentional settings (`theme`, `defaultThinkingLevel`)
+are tracked in `settings.template.json`.
+
+### First-time setup (or after cloning)
+
+```bash
+# Merge template into settings.json (overriding volatile keys)
+cd pi/.pi/agent
+jq -s '.[0] * .[1]' settings.template.json settings.json > tmp && mv tmp settings.json
+```
+
+Alternatively, if no `settings.json` exists yet, just copy the template:
+
+```bash
+cp pi/.pi/agent/settings.template.json pi/.pi/agent/settings.json
+```
+
+### How it works
+
+- `settings.template.json` — tracked in git, defines intentional defaults
+- `settings.json` — **gitignored**, pi writes whatever it wants here
+- On setup, `jq` merges template → settings (template takes priority)
+- `lastChangelogVersion`, `defaultModel`, etc. evolve naturally without dirtying git

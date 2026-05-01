@@ -68,6 +68,33 @@ pi/
 └── README.md
 ```
 
+## Settings Management
+
+Two settings files with different purposes:
+
+| File | Tracked? | Purpose |
+|------|----------|---------|
+| `settings.template.json` | ✅ Git | Intentional settings (`theme`, `defaultThinkingLevel`) |
+| `settings.json` | ❌ Gitignored | Runtime state (`defaultModel`, `defaultProvider`, `lastChangelogVersion`) |
+
+`settings.json` is written by pi at runtime — `defaultModel` and
+`defaultProvider` change every time the user switches models, and
+`lastChangelogVersion` auto-updates. The template lets the repo track only
+intentional defaults while the actual settings evolve naturally.
+
+### First-time setup
+
+```bash
+# If settings.json doesn't exist, copy the template
+cp pi/.pi/agent/settings.template.json pi/.pi/agent/settings.json
+# Or merge into an existing settings.json
+jq -s '.[0] * .[1]' pi/.pi/agent/settings.template.json pi/.pi/agent/settings.json > tmp && mv tmp pi/.pi/agent/settings.json
+```
+
+### When adding a new intentional setting
+
+Add it to `settings.template.json`. The user merges on next setup.
+
 ## Deploying Changes
 
 Since `stow` and `git` are unavailable in the VM, **print these commands for the
