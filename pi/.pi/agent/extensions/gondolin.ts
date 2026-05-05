@@ -64,6 +64,19 @@ function shQuote(value: string): string {
 }
 
 function toGuestPath(localCwd: string, localPath: string): string {
+  // If the path is already inside the guest filesystem, pass it through.
+  // The system prompt tells the model about /workspace and /pi, so the
+  // model naturally uses these guest-absolute paths.
+  if (
+    localPath.startsWith(GUEST_WORKSPACE + "/") ||
+    localPath === GUEST_WORKSPACE
+  ) {
+    return localPath;
+  }
+  if (localPath.startsWith("/pi/")) {
+    return localPath;
+  }
+
   const rel = path.relative(localCwd, localPath);
   if (rel === "") return GUEST_WORKSPACE;
   if (rel.startsWith("..") || path.isAbsolute(rel)) {
