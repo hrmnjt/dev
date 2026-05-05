@@ -64,6 +64,7 @@ cask "firefox@developer-edition" # Firefox
 cask "orion"                    # Browser
 cask "zen"                      # Privacy-focused browser
 cask "brave-browser"			# trying out brave, waiting for ladybird
+cask "helium-browser"          # Helium browser (floating, always-on-top)
 
 # Utilities
 cask "alt-tab"                  # macOS window switcher
