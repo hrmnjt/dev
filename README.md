@@ -38,10 +38,13 @@ just brewinst
 # Step 6: .dotfiles in place with stow
 `just stowall`
 
-# Step 7: Generate SSH key for GitHub
+# Step 7: Install pi extension dependencies
+`just pi-deps`
+
+# Step 8: Generate SSH key for GitHub
 `just ghsshkey`
 
-# Step 8: Create git directory structure
+# Step 9: Create git directory structure
 `just gitsetup`
 ```
 

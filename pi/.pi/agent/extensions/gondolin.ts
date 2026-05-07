@@ -261,10 +261,16 @@ export default function (pi: ExtensionAPI) {
         mounts[GUEST_PI_EXAMPLES] = new RealFSProvider(piResources.examples);
       }
 
+      // Support custom VM images (e.g. with git pre-installed).
+      // Set GONDOLIN_GUEST_DIR to the output of `just gondolin-image`.
+      // Falls back to the default alpine-base image if unset.
+      const imagePath = process.env.GONDOLIN_GUEST_DIR || undefined;
+
       const created = await VM.create({
         vfs: {
           mounts,
         },
+        ...(imagePath ? { sandbox: { imagePath } } : {}),
       });
 
       vm = created;

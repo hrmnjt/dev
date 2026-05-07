@@ -47,3 +47,18 @@ xdgsetup:
 # Generate ed25519 SSH key for GitHub, add to ssh-agent, copy pubkey to clipboard
 ghsshkey:
     ./_scripts/sshsetup.sh
+
+# --- Gondolin VM image ---
+
+# Build a custom VM image with git, ripgrep, jq, fd, and other dev tools.
+# Config: pi/.pi/agent/gondolin-image.json
+# Output: ~/.gondolin/custom-image (used by GONDOLIN_GUEST_DIR env var)
+# Requires: lz4, e2fsprogs (see Brewfile)
+gondolin-image:
+    npx @earendil-works/gondolin build \
+        --config pi/.pi/agent/gondolin-image.json \
+        --output ~/.gondolin/custom-image
+
+# Install pi extension dependencies (run after stowall)
+pi-deps:
+    npm install --prefix ~/.pi/agent
