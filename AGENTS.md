@@ -61,8 +61,9 @@ pi/
 │       │   ├── answer.ts       # User-initiated Q&A extraction
 │       │   ├── exit.ts         # Graceful terminal exit
 │       │   └── gondolin.ts     # Gondolin VM sandboxing
+│       ├── gondolin-image.json # Custom VM image build config (git, ripgrep, etc.)
 │       ├── package.json        # Extension dependencies
-│       ├── settings.json       # pi global settings
+│       ├── settings.json        # pi global settings
 │       └── themes/
 │           └── catppuccin-mocha.json
 └── README.md
@@ -104,9 +105,7 @@ user to run on their host** after making changes:
 # Deploy config changes (symlink into ~/.pi/agent)
 cd ~/code/github.com/hrmnjt/dev   # adjust path as needed
 stow -t ~ pi
-
-# Install/update extension dependencies
-cd ~/.pi/agent && npm install
+just pi-deps
 ```
 
 Then tell the user to type `/reload` in pi to hot-reload extensions.
@@ -135,3 +134,23 @@ Usage: `/exit`
 ### gondolin
 Sandboxes all tool operations inside a lightweight VM. Mounts workspace and
 pi docs/examples. This is the extension you're currently inside.
+
+**Custom VM image:** The default Alpine VM lacks git and other dev tools.
+A custom image with pre-installed packages is configured via
+`pi/.pi/agent/gondolin-image.json`. Build it once:
+
+```bash
+# One-time build (on host Mac)
+npx @earendil-works/gondolin build \
+  --config pi/.pi/agent/gondolin-image.json \
+  --output ~/.gondolin/custom-image
+```
+
+Then set the env var before starting pi (or add to your shell profile):
+
+```bash
+export GONDOLIN_GUEST_DIR="$HOME/.gondolin/custom-image"
+```
+
+To add more tools, edit `gondolin-image.json` → `rootfsPackages`, rebuild,
+and restart pi. The build output (~200MB) is stored outside the repo.

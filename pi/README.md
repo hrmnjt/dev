@@ -12,6 +12,7 @@ pi/
 │       │   ├── answer.ts       # User-initiated Q&A extraction
 │       │   ├── exit.ts         # Graceful terminal exit
 │       │   └── gondolin.ts     # Gondolin VM sandboxing
+│       ├── gondolin-image.json # Custom VM image build config
 │       ├── package.json        # Extension dependencies
 │       ├── settings.template.json   # Intentional settings (tracked)
 │       ├── settings.json       # Runtime settings (gitignored)
@@ -26,8 +27,7 @@ pi/
 # From repo root
 stow -t ~ pi
 
-# Install extension dependencies
-cd ~/.pi/agent && npm install
+just pi-deps
 
 # Install QEMU (fallback backend for Gondolin)
 brew install qemu   # macOS
@@ -131,6 +131,36 @@ Linux micro-VM. Based on the [official example](https://github.com/earendil-work
 - Redirects all file and shell tool operations into the sandbox
 - Runs user `!` commands inside the VM too
 - Patches the system prompt so the model sees `/workspace` paths
+
+**Custom VM image:**
+
+The default Alpine VM image lacks `git` and other dev tools. A custom image
+with pre-installed packages is configured in `gondolin-image.json`.
+
+```bash
+# One-time build (requires lz4 and e2fsprogs from Brewfile)
+just gondolin-image
+```
+
+This produces `~/.gondolin/custom-image/` (~200MB), pointed to by the
+`GONDOLIN_GUEST_DIR` env var. The extension reads this var and passes it
+to `VM.create()` — falling back to the default Alpine image if unset.
+
+```bash
+# Add to ~/.zshrc for persistence
+export GONDOLIN_GUEST_DIR="$HOME/.gondolin/custom-image"
+```
+
+**Adding tools to the VM:**
+
+Edit `gondolin-image.json` → `rootfsPackages`, add Alpine package names,
+then rebuild:
+
+```bash
+just gondolin-image
+```
+
+Restart pi to use the new image. No extension changes needed.
 
 **Performance on Apple Silicon:**
 

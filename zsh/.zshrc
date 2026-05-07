@@ -6,6 +6,9 @@
 eval "$(/opt/homebrew/bin/brew shellenv)"
 export HOMEBREW_NO_AUTO_UPDATE=1
 
+# Gondolin custom VM image (built with `just gondolin-image`)
+export GONDOLIN_GUEST_DIR="$HOME/.gondolin/custom-image"
+
 # direnv
 eval "$(direnv hook zsh)"
 
