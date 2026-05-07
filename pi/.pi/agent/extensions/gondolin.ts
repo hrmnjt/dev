@@ -180,6 +180,13 @@ function createGondolinBashOps(vm: VM, localCwd: string): BashOperations {
     exec: async (command, cwd, { onData, signal, timeout, env }) => {
       const guestCwd = toGuestPath(localCwd, cwd);
 
+      // The VM inherits host env vars (HOME=/Users/..., XDG_CONFIG_HOME, etc.)
+      // which don't exist inside the guest. Fix them so git and other tools
+      // resolve config paths correctly inside the VM.
+      const guestEnv: Record<string, string> = sanitizeEnv(env) ?? {};
+      guestEnv["HOME"] = "/root";
+      guestEnv["XDG_CONFIG_HOME"] = "/root/.config";
+
       const ac = new AbortController();
       const onAbort = () => ac.abort();
       signal?.addEventListener("abort", onAbort, { once: true });
@@ -197,7 +204,7 @@ function createGondolinBashOps(vm: VM, localCwd: string): BashOperations {
         const proc = vm.exec(["/bin/bash", "-lc", command], {
           cwd: guestCwd,
           signal: ac.signal,
-          env: sanitizeEnv(env),
+          env: guestEnv,
           stdout: "pipe",
           stderr: "pipe",
         });
@@ -286,10 +293,12 @@ export default function (pi: ExtensionAPI) {
 
       // Allow git to trust the workspace (repo files owned by host user,
       // but the VM runs as root — git rejects this by default).
-      await created.exec([
-        "/bin/sh", "-lc",
-        "git config --global --add safe.directory /workspace",
-      ]);
+      // Override HOME so --global writes to /root/.gitconfig, not the
+      // host's HOME which doesn't exist inside the VM.
+      await created.exec(
+        ["/bin/sh", "-lc", "git config --global --add safe.directory /workspace"],
+        { env: { HOME: "/root" } },
+      );
 
       let statusText = `Gondolin: running (${localCwd} -> ${GUEST_WORKSPACE})`;
       if (piResources) {
