@@ -16,6 +16,8 @@
  *   - @earendil-works/gondolin installed in ~/.pi/agent/node_modules/
  */
 
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 
 import type {
@@ -266,6 +268,13 @@ export default function (pi: ExtensionAPI) {
       // Falls back to the default alpine-base image if unset.
       const imagePath = process.env.GONDOLIN_GUEST_DIR || undefined;
 
+      // Mount host git config so git identity and settings work inside the VM.
+      // Repo layout: git/.config/git/ stowed to ~/.config/git/
+      const hostGitConfigDir = path.join(os.homedir(), ".config", "git");
+      if (fs.existsSync(hostGitConfigDir)) {
+        mounts["/root/.config/git"] = new RealFSProvider(hostGitConfigDir);
+      }
+
       const created = await VM.create({
         vfs: {
           mounts,
@@ -274,6 +283,13 @@ export default function (pi: ExtensionAPI) {
       });
 
       vm = created;
+
+      // Allow git to trust the workspace (repo files owned by host user,
+      // but the VM runs as root — git rejects this by default).
+      await created.exec([
+        "/bin/sh", "-lc",
+        "git config --global --add safe.directory /workspace",
+      ]);
 
       let statusText = `Gondolin: running (${localCwd} -> ${GUEST_WORKSPACE})`;
       if (piResources) {
