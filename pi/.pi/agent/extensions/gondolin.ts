@@ -186,6 +186,12 @@ function createGondolinBashOps(vm: VM, localCwd: string): BashOperations {
       const guestEnv: Record<string, string> = sanitizeEnv(env) ?? {};
       guestEnv["HOME"] = "/root";
       guestEnv["XDG_CONFIG_HOME"] = "/root/.config";
+      // Suppress SSH host-key prompts when git connects through Gondolin's
+      // SSH proxy (the proxy uses an ephemeral host key).
+      guestEnv["GIT_SSH_COMMAND"] =
+        "ssh -o BatchMode=yes -o StrictHostKeyChecking=no" +
+        " -o UserKnownHostsFile=/dev/null -o GlobalKnownHostsFile=/dev/null" +
+        " -o LogLevel=ERROR";
 
       const ac = new AbortController();
       const onAbort = () => ac.abort();
@@ -283,6 +289,14 @@ export default function (pi: ExtensionAPI) {
       }
 
       const created = await VM.create({
+        // Enable outbound SSH for git push/pull over SSH.
+        // Requires synthetic DNS with per-host mapping so the proxy can
+        // identify the intended upstream target from the guest's TCP connection.
+        dns: { mode: "synthetic", syntheticHostMapping: "per-host" },
+        ssh: {
+          allowedHosts: ["github.com"],
+          agent: process.env.SSH_AUTH_SOCK,
+        },
         vfs: {
           mounts,
         },
