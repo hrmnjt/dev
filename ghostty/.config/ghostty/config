@@ -10,7 +10,7 @@ font-size = 18
 font-family = "JetBrains Mono"
 
 # theme for ghostty
-theme = gruvbox-dark-medium
+theme = "Gruvbox Dark Hard"
 
 # cosmetic: nicer icon on macos
 macos-icon = "blueprint"
