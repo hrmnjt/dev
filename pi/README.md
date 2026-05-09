@@ -131,6 +131,7 @@ Linux micro-VM. Based on the [official example](https://github.com/earendil-work
 - Redirects all file and shell tool operations into the sandbox
 - Runs user `!` commands inside the VM too
 - Patches the system prompt so the model sees `/workspace` paths
+- Enables full git (commit, push, pull, clone) from inside the VM via an SSH bridge (see below)
 
 **Custom VM image:**
 
@@ -150,6 +151,14 @@ to `VM.create()` — falling back to the default Alpine image if unset.
 # Add to ~/.zshrc for persistence
 export GONDOLIN_GUEST_DIR="$HOME/.gondolin/custom-image"
 ```
+
+**Git over SSH:**
+
+The extension mounts your host `~/.config/git/` (identity, email) into the VM
+and proxies outbound SSH via your host's `SSH_AUTH_SOCK` agent. `github.com` is
+pre-configured as an allowed host. This means `git commit`, `git push`,
+`git pull`, and `git clone` against GitHub all work transparently from inside
+the VM — no need to switch to the host for git.
 
 **Adding tools to the VM:**
 
