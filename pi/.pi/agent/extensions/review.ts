@@ -21,7 +21,6 @@
  * new commits and ask the model to verify previous comments were addressed.
  */
 
-import { execSync } from "node:child_process";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
 // ---------------------------------------------------------------------------
@@ -32,40 +31,31 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 let lastReviewedSha: string | null = null;
 
 // ---------------------------------------------------------------------------
-// Git helpers (run on the host, outside the Gondolin VM)
-// ---------------------------------------------------------------------------
-
-function git(command: string): string {
-  try {
-    return execSync(command, {
-      encoding: "utf-8",
-      timeout: 30_000,
-      stdio: "pipe",
-    }).trim();
-  } catch (e: any) {
-    const stderr = e.stderr?.trim() || e.message;
-    throw new Error(stderr);
-  }
-}
-
-function gitOk(command: string): boolean {
-  try {
-    execSync(command, { encoding: "utf-8", stdio: "pipe" });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function isGitRepo(): boolean {
-  return gitOk("git rev-parse --git-dir");
-}
-
-// ---------------------------------------------------------------------------
 // Extension
 // ---------------------------------------------------------------------------
 
 export default function (pi: ExtensionAPI) {
+  // -------------------------------------------------------------------------
+  // Git helpers — use pi.exec() for async, non-blocking shell execution
+  // -------------------------------------------------------------------------
+
+  async function git(command: string): Promise<string> {
+    const result = await pi.exec("sh", ["-c", command]);
+    if (result.code !== 0) {
+      throw new Error(result.stderr?.trim() || `git command exited with code ${result.code}`);
+    }
+    return result.stdout?.trim() || "";
+  }
+
+  async function gitOk(command: string): Promise<boolean> {
+    const result = await pi.exec("sh", ["-c", command]);
+    return result.code === 0;
+  }
+
+  async function isGitRepo(): Promise<boolean> {
+    return gitOk("git rev-parse --git-dir");
+  }
+
   pi.registerCommand("review", {
     description:
       "Step-by-step PR review: model works out loud with tool calls",
@@ -74,14 +64,14 @@ export default function (pi: ExtensionAPI) {
 
       // --- Validation -------------------------------------------------------
 
-      if (!isGitRepo()) {
+      if (!(await isGitRepo())) {
         ctx.ui.notify("Not in a git repository", "error");
         return;
       }
 
       let currentBranch: string;
       try {
-        currentBranch = git("git rev-parse --abbrev-ref HEAD");
+        currentBranch = await git("git rev-parse --abbrev-ref HEAD");
       } catch {
         ctx.ui.notify("Failed to determine current branch", "error");
         return;
@@ -98,9 +88,9 @@ export default function (pi: ExtensionAPI) {
       // --- Resolve base branch (local first, then origin/<name>) ------------
 
       let resolvedBase = baseBranch;
-      if (!gitOk(`git rev-parse --verify "${resolvedBase}"`)) {
+      if (!(await gitOk(`git rev-parse --verify "${resolvedBase}"`))) {
         const remote = `origin/${baseBranch}`;
-        if (gitOk(`git rev-parse --verify "${remote}"`)) {
+        if (await gitOk(`git rev-parse --verify "${remote}"`)) {
           resolvedBase = remote;
         } else {
           ctx.ui.notify(
@@ -124,7 +114,7 @@ export default function (pi: ExtensionAPI) {
 
       let mergeBase: string;
       try {
-        mergeBase = git(`git merge-base "${resolvedBase}" HEAD`);
+        mergeBase = await git(`git merge-base "${resolvedBase}" HEAD`);
       } catch {
         ctx.ui.notify(
           `No common ancestor found between ${currentBranch} and ${resolvedBase}. ` +
@@ -134,7 +124,7 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      const currentHead = git("git rev-parse HEAD");
+      const currentHead = await git("git rev-parse HEAD");
       if (mergeBase === currentHead) {
         ctx.ui.notify(
           `No new commits on ${currentBranch} compared to ${resolvedBase}`,
@@ -150,7 +140,7 @@ export default function (pi: ExtensionAPI) {
 
       if (lastReviewedSha) {
         if (
-          gitOk(`git merge-base --is-ancestor "${lastReviewedSha}" HEAD`)
+          await gitOk(`git merge-base --is-ancestor "${lastReviewedSha}" HEAD`)
         ) {
           reviewStart = lastReviewedSha;
           isIterative = true;
@@ -164,23 +154,23 @@ export default function (pi: ExtensionAPI) {
       // --- Gather lightweight context (NOT the full diff) -------------------
       // The model will explore the diff itself using tools, working out loud.
 
-      const commitLog = git(
+      const commitLog = await git(
         `git log --oneline --no-decorate "${reviewStart}..HEAD"`,
       );
       const commitCount = commitLog ? commitLog.split("\n").length : 0;
 
       // Detailed commit log for context (hash + author + subject)
-      const commitDetail = git(
+      const commitDetail = await git(
         `git log --format="%h %an: %s" "${reviewStart}..HEAD"`,
       );
 
       // List of changed files with status
-      const changedFiles = git(
+      const changedFiles = await git(
         `git diff --name-status "${reviewStart}..HEAD"`,
       );
 
       // Diff stat for scope
-      const diffStat = git(
+      const diffStat = await git(
         `git diff --stat "${reviewStart}..HEAD"`,
       );
 
@@ -346,7 +336,7 @@ must not change the verdict.
 If none apply, write: *(none)*
 
 **Security Deep-Dive** (if applicable) — Detailed analysis of any
-security-sensitive code paths.;
+security-sensitive code paths.
 
       pi.sendUserMessage(message);
     },
