@@ -6,9 +6,9 @@ context applies.
 
 ## ⚠️ Critical: VM vs Host Boundary
 
-All `read`, `write`, `edit`, and `bash` tool calls execute inside a **Gondolin
-micro-VM** (Alpine Linux), not directly on the host Mac. The project directory
-is mounted at `/workspace` inside the VM.
+All `read`, `write`, `edit`, and `bash` tool calls — as well as user `!` shell
+commands — execute inside a **Gondolin micro-VM** (Alpine Linux), not directly
+on the host Mac. The project directory is mounted at `/workspace` inside the VM.
 
 **The following commands DO NOT WORK inside the VM.** If you need to run them,
 print them for the user to execute manually on their host Mac:
@@ -16,9 +16,17 @@ print them for the user to execute manually on their host Mac:
 | Command | Why it fails | What to do instead |
 |---------|-------------|-------------------|
 | `stow` | Not installed in VM | Print the stow command for the user to run on host |
-| `git` | Not installed in VM | Print git commands for the user to run on host |
 | `npm install` in `~/.pi/agent` | `~` is the VM's root, not the host's | Tell user to run `cd ~/.pi/agent && npm install` on host |
 | `brew` | macOS-only, not in VM | Print brew commands for the user to run on host |
+
+> **Note:** `npm install` inside `/workspace` (any project mounted into the VM)
+> works fine. Only `~/.pi/agent` is unreachable because the VM's home directory
+> is not the host's home.
+>
+> **Note:** `git` fully works inside the VM (commit, push, pull, etc.) when the
+> custom VM image is in use (see gondolin extension below). The extension mounts
+> host git config (`~/.config/git/`) and uses an SSH bridge via the host's
+> `SSH_AUTH_SOCK` to authenticate with GitHub.
 
 **Example workflow when editing extensions:**
 1. Edit files in `/workspace/pi/.pi/agent/extensions/` (this works in VM)
@@ -58,12 +66,13 @@ pi/
 ├── .pi/
 │   └── agent/
 │       ├── extensions/
-│       │   ├── answer.ts       # User-initiated Q&A extraction
-│       │   ├── exit.ts         # Graceful terminal exit
-│       │   └── gondolin.ts     # Gondolin VM sandboxing
-│       ├── gondolin-image.json # Custom VM image build config (git, ripgrep, etc.)
-│       ├── package.json        # Extension dependencies
-│       ├── settings.json        # pi global settings
+│       │   ├── answer.ts              # User-initiated Q&A extraction
+│       │   ├── exit.ts                # Graceful terminal exit
+│       │   └── gondolin.ts            # Gondolin VM sandboxing
+│       ├── gondolin-image.json        # Custom VM image build config (git, ripgrep, etc.)
+│       ├── package.json               # Extension dependencies
+│       ├── settings.template.json     # Intentional settings (tracked in git)
+│       ├── settings.json              # Runtime settings (gitignored)
 │       └── themes/
 │           └── catppuccin-mocha.json
 └── README.md
@@ -83,13 +92,18 @@ Two settings files with different purposes:
 `lastChangelogVersion` auto-updates. The template lets the repo track only
 intentional defaults while the actual settings evolve naturally.
 
-### First-time setup
+### First-time setup (or after cloning)
 
 ```bash
-# If settings.json doesn't exist, copy the template
+# Merge template into settings.json (overriding volatile keys)
+cd pi/.pi/agent
+jq -s '.[0] * .[1]' settings.template.json settings.json > tmp && mv tmp settings.json
+```
+
+If no `settings.json` exists yet, copy the template instead:
+
+```bash
 cp pi/.pi/agent/settings.template.json pi/.pi/agent/settings.json
-# Or merge into an existing settings.json
-jq -s '.[0] * .[1]' pi/.pi/agent/settings.template.json pi/.pi/agent/settings.json > tmp && mv tmp pi/.pi/agent/settings.json
 ```
 
 ### When adding a new intentional setting
@@ -98,17 +112,31 @@ Add it to `settings.template.json`. The user merges on next setup.
 
 ## Deploying Changes
 
-Since `stow` and `git` are unavailable in the VM, **print these commands for the
-user to run on their host** after making changes:
+Since `stow` is unavailable in the VM, **print these commands for the user to
+run on their host** after making changes:
 
 ```bash
 # Deploy config changes (symlink into ~/.pi/agent)
 cd ~/code/github.com/hrmnjt/dev   # adjust path as needed
 stow -t ~ pi
-just pi-deps
+just pi-deps                       # runs: npm install --prefix ~/.pi/agent
 ```
 
 Then tell the user to type `/reload` in pi to hot-reload extensions.
+
+## Growing the Config
+
+When asked to create new pi resources, place them in the appropriate directory
+under `pi/.pi/agent/`:
+
+| Directory | What | Auto-discovered? |
+|-----------|------|-----------------|
+| `themes/` | JSON theme files | Yes |
+| `extensions/` | TypeScript `.ts`/`.js` modules | Yes |
+| `skills/` | `SKILL.md` folders or `.md` files | Yes |
+| `prompts/` | `.md` prompt templates | Via `settings.json` |
+
+After adding files, tell the user to run `stow -t ~ pi` and `/reload`.
 
 ## Extension Development Guidelines
 
@@ -140,10 +168,8 @@ A custom image with pre-installed packages is configured via
 `pi/.pi/agent/gondolin-image.json`. Build it once:
 
 ```bash
-# One-time build (on host Mac)
-npx @earendil-works/gondolin build \
-  --config pi/.pi/agent/gondolin-image.json \
-  --output ~/.gondolin/custom-image
+# One-time build (on host Mac) — uses just gondolin-image which wraps npx
+just gondolin-image
 ```
 
 Then set the env var before starting pi (or add to your shell profile):
@@ -154,3 +180,8 @@ export GONDOLIN_GUEST_DIR="$HOME/.gondolin/custom-image"
 
 To add more tools, edit `gondolin-image.json` → `rootfsPackages`, rebuild,
 and restart pi. The build output (~200MB) is stored outside the repo.
+
+**Git over SSH:** The extension mounts your host `~/.config/git/` (identity,
+email) into the VM and proxies SSH via the host's `SSH_AUTH_SOCK`. This means
+`git commit`, `git push`, `git pull`, and `git clone` against `github.com`
+all work from inside the VM — no need to switch to the host for git operations.

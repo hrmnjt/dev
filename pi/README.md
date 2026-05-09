@@ -27,7 +27,7 @@ pi/
 # From repo root
 stow -t ~ pi
 
-just pi-deps
+just pi-deps                       # runs: npm install --prefix ~/.pi/agent
 
 # Install QEMU (fallback backend for Gondolin)
 brew install qemu   # macOS
@@ -41,24 +41,6 @@ This symlinks into `~/.pi/agent/`:
 
 Machine-local files (`auth.json`, `sessions/`, `git/`, `node_modules/`) stay
 untouched in `~/.pi/agent/`.
-
-## Git clean filter
-
-Pi auto-updates `lastChangelogVersion` in `settings.json` after updates.
-Since `settings.json` is symlinked, those changes show up in `git diff`.
-
-A git clean filter strips this field before every commit, so your repo
-stays clean while pi can still mutate the working copy:
-
-```bash
-# Already configured in .git/config and pi/.pi/agent/.gitattributes
-# Verify it's active:
-git check-attr filter pi/.pi/agent/settings.json
-# → pi/.pi/agent/settings.json: filter: pi-settings
-```
-
-The filter uses `pi/.pi/agent/settings-clean.py` — a small Python script
-that removes `lastChangelogVersion` and outputs valid JSON.
 
 ## Extensions
 
@@ -131,11 +113,12 @@ Linux micro-VM. Based on the [official example](https://github.com/earendil-work
 - Redirects all file and shell tool operations into the sandbox
 - Runs user `!` commands inside the VM too
 - Patches the system prompt so the model sees `/workspace` paths
+- Enables full git (commit, push, pull, clone) from inside the VM via an SSH bridge (see below)
 
 **Custom VM image:**
 
 The default Alpine VM image lacks `git` and other dev tools. A custom image
-with pre-installed packages is configured in `gondolin-image.json`.
+with pre-installed packages is configured in `pi/.pi/agent/gondolin-image.json`.
 
 ```bash
 # One-time build (requires lz4 and e2fsprogs from Brewfile)
@@ -151,9 +134,17 @@ to `VM.create()` — falling back to the default Alpine image if unset.
 export GONDOLIN_GUEST_DIR="$HOME/.gondolin/custom-image"
 ```
 
+**Git over SSH:**
+
+The extension mounts your host `~/.config/git/` (identity, email) into the VM
+and proxies outbound SSH via your host's `SSH_AUTH_SOCK` agent. `github.com` is
+pre-configured as an allowed host. This means `git commit`, `git push`,
+`git pull`, and `git clone` against GitHub all work transparently from inside
+the VM — no need to switch to the host for git.
+
 **Adding tools to the VM:**
 
-Edit `gondolin-image.json` → `rootfsPackages`, add Alpine package names,
+Edit `pi/.pi/agent/gondolin-image.json` → `rootfsPackages`, add Alpine package names,
 then rebuild:
 
 ```bash
@@ -223,3 +214,7 @@ cp pi/.pi/agent/settings.template.json pi/.pi/agent/settings.json
 - `settings.json` — **gitignored**, pi writes whatever it wants here
 - On setup, `jq` merges template → settings (template takes priority)
 - `lastChangelogVersion`, `defaultModel`, etc. evolve naturally without dirtying git
+
+### When adding a new intentional setting
+
+Add it to `settings.template.json`. The user merges on next setup.
