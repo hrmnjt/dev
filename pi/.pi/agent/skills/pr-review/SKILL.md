@@ -48,7 +48,8 @@ note findings with specific file paths and line numbers.
 - Input validation gaps (user input, API payloads)
 - Insecure defaults or configurations
 - Hardcoded secrets, keys, tokens
-- Dependency vulnerabilities
+- SSRF via user-supplied URLs
+- Open redirects not validated against trusted domains
 
 #### Effectiveness
 - Does the solution actually solve the stated problem?
@@ -73,6 +74,57 @@ note findings with specific file paths and line numbers.
 - DRY: is logic duplicated where it shouldn't be?
 - Test coverage: are edge cases tested? Are tests meaningful?
 
+## Determining What to Flag
+
+Flag issues that:
+1. Meaningfully impact correctness, performance, security, or maintainability
+2. Are discrete and actionable (not multiple issues combined into one)
+3. Were introduced in the changes being reviewed (not pre-existing issues unless
+   the change makes them worse)
+4. The author would likely fix if they knew about them
+5. Have provable impact — identify the specific parts affected, don't speculate
+6. Demand rigor consistent with the rest of the codebase
+
+## Priority Levels
+
+Tag each finding with a priority level:
+
+| Level | Meaning |
+|-------|---------|
+| **P0** | Drop everything to fix. Blocking release/operations. Only for universal issues. |
+| **P1** | Urgent. Should be addressed in the next cycle. |
+| **P2** | Normal. To be fixed eventually. |
+| **P3** | Low. Nice to have. |
+
+## Comment Guidelines
+
+1. Be clear about *why* the issue is a problem, not just what it is
+2. Communicate severity appropriately — don't exaggerate
+3. Be brief — at most 1 paragraph per finding
+4. Keep code snippets under 3 lines when providing fix examples
+5. Explicitly state scenarios or environments where the issue arises
+6. Use a matter-of-fact tone — helpful reviewer, not accusatory
+7. Avoid flattery or unhelpful phrases like "Great job on..."
+
+## Untrusted User Input
+
+When reviewing code that handles user input:
+1. Flag open redirects — they must validate against trusted domains only
+2. Flag SQL that is not parameterized
+3. Flag HTTP fetches with user-supplied URLs that aren't protected against
+   access to local resources (SSRF)
+4. Prefer escaping over sanitizing where possible (e.g., HTML escaping)
+
+## Error Handling (Fail-Fast)
+
+When reviewing added or modified error handling:
+1. Evaluate every new or changed `try/catch`: identify what can fail and why
+   local handling is correct at that exact layer
+2. Silent local error recovery (especially parsing, IO, or network fallbacks)
+   is a high-signal review candidate unless there is explicit justification
+3. If a catch exists only to satisfy lint/style without real handling, flag it
+4. When uncertain, prefer crashing fast over silent degradation
+
 ## Output Format
 
 After the step-by-step analysis, compile findings into this structured format
@@ -80,6 +132,9 @@ After the step-by-step analysis, compile findings into this structured format
 
 ### Holistic Summary
 2-3 paragraph overall assessment of the change.
+
+### Verdict
+`correct` (no blocking issues) or `needs attention` (has P0/P1 issues).
 
 ### Dimension Scores (1-5)
 
@@ -92,23 +147,33 @@ After the step-by-step analysis, compile findings into this structured format
 | Correctness | ?/5 | |
 | Code Quality | ?/5 | |
 
-### Critical Findings 🔴
-Issues that **must** be fixed before merge.
+### Findings
 
-| File | Lines | Issue | Fix |
-|------|-------|-------|-----|
+List each finding with its priority tag, file location, and explanation.
+Keep line references short (avoid ranges over 5-10 lines). Only flag code that
+overlaps with the actual diff — don't flag pre-existing code.
 
-### Suggestions 🟡
-Improvements worth making but not blocking.
+| Priority | File | Lines | Issue | Recommendation |
+|----------|------|-------|-------|----------------|
+| P0 | `path/to/file` | 42 | ... | ... |
+| P1 | `path/to/file` | 15 | ... | ... |
+| P2 | `path/to/file` | 78 | ... | ... |
+| P3 | `path/to/file` | 100 | ... | ... |
 
-| File | Lines | Issue | Suggestion |
-|------|-------|-------|------------|
+### Human Reviewer Callouts (Non-Blocking)
 
-### Observations 🟢
-Positive notes and minor observations.
+Include only those that apply. These are informational for the human reviewer,
+not fix items. Do not include them in Findings unless there is an independent
+defect. These callouts alone must not change the verdict.
 
-| File | Lines | Note |
-|------|-------|------|
+- **This change adds a database migration:** <files/details>
+- **This change introduces a new dependency:** <package(s)/details>
+- **This change changes a dependency (or the lockfile):** <files/package(s)/details>
+- **This change modifies auth/permission behavior:** <what changed and where>
+- **This change introduces backwards-incompatible public schema/API/contract changes:** <what changed and where>
+- **This change includes irreversible or destructive operations:** <operation and scope>
+
+If none apply, write: *(none)*
 
 ### Security Deep-Dive
 (If applicable) Detailed analysis of security-sensitive code paths.
