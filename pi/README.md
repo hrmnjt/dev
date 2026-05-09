@@ -42,24 +42,6 @@ This symlinks into `~/.pi/agent/`:
 Machine-local files (`auth.json`, `sessions/`, `git/`, `node_modules/`) stay
 untouched in `~/.pi/agent/`.
 
-## Git clean filter
-
-Pi auto-updates `lastChangelogVersion` in `settings.json` after updates.
-Since `settings.json` is symlinked, those changes show up in `git diff`.
-
-A git clean filter strips this field before every commit, so your repo
-stays clean while pi can still mutate the working copy:
-
-```bash
-# Already configured in .git/config and pi/.pi/agent/.gitattributes
-# Verify it's active:
-git check-attr filter pi/.pi/agent/settings.json
-# → pi/.pi/agent/settings.json: filter: pi-settings
-```
-
-The filter uses `pi/.pi/agent/settings-clean.py` — a small Python script
-that removes `lastChangelogVersion` and outputs valid JSON.
-
 ## Extensions
 
 ### answer
