@@ -6,9 +6,9 @@ context applies.
 
 ## ⚠️ Critical: VM vs Host Boundary
 
-All `read`, `write`, `edit`, and `bash` tool calls execute inside a **Gondolin
-micro-VM** (Alpine Linux), not directly on the host Mac. The project directory
-is mounted at `/workspace` inside the VM.
+All `read`, `write`, `edit`, and `bash` tool calls — as well as user `!` shell
+commands — execute inside a **Gondolin micro-VM** (Alpine Linux), not directly
+on the host Mac. The project directory is mounted at `/workspace` inside the VM.
 
 **The following commands DO NOT WORK inside the VM.** If you need to run them,
 print them for the user to execute manually on their host Mac:
@@ -19,6 +19,10 @@ print them for the user to execute manually on their host Mac:
 | `npm install` in `~/.pi/agent` | `~` is the VM's root, not the host's | Tell user to run `cd ~/.pi/agent && npm install` on host |
 | `brew` | macOS-only, not in VM | Print brew commands for the user to run on host |
 
+> **Note:** `npm install` inside `/workspace` (any project mounted into the VM)
+> works fine. Only `~/.pi/agent` is unreachable because the VM's home directory
+> is not the host's home.
+>
 > **Note:** `git` fully works inside the VM (commit, push, pull, etc.) when the
 > custom VM image is in use (see gondolin extension below). The extension mounts
 > host git config (`~/.config/git/`) and uses an SSH bridge via the host's
@@ -115,10 +119,24 @@ run on their host** after making changes:
 # Deploy config changes (symlink into ~/.pi/agent)
 cd ~/code/github.com/hrmnjt/dev   # adjust path as needed
 stow -t ~ pi
-just pi-deps
+just pi-deps                       # runs: npm install --prefix ~/.pi/agent
 ```
 
 Then tell the user to type `/reload` in pi to hot-reload extensions.
+
+## Growing the Config
+
+When asked to create new pi resources, place them in the appropriate directory
+under `pi/.pi/agent/`:
+
+| Directory | What | Auto-discovered? |
+|-----------|------|-----------------|
+| `themes/` | JSON theme files | Yes |
+| `extensions/` | TypeScript `.ts`/`.js` modules | Yes |
+| `skills/` | `SKILL.md` folders or `.md` files | Yes |
+| `prompts/` | `.md` prompt templates | Via `settings.json` |
+
+After adding files, tell the user to run `stow -t ~ pi` and `/reload`.
 
 ## Extension Development Guidelines
 

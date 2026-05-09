@@ -27,7 +27,7 @@ pi/
 # From repo root
 stow -t ~ pi
 
-just pi-deps
+just pi-deps                       # runs: npm install --prefix ~/.pi/agent
 
 # Install QEMU (fallback backend for Gondolin)
 brew install qemu   # macOS
@@ -136,7 +136,7 @@ Linux micro-VM. Based on the [official example](https://github.com/earendil-work
 **Custom VM image:**
 
 The default Alpine VM image lacks `git` and other dev tools. A custom image
-with pre-installed packages is configured in `gondolin-image.json`.
+with pre-installed packages is configured in `pi/.pi/agent/gondolin-image.json`.
 
 ```bash
 # One-time build (requires lz4 and e2fsprogs from Brewfile)
@@ -162,7 +162,7 @@ the VM — no need to switch to the host for git.
 
 **Adding tools to the VM:**
 
-Edit `gondolin-image.json` → `rootfsPackages`, add Alpine package names,
+Edit `pi/.pi/agent/gondolin-image.json` → `rootfsPackages`, add Alpine package names,
 then rebuild:
 
 ```bash
@@ -232,3 +232,7 @@ cp pi/.pi/agent/settings.template.json pi/.pi/agent/settings.json
 - `settings.json` — **gitignored**, pi writes whatever it wants here
 - On setup, `jq` merges template → settings (template takes priority)
 - `lastChangelogVersion`, `defaultModel`, etc. evolve naturally without dirtying git
+
+### When adding a new intentional setting
+
+Add it to `settings.template.json`. The user merges on next setup.
