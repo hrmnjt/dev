@@ -103,7 +103,7 @@ export default function (pi: ExtensionAPI) {
             const gondolinState = gondolinRaw.match(/Gondolin:\s*(\S+)/)?.[1];
             if (gondolinState) {
               pwd = `${pwd} on gondolin: ${gondolinState}`;
-              delete statuses?.delete?.("gondolin"); // remove so it doesn't appear below
+              statuses?.delete("gondolin");
             }
 
             // --- Stats line (1:1 from FooterComponent) ---------------------
