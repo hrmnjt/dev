@@ -336,7 +336,7 @@ must not change the verdict.
 If none apply, write: *(none)*
 
 **Security Deep-Dive** (if applicable) — Detailed analysis of any
-security-sensitive code paths.
+security-sensitive code paths.`;
 
       pi.sendUserMessage(message);
     },
