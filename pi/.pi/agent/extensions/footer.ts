@@ -71,7 +71,10 @@ export default function (pi: ExtensionAPI) {
           const branchStr = branch ? ` (${branch})` : "";
 
           const statuses = footerData.getExtensionStatuses() as Map<string, string>;
-          const gondolinStr = statuses?.get("gondolin") ? " on gondolin" : "";
+          const gondolinRaw = statuses?.get("gondolin") ?? "";
+          // Extract state word: "Gondolin: running ..." → "running"
+          const gondolinState = gondolinRaw.match(/Gondolin:\s*(\S+)/)?.[1];
+          const gondolinStr = gondolinState ? ` on gondolin: ${gondolinState}` : "";
 
           const line1 = theme.fg("muted", `${shortCwd}${branchStr}${gondolinStr}`);
 
