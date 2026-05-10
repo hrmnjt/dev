@@ -250,14 +250,6 @@ export default function (pi: ExtensionAPI) {
     if (vmStarting) return vmStarting;
 
     vmStarting = (async () => {
-      ctx?.ui.setStatus(
-        "gondolin",
-        ctx.ui.theme.fg(
-          "accent",
-          `Gondolin: starting (mount ${GUEST_WORKSPACE})`,
-        ),
-      );
-
       // Use krun (Apple Virtualization.framework) on Apple Silicon for faster boots
       // Falls back to QEMU automatically if krun is unavailable
       if (process.platform === "darwin" && process.arch === "arm64") {
@@ -314,15 +306,6 @@ export default function (pi: ExtensionAPI) {
         { env: { HOME: "/root" } },
       );
 
-      let statusText = `Gondolin: running (${localCwd} -> ${GUEST_WORKSPACE})`;
-      if (piResources) {
-        statusText += `, docs mounted`;
-      }
-
-      ctx?.ui.setStatus(
-        "gondolin",
-        ctx.ui.theme.fg("accent", statusText),
-      );
       ctx?.ui.notify(
         `Gondolin VM ready. Host ${localCwd} mounted at ${GUEST_WORKSPACE}`,
         "info",
@@ -339,10 +322,6 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("session_shutdown", async (_event, ctx) => {
     if (!vm) return;
-    ctx.ui.setStatus(
-      "gondolin",
-      ctx.ui.theme.fg("muted", "Gondolin: stopping"),
-    );
     try {
       await vm.close();
     } finally {

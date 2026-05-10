@@ -89,9 +89,9 @@ export default function (pi: ExtensionAPI) {
       // --- Resolve base branch (local first, then origin/<name>) ------------
 
       let resolvedBase = baseBranch;
-      if (!(await gitOk(`git rev-parse --verify -- ${resolvedBase}`))) {
+      if (!(await gitOk(`git rev-parse --verify ${resolvedBase}`))) {
         const remote = `origin/${baseBranch}`;
-        if (await gitOk(`git rev-parse --verify -- ${remote}`)) {
+        if (await gitOk(`git rev-parse --verify ${remote}`)) {
           resolvedBase = remote;
         } else {
           ctx.ui.notify(
