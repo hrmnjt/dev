@@ -47,59 +47,70 @@ export default function (pi: ExtensionAPI) {
         dispose: unsub,
         invalidate() {},
         render(width: number): string[] {
-          // --- Token stats from session ------------------------------------
-          let input = 0, output = 0, reasoning = 0, cost = 0;
-          for (const e of ctx.sessionManager?.getBranch?.() ?? []) {
-            if (e.type === "message" && e.message?.role === "assistant") {
-              const m = e.message as AssistantMessage;
-              input += m.usage?.input ?? 0;
-              output += m.usage?.output ?? 0;
-              reasoning += (m.usage?.cacheRead ?? 0) + (m.usage?.cacheWrite ?? 0);
-              cost += m.usage?.cost?.total ?? 0;
+          try {
+            // --- Token stats from session ----------------------------------
+            let input = 0, output = 0, reasoning = 0, cost = 0;
+            for (const e of ctx.sessionManager?.getBranch?.() ?? []) {
+              if (e.type === "message" && e.message?.role === "assistant") {
+                const m = e.message as AssistantMessage;
+                input += m.usage?.input ?? 0;
+                output += m.usage?.output ?? 0;
+                reasoning += (m.usage?.cacheRead ?? 0) + (m.usage?.cacheWrite ?? 0);
+                cost += m.usage?.cost?.total ?? 0;
+              }
             }
+
+            // --- Line 1: cwd + branch + gondolin status --------------------
+            const shortCwd = (ctx.cwd ?? "").replace(homedir(), "~");
+            const branch = footerData.getGitBranch();
+            const branchStr = branch ? ` (${branch})` : "";
+
+            const statuses = footerData.getExtensionStatuses() as Map<string, string>;
+            const gondolinRaw = statuses?.get("gondolin") ?? "";
+            const gondolinState = gondolinRaw.match(/Gondolin:\s*(\S+)/)?.[1];
+            const gondolinStr = gondolinState ? ` on gondolin: ${gondolinState}` : "";
+
+            const line1 = truncateToWidth(
+              theme.fg("muted", `${shortCwd}${branchStr}${gondolinStr}`),
+              width,
+            );
+
+            // --- Line 2: token stats (left) + model info (right) -----------
+            const parts: string[] = [];
+            if (input > 0) parts.push(`↑${formatTokens(input)}`);
+            if (output > 0) parts.push(`↓${formatTokens(output)}`);
+            if (reasoning > 0) parts.push(`R${formatTokens(reasoning)}`);
+            if (cost > 0) parts.push(`$${cost.toFixed(3)}`);
+            const ctxPct = (() => {
+              const u = ctx.getContextUsage?.();
+              if (u?.tokens && u?.contextWindow) {
+                return `${((u.tokens / u.contextWindow) * 100).toFixed(1)}%/${(u.contextWindow / 1_000_000).toFixed(1)}M`;
+              }
+              return "";
+            })();
+            if (ctxPct) parts.push(ctxPct);
+            parts.push("(auto)");
+
+            const left = parts.join(" ");
+
+            const model = ctx.model;
+            const provider = model?.provider ?? "";
+            const modelName = model?.name ?? model?.id ?? "?";
+            const thinking = pi.getThinkingLevel();
+            const thinkingStr = thinking && thinking !== "off" ? ` • ${thinking}` : "";
+            const right = `(${provider}) ${modelName}${thinkingStr}`;
+
+            // Build line 2 with padding, then apply dim as a single wrap
+            const leftW = visibleWidth(left);
+            const rightW = visibleWidth(right);
+            const pad = " ".repeat(Math.max(1, width - leftW - rightW));
+            const line2 = truncateToWidth(theme.fg("dim", left + pad + right), width);
+
+            return [line1, line2];
+          } catch {
+            // Never let a footer error corrupt the terminal
+            return [theme.fg("warning", "footer error")];
           }
-
-          // --- Context usage ------------------------------------------------
-          const usage = ctx.getContextUsage?.();
-          const ctxPct = usage?.tokens && usage?.contextWindow
-            ? `${((usage.tokens / usage.contextWindow) * 100).toFixed(1)}%/${(usage.contextWindow / 1_000_000).toFixed(1)}M`
-            : "";
-
-          // --- Line 1: cwd + branch + gondolin status ----------------------
-          const shortCwd = (ctx.cwd ?? "").replace(homedir(), "~");
-          const branch = footerData.getGitBranch();
-          const branchStr = branch ? ` (${branch})` : "";
-
-          const statuses = footerData.getExtensionStatuses() as Map<string, string>;
-          const gondolinRaw = statuses?.get("gondolin") ?? "";
-          // Extract state word: "Gondolin: running ..." → "running"
-          const gondolinState = gondolinRaw.match(/Gondolin:\s*(\S+)/)?.[1];
-          const gondolinStr = gondolinState ? ` on gondolin: ${gondolinState}` : "";
-
-          const line1 = theme.fg("muted", `${shortCwd}${branchStr}${gondolinStr}`);
-
-          // --- Line 2: token stats (left) + model info (right) --------------
-          const parts: string[] = [];
-          if (input > 0) parts.push(theme.fg("dim", `↑${formatTokens(input)}`));
-          if (output > 0) parts.push(theme.fg("dim", `↓${formatTokens(output)}`));
-          if (reasoning > 0) parts.push(theme.fg("dim", `R${formatTokens(reasoning)}`));
-          if (cost > 0) parts.push(theme.fg("dim", `$${cost.toFixed(3)}`));
-          if (ctxPct) parts.push(theme.fg("dim", ctxPct));
-          parts.push(theme.fg("dim", "(auto)"));
-
-          const left = parts.join(" ");
-
-          const model = ctx.model;
-          const provider = model?.provider ?? "";
-          const modelName = model?.name ?? model?.id ?? "?";
-          const thinking = pi.getThinkingLevel();
-          const thinkingStr = thinking && thinking !== "off" ? ` • ${thinking}` : "";
-          const right = theme.fg("dim", `(${provider}) ${modelName}${thinkingStr}`);
-
-          const pad = " ".repeat(Math.max(1, width - visibleWidth(left) - visibleWidth(right)));
-          const line2 = truncateToWidth(left + pad + right, width);
-
-          return [line1, line2];
         },
       };
     });
