@@ -261,17 +261,10 @@ When reviewing added or modified error handling, default to fail-fast:
 
 ---
 
-## Review Process
+## Review Dimensions
 
-### Step 1 — Understand the change
-Read the commit messages above. Use \`git show --stat <commit>\` or
-\`git diff ${resolvedBase}...HEAD -- <file>\` to explore. Start by
-reading files that appear central to the change. Summarize what the PR
-does in 2-3 sentences before proceeding.${isIterative ? `\n\n**This is an updated review.** First, verify whether your previous review\ncomments were addressed. Call out any that were ignored or only partially fixed.` : ""}
-
-### Step 2 — Analyze by dimension
-Go through the files systematically. For each dimension below, read relevant
-code and note findings with specific file paths and line numbers.
+Cover each dimension. Read relevant code and cite specific file paths and
+line numbers in your findings.
 
 - **Design & Architecture** — Patterns, modularity, API/interface design.
   Does this fit the existing codebase? Is there tight coupling? Would a
@@ -289,9 +282,9 @@ code and note findings with specific file paths and line numbers.
 - **Code Quality** — Readability, naming, comments (explain WHY not WHAT),
   consistency, DRY, test coverage of edge cases.
 
-### Step 3 — Compile findings
-After analyzing, compile everything into this format (easy for me to copy-paste
-into ADO PR comments):
+## Output Format
+
+Compile findings in this format for easy copy-paste into ADO PR comments:
 
 **Holistic Summary** — 2-3 paragraph overall assessment.
 
