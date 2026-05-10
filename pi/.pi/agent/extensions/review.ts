@@ -44,7 +44,8 @@ export default function (pi: ExtensionAPI) {
     if (result.code !== 0) {
       throw new Error(result.stderr?.trim() || `git command exited with code ${result.code}`);
     }
-    return result.stdout?.trim() || "";
+    // result.stdout is null only on spawn failure; pi.exec guarantees a string
+    return (result.stdout ?? "").trim();
   }
 
   async function gitOk(command: string): Promise<boolean> {
@@ -88,9 +89,9 @@ export default function (pi: ExtensionAPI) {
       // --- Resolve base branch (local first, then origin/<name>) ------------
 
       let resolvedBase = baseBranch;
-      if (!(await gitOk(`git rev-parse --verify "${resolvedBase}"`))) {
+      if (!(await gitOk(`git rev-parse --verify -- ${resolvedBase}`))) {
         const remote = `origin/${baseBranch}`;
-        if (await gitOk(`git rev-parse --verify "${remote}"`)) {
+        if (await gitOk(`git rev-parse --verify -- ${remote}`)) {
           resolvedBase = remote;
         } else {
           ctx.ui.notify(
@@ -154,15 +155,12 @@ export default function (pi: ExtensionAPI) {
       // --- Gather lightweight context (NOT the full diff) -------------------
       // The model will explore the diff itself using tools, working out loud.
 
-      const commitLog = await git(
-        `git log --oneline --no-decorate "${reviewStart}..HEAD"`,
-      );
-      const commitCount = commitLog ? commitLog.split("\n").length : 0;
-
-      // Detailed commit log for context (hash + author + subject)
       const commitDetail = await git(
         `git log --format="%h %an: %s" "${reviewStart}..HEAD"`,
       );
+      const commitCount = commitDetail
+        ? commitDetail.split("\n").length
+        : 0;
 
       // List of changed files with status
       const changedFiles = await git(
