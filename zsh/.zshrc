@@ -26,6 +26,9 @@ alias pass='cat ~/.pass | pbcopy'
 alias cdp='cd ~/code/github.com/hrmnjt'
 alias cdw='cd ~/code/work/doh'
 
+# git worktree helper
+[[ -f ~/.config/zsh/wt.zsh ]] && source ~/.config/zsh/wt.zsh
+
 export FZF_DEFAULT_OPTS=" \
 --color=bg+:#313244,bg:#1E1E2E,spinner:#F5E0DC,hl:#F38BA8 \
 --color=fg:#CDD6F4,header:#F38BA8,info:#CBA6F7,pointer:#F5E0DC \
