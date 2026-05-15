@@ -37,6 +37,8 @@ import {
 
 import { RealFSProvider, VM } from "@earendil-works/gondolin";
 
+import { getBlockedCommandMessage } from "./uv.js";
+
 const GUEST_WORKSPACE = "/workspace";
 const GUEST_PI_DOCS = "/pi/docs";
 const GUEST_PI_EXAMPLES = "/pi/examples";
@@ -370,6 +372,13 @@ export default function (pi: ExtensionAPI) {
       const activeVm = await ensureVm(ctx);
       const tool = createBashTool(localCwd, {
         operations: createGondolinBashOps(activeVm, localCwd),
+        spawnHook: (spawnCtx: { command: string }) => {
+          const blockedMessage = getBlockedCommandMessage(spawnCtx.command);
+          if (blockedMessage) {
+            throw new Error(blockedMessage);
+          }
+          return spawnCtx;
+        },
       });
       return tool.execute(id, params, signal, onUpdate);
     },
@@ -377,7 +386,18 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("user_bash", (_event, _ctx) => {
     if (!vm) return;
-    return { operations: createGondolinBashOps(vm, localCwd) };
+    const gondolinOps = createGondolinBashOps(vm, localCwd);
+    return {
+      operations: {
+        exec: async (command, cwd, opts) => {
+          const blockedMessage = getBlockedCommandMessage(command);
+          if (blockedMessage) {
+            throw new Error(blockedMessage);
+          }
+          return gondolinOps.exec(command, cwd, opts);
+        },
+      },
+    };
   });
 
   pi.on("before_agent_start", async (event, ctx) => {
