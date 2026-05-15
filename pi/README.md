@@ -11,7 +11,8 @@ pi/
 │       ├── extensions/
 │       │   ├── answer.ts       # User-initiated Q&A extraction
 │       │   ├── exit.ts         # Graceful terminal exit
-│       │   └── gondolin.ts     # Gondolin VM sandboxing
+│       │   ├── gondolin.ts     # Gondolin VM sandboxing
+│       │   └── notify.ts       # Desktop notifications when agent finishes
 │       ├── gondolin-image.json # Custom VM image build config
 │       ├── package.json        # Extension dependencies
 │       ├── settings.template.json   # Intentional settings (tracked)
@@ -95,6 +96,32 @@ avoid the raw-mode corruption that happens with `Ctrl+C` or `process.exit()`.
 The built-in way to quit pi is `Ctrl+D` or `Ctrl+C`, but these can leave the
 terminal in raw mode, causing garbled output on subsequent shell input. This
 extension uses `ctx.shutdown()` for a clean exit.
+
+---
+
+### notify
+
+Sends a desktop notification when the agent finishes and pi is ready for input.
+Inspired by [mitsuhiko's notify.ts](https://github.com/mitsuhiko/agent-stuff/blob/main/extensions/notify.ts).
+
+**Backend:** OSC 777 for Ghostty, iTerm2, WezTerm, and rxvt-unicode.
+
+The notification title/body include a session label so you can tell which Pi
+window or tab is waiting. By default the label is `<repo>:<branch> · <tty>`;
+set `PI_NOTIFY_LABEL` to override it.
+
+**How to use it:**
+- Automatic after each completed agent run
+- `/notify test` — send a test notification
+- `/notify on` / `/notify off` — toggle for the current pi process
+- `/notify status` — show enabled state and session label
+
+**Configuration:**
+```bash
+PI_NOTIFY=0                 # disable at startup
+PI_NOTIFY_MAX_BODY=220      # truncate notification body
+PI_NOTIFY_LABEL=tab-2-api   # override label shown in notifications
+```
 
 ---
 
