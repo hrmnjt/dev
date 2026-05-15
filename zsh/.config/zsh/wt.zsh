@@ -12,7 +12,7 @@
 #
 # Defaults:
 #   WT_BASE=origin/main
-#   worktree dir = <primary-repo-root>.worktrees/<branch>
+#   worktree dir = <primary-repo-root>.worktrees/<branch with / replaced by .>
 
 __wt_err() {
   print -u2 -- "wt: $*"
@@ -190,7 +190,7 @@ __wt_create() {
 
   root=$(__wt_repo_root) || return 1
   dir=$(__wt_worktrees_dir) || return 1
-  target="$dir/$branch"
+  target="$dir/${branch//\//.}"
 
   if [[ -e "$target" ]]; then
     __wt_err "target already exists but is not registered as a worktree: $target"
