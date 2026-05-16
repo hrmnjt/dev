@@ -16,7 +16,8 @@ eval "$(direnv hook zsh)"
 # https://starship.rs/guide/
 eval "$(starship init zsh)"
 
-alias loadshell='source ~/.zshrc'
+# Reload shell safely. `source ~/.zshrc` breaks Ghostty shell integration.
+alias loadshell='exec zsh -l'
 
 alias l='eza --all --git --long --show-symlinks'
 
@@ -38,3 +39,16 @@ export FZF_DEFAULT_OPTS=" \
 
 # amp
 export PATH="$HOME/.local/bin:$PATH"
+
+# Ghostty shell integration
+#
+# Ghostty auto-injects this only for shells it directly spawns. Re-exec'd shells
+# (for example via `loadshell`) need to source it explicitly so cwd reporting
+# keeps working for new tabs/splits.
+if [[ "$TERM_PROGRAM" == "ghostty" ]]; then
+  if [[ -n "$GHOSTTY_RESOURCES_DIR" && -r "$GHOSTTY_RESOURCES_DIR/shell-integration/zsh/ghostty-integration" ]]; then
+    source "$GHOSTTY_RESOURCES_DIR/shell-integration/zsh/ghostty-integration"
+  elif [[ -r "/Applications/Ghostty.app/Contents/Resources/ghostty/shell-integration/zsh/ghostty-integration" ]]; then
+    source "/Applications/Ghostty.app/Contents/Resources/ghostty/shell-integration/zsh/ghostty-integration"
+  fi
+fi
