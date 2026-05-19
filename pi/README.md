@@ -12,11 +12,13 @@ pi/
 │       │   ├── answer.ts       # User-initiated Q&A extraction
 │       │   ├── exit.ts         # Graceful terminal exit
 │       │   ├── gondolin.ts     # Gondolin VM sandboxing
-│       │   └── notify.ts       # Desktop notifications when agent finishes
+│       │   ├── notify.ts       # Desktop notifications when agent finishes
+│       │   └── usage.ts        # Token usage & cost tracking
 │       ├── gondolin-image.json # Custom VM image build config
 │       ├── package.json        # Extension dependencies
 │       ├── settings.template.json   # Intentional settings (tracked)
 │       ├── settings.json       # Runtime settings (gitignored)
+│       ├── usage-data/         # Usage tracking data (gitignore)
 │       └── themes/
 │           └── catppuccin-mocha.json
 └── README.md
@@ -195,6 +197,32 @@ cd /path/to/your/project
 pi
 # Gondolin VM ready. Host /path/to/your/project mounted at /workspace
 ```
+
+### Usage
+
+Tracks token usage and estimated costs across LLM providers, persisted to
+`~/.pi/agent/usage-data/usage.json`. No model turn is needed — output is
+displayed directly via `/usage`.
+
+**What it tracks per turn:**
+- Model and provider (uses actual `responseModel` for accuracy)
+- Input, output, cache read/write tokens
+- Estimated cost (from pi's built-in model pricing, same as footer)
+- Reasoning tokens (estimated from thinking blocks, ~4 chars/token)
+
+**Commands:**
+- `/usage` or `/usage today` — today's usage
+- `/usage month` — this month's usage
+- `/usage all` — all-time usage
+
+Performance: negligible. The `turn_end` handler reads a few properties and
+appends to a small JSON file once per LLM turn. `/usage` just reads/formats
+that file.
+
+**Adding a new provider:** Nothing to configure. Usage is recorded automatically
+for whatever provider/model pi uses. Raw provider and model IDs are used as-is.
+
+---
 
 ## Theme: catppuccin-mocha
 
