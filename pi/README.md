@@ -12,6 +12,7 @@ pi/
 │       │   ├── answer.ts       # User-initiated Q&A extraction
 │       │   ├── exit.ts         # Graceful terminal exit
 │       │   ├── gondolin.ts     # Gondolin VM sandboxing
+│       │   ├── hunk.ts         # Hunk review feedback loop
 │       │   ├── notify.ts       # Desktop notifications when agent finishes
 │       │   └── usage.ts        # Token usage & cost tracking
 │       ├── gondolin-image.json # Custom VM image build config
@@ -98,6 +99,32 @@ avoid the raw-mode corruption that happens with `Ctrl+C` or `process.exit()`.
 The built-in way to quit pi is `Ctrl+D` or `Ctrl+C`, but these can leave the
 terminal in raw mode, causing garbled output on subsequent shell input. This
 extension uses `ctx.shutdown()` for a clean exit.
+
+---
+
+### hunk
+
+Review pi-generated changes with [Hunk](https://github.com/modem-dev/hunk), then
+send review comments back into the same pi session.
+
+**Simple workflow:**
+1. Ask pi to make changes
+2. Open another host terminal and run `pihunk` (`hunk diff` wrapper)
+3. Leave Hunk open and add comments in the Hunk UI
+4. In another host terminal for the same repo, run `hunkfb`
+5. `hunkfb` exports Hunk's live user comments to repo-root `.hunk-feedback.md`
+6. Back in pi, run `/hunk`; it reads `.hunk-feedback.md`, adds git context, and sends it to the model
+
+**Commands:**
+- `pihunk` — host-side zsh helper; defaults to `hunk diff` and runs `git add -N .` so new files show in the diff
+- `hunkfb` — host-side zsh helper; runs `hunk session comment list --repo . --type user --json` and writes `.hunk-feedback.md`
+- `/hunk [path]` — pi command; reads `.hunk-feedback.md` by default and sends review comments to the model with refreshed git context
+
+Important: Hunk UI comments are live session state, not automatically written to
+a repo file. Run `hunkfb` while the Hunk window is still open. The durable bridge
+is repo-root `.hunk-feedback.md`, visible on macOS and in Gondolin as
+`/workspace/.hunk-feedback.md`. The extension adds that file to local
+`.git/info/exclude` so it is not committed.
 
 ---
 
