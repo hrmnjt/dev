@@ -163,10 +163,28 @@ to `VM.create()` — falling back to the default Alpine image if unset.
 export GONDOLIN_GUEST_DIR="$HOME/.gondolin/custom-image"
 ```
 
-**Git over SSH:**
+**Git over SSH with path-based identity:**
 
-The extension mounts your host `~/.config/git/` (identity, email) into the VM
-and proxies outbound SSH via your host's `SSH_AUTH_SOCK` agent. `github.com` is
+Inside the VM, every repo appears as `/workspace`, so git's `includeIf` conditional
+can't distinguish personal from work repos by guest path. The extension solves
+this by resolving the correct identity from the **host path** (`localCwd`) before
+mounting, then generating a VM-specific git config that includes only the
+matching identity file:
+
+| Host path prefix | Identity |
+|---|---|
+| `~/code/github.com/hrmnjt/` | Personal (hrmnjt / harman@hrmnjt.dev) |
+| `~/code/work/` | Work (Harmanjeet Singh Nagi / hanagi@doh.gov.ae) |
+| Anything else | None — `git commit` fails with a clear identity error (fail-closed) |
+
+The generated config is written to a temp directory per session and mounted at
+`/root/.config/git/` inside the VM. It includes `[user] useConfigOnly = true` so
+that repos with no matching rule refuse to commit rather than falling back to a
+wrong identity.
+
+To add or change identity rules, edit `GIT_IDENTITY_RULES` in `gondolin.ts`.
+
+SSH is also proxied via your host's `SSH_AUTH_SOCK` agent, with `github.com`
 pre-configured as an allowed host. This means `git commit`, `git push`,
 `git pull`, and `git clone` against GitHub all work transparently from inside
 the VM — no need to switch to the host for git.

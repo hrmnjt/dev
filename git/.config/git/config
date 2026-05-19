@@ -7,9 +7,6 @@
 # Automatically use personal config in personal repos
 [includeIf "gitdir:~/code/github.com/hrmnjt/"]
     path = ~/.config/git/config.personal
-# Same identity inside the Gondolin VM (host repo mounted at /workspace)
-[includeIf "gitdir:/workspace/"]
-    path = ~/.config/git/config.personal
 
 # Automatically use work config in work repos
 [includeIf "gitdir:~/code/work/"]
