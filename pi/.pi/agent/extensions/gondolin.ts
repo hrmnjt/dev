@@ -67,6 +67,96 @@ function shQuote(value: string): string {
   return "'" + value.replace(/'/g, "'\\''") + "'";
 }
 
+// ---------------------------------------------------------------------------
+// Git identity: resolve the correct user config based on the host path.
+// Inside the VM every repo appears as /workspace, so git's includeIf
+// conditional can't distinguish personal from work repos by guest path.
+// Instead we resolve identity from the HOST path (localCwd) and write
+// a VM-specific git config directory that includes only the matching
+// identity file.
+// ---------------------------------------------------------------------------
+
+const GIT_IDENTITY_RULES: { prefix: string; config: string }[] = [
+  {
+    prefix: path.join(os.homedir(), "code", "work") + path.sep,
+    config: path.join(os.homedir(), ".config", "git", "config.work"),
+  },
+  {
+    prefix: path.join(os.homedir(), "code", "github.com", "hrmnjt") + path.sep,
+    config: path.join(os.homedir(), ".config", "git", "config.personal"),
+  },
+];
+
+function resolveGitIdentityConfig(localCwd: string): string | null {
+  // Sort by prefix length descending so more specific (longer) paths win
+  const sorted = [...GIT_IDENTITY_RULES].sort(
+    (a, b) => b.prefix.length - a.prefix.length,
+  );
+  for (const rule of sorted) {
+    if (localCwd.startsWith(rule.prefix)) {
+      return rule.config;
+    }
+  }
+  return null;
+}
+
+async function generateGitConfigDir(
+  identityConfigPath: string | null,
+): Promise<string> {
+  const tmpDir = await fs.promises.mkdtemp(
+    path.join(os.tmpdir(), "pi-gitconfig-"),
+  );
+
+  // Git config for inside the VM. Includes identity unconditionally;
+  // useConfigOnly=true ensures git refuses to commit when the identity
+  // file is empty (i.e. no path rule matched — fail-closed).
+  const configContent = [
+    `[init]`,
+    `    defaultBranch = main`,
+    ``,
+    `[core]`,
+    `    excludesFile = ~/.config/git/ignore`,
+    ``,
+    `[user]`,
+    `    useConfigOnly = true`,
+    ``,
+    `[include]`,
+    `    path = ~/.config/git/identity`,
+    ``,
+    `[branch]`,
+    `    sort = -committerdate`,
+    ``,
+    `[rerere]`,
+    `    enabled = true`,
+    ``,
+    `[merge]`,
+    `    conflictStyle = zdiff3`,
+  ].join("\n") + "\n";
+
+  await fs.promises.writeFile(path.join(tmpDir, "config"), configContent);
+
+  // Identity: copy from the matched host config, or leave empty so
+  // useConfigOnly rejects commits (fail-closed for unknown paths).
+  const identityPath = path.join(tmpDir, "identity");
+  if (identityConfigPath && fs.existsSync(identityConfigPath)) {
+    const identityContent = await fs.promises.readFile(identityConfigPath, "utf8");
+    await fs.promises.writeFile(identityPath, identityContent);
+  } else {
+    await fs.promises.writeFile(
+      identityPath,
+      "# No matching git identity for this path — commits will fail\n",
+    );
+  }
+
+  // Copy global gitignore from host
+  const hostIgnore = path.join(os.homedir(), ".config", "git", "ignore");
+  if (fs.existsSync(hostIgnore)) {
+    await fs.promises.copyFile(hostIgnore, path.join(tmpDir, "ignore"));
+  }
+
+  return tmpDir;
+}
+
 function toGuestPath(localCwd: string, localPath: string): string {
   // If the path is already inside the guest filesystem, pass it through.
   // The system prompt tells the model about /workspace and /pi, so the
@@ -246,6 +336,7 @@ export default function (pi: ExtensionAPI) {
   let vm: VM | null = null;
   let vmStarting: Promise<VM> | null = null;
   let piResources: PiResources | null = null;
+  let gitConfigDir: string | null = null;
 
   async function ensureVm(ctx?: ExtensionContext) {
     if (vm) return vm;
@@ -275,12 +366,12 @@ export default function (pi: ExtensionAPI) {
       // Falls back to the default alpine-base image if unset.
       const imagePath = process.env.GONDOLIN_GUEST_DIR || undefined;
 
-      // Mount host git config so git identity and settings work inside the VM.
-      // Repo layout: git/.config/git/ stowed to ~/.config/git/
-      const hostGitConfigDir = path.join(os.homedir(), ".config", "git");
-      if (fs.existsSync(hostGitConfigDir)) {
-        mounts["/root/.config/git"] = new RealFSProvider(hostGitConfigDir);
-      }
+      // Generate a VM-specific git config directory that selects the correct
+      // identity based on the host path (since all repos appear as /workspace
+      // inside the VM, git's includeIf can't distinguish them by guest path).
+      const identityConfigPath = resolveGitIdentityConfig(localCwd);
+      gitConfigDir = await generateGitConfigDir(identityConfigPath);
+      mounts["/root/.config/git"] = new RealFSProvider(gitConfigDir);
 
       const created = await VM.create({
         // Enable outbound SSH for git push/pull over SSH.
@@ -308,8 +399,13 @@ export default function (pi: ExtensionAPI) {
         { env: { HOME: "/root" } },
       );
 
+      const identityLabel = identityConfigPath
+        ? path.basename(identityConfigPath) === "config.work"
+          ? "work"
+          : "personal"
+        : "none";
       ctx?.ui.notify(
-        `Gondolin VM ready. Host ${localCwd} mounted at ${GUEST_WORKSPACE}`,
+        `Gondolin VM ready. Host ${localCwd} mounted at ${GUEST_WORKSPACE} (git: ${identityLabel})`,
         "info",
       );
       return created;
@@ -330,6 +426,13 @@ export default function (pi: ExtensionAPI) {
       vm = null;
       vmStarting = null;
       piResources = null;
+      // Clean up generated git config directory
+      if (gitConfigDir) {
+        try {
+          await fs.promises.rm(gitConfigDir, { recursive: true });
+        } catch { /* best effort */ }
+        gitConfigDir = null;
+      }
     }
   });
 
