@@ -18,7 +18,7 @@ pi/
 │       ├── package.json        # Extension dependencies
 │       ├── settings.template.json   # Intentional settings (tracked)
 │       ├── settings.json       # Runtime settings (gitignored)
-│       ├── usage-data/         # Usage tracking data (gitignore)
+│       ├── usage-data/         # Usage tracking data (gitignored)
 │       └── themes/
 │           └── catppuccin-mocha.json
 └── README.md
@@ -201,7 +201,7 @@ pi
 ### Usage
 
 Tracks token usage and estimated costs across LLM providers, persisted to
-`~/.pi/agent/usage-data/usage.json`. No model turn is needed — output is
+`~/.pi/agent/usage-data/usage.jsonl`. No model turn is needed — output is
 displayed directly via `/usage`.
 
 **What it tracks per turn:**
@@ -216,8 +216,8 @@ displayed directly via `/usage`.
 - `/usage all` — all-time usage
 
 Performance: negligible. The `turn_end` handler reads a few properties and
-appends to a small JSON file once per LLM turn. `/usage` just reads/formats
-that file.
+appends one JSONL line once per LLM turn. `/usage` just reads/formats that file.
+The whole `usage-data/` directory is gitignored.
 
 **Adding a new provider:** Nothing to configure. Usage is recorded automatically
 for whatever provider/model pi uses. Raw provider and model IDs are used as-is.
