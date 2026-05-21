@@ -1,5 +1,3 @@
 .DS_Store
 *.swp
 *.swo
-.envrc
-.direnv/
