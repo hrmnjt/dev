@@ -157,7 +157,7 @@ function formatNotification(
 }
 
 function notifyOSC777(title: string, body: string): void {
-  // Ghostty, iTerm2, WezTerm, rxvt-unicode: ESC ] 777 ; notify ; title ; body BEL
+  // Ghostty, iTerm2, rxvt-unicode: ESC ] 777 ; notify ; title ; body BEL
   process.stdout.write(`\x1b]777;notify;${sanitizeOSCField(title)};${sanitizeOSCField(body)}\x07`);
 }
 

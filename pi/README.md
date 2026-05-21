@@ -133,7 +133,7 @@ is repo-root `.hunk-feedback.md`, visible on macOS and in Gondolin as
 Sends a desktop notification when the agent finishes and pi is ready for input.
 Inspired by [mitsuhiko's notify.ts](https://github.com/mitsuhiko/agent-stuff/blob/main/extensions/notify.ts).
 
-**Backend:** OSC 777 for Ghostty, iTerm2, WezTerm, and rxvt-unicode.
+**Backend:** OSC 777 for Ghostty, iTerm2, and rxvt-unicode.
 
 The notification title/body include a session label so you can tell which Pi
 window or tab is waiting. By default the label is `<repo>:<branch> · <tty>`;
