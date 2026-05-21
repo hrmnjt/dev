@@ -1,4 +1,6 @@
 
+zmodload zsh/zprof
+
 # Importing things that I want to keep locally
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 
@@ -9,8 +11,6 @@ export HOMEBREW_NO_AUTO_UPDATE=1
 # Gondolin custom VM image (built with `just gondolin-image`)
 export GONDOLIN_GUEST_DIR="$HOME/.gondolin/custom-image"
 
-# direnv
-eval "$(direnv hook zsh)"
 
 # starship.rs prompt
 # https://starship.rs/guide/

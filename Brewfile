@@ -7,7 +7,6 @@
 # Shell & Prompt
 brew "starship"                 # Shell prompt
 brew "zoxide"                   # Smart directory jumper
-brew "direnv"                   # Environment variable management per directory
 
 # File & Text Tools
 brew "eza"                      # Modern ls replacement
