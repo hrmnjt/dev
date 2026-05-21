@@ -55,7 +55,6 @@ brew "databricks/tap/databricks" # Databricks CLI
 
 # Terminals
 cask "ghostty"                  # Terminal emulator
-cask "wezterm"                  # Terminal emulator
 
 # Editors
 cask "visual-studio-code"       # Code editor
