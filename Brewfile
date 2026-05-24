@@ -18,9 +18,8 @@ brew "glow"                     # Markdown viewer
 brew "neovim"                   # Text editor
 brew "just"                     # Command runner (like make)
 brew "stow"                     # Symlink manager for dotfiles
-brew "tmux"                     # Terminal multiplexer
-brew "node"
 
+brew "node"
 brew "uv"                       # Python package manager
 brew "gh"                       # Github CLI
 brew "luarocks"                 # Lua package manager
