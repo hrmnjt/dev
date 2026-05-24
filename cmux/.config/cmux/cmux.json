@@ -1,0 +1,89 @@
+{
+  "$schema": "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux.schema.json",
+  "schemaVersion": 1,
+
+  // This file uses JSON with comments (JSONC).
+  // Uncomment and edit any setting to customize. Remove a key to fall back to defaults.
+
+  "app": {
+    "appearance": "dark",
+    "warnBeforeQuit": true,
+    "sendAnonymousTelemetry": false,
+    "workspaceInheritWorkingDirectory": true,
+    "renameSelectsExistingName": true,
+    "newWorkspacePlacement": "afterCurrent",
+    "minimalMode": false,
+    "focusPaneOnFirstClick": true,
+    "confirmQuit": true
+  },
+
+  "terminal": {
+    "showScrollBar": true,
+    "copyOnSelect": true,
+    "autoResumeAgentSessions": true
+  },
+
+  "notifications": {
+    "unreadPaneRing": true,
+    "dockBadge": true,
+    "sound": "default"
+  },
+
+  "sidebar": {
+    "showSSH": false,
+    "watchGitStatus": true,
+    "showLog": true,
+    "showPorts": true,
+    "showPullRequests": true,
+    "branchLayout": "vertical",
+    "showNotificationMessage": true
+  },
+
+  "workspaceColors": {
+    "selectionColor": "#504945",
+    "notificationBadgeColor": "#FE8019",
+    "colors": {
+      "Red": "#CC241D",
+      "Crimson": "#922B21",
+      "Orange": "#D65D0E",
+      "Amber": "#D79921",
+      "Olive": "#4A5C18",
+      "Green": "#98971A",
+      "Teal": "#006B6B",
+      "Aqua": "#689D6A",
+      "Blue": "#458588",
+      "Navy": "#1A5276",
+      "Indigo": "#283593",
+      "Purple": "#B16286",
+      "Magenta": "#AD1457",
+      "Rose": "#880E4F",
+      "Brown": "#7B3F00",
+      "Charcoal": "#3C3836"
+    },
+    "indicatorStyle": "leftRail"
+  },
+
+  "sidebarAppearance": {
+    "matchTerminalBackground": true,
+    "tintColor": "#504945",
+    "darkModeTintColor": "#504945",
+    "lightModeTintColor": "#EBDBB2",
+    "tintOpacity": 0.18
+  },
+
+  "automation": {
+    "claudeCodeIntegration": true,
+    "cursorIntegration": false,
+    "geminiIntegration": false,
+    "socketControlMode": "cmuxOnly",
+    "suppressSubagentNotifications": true,
+    "portBase": 9100,
+    "portRange": 10
+  },
+
+  "browser": {
+    "theme": "dark",
+    "openTerminalLinksInCmuxBrowser": true,
+    "interceptTerminalOpenCommandInCmuxBrowser": true
+  }
+}
