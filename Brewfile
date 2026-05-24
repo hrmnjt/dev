@@ -94,11 +94,13 @@ cask "font-jetbrains-mono"
 # =============================================================================
 
 # --- CLI Tools ---
+# TODO: add personal context
 brew "azure-cli"
 brew "databricks/tap/databricks"
 brew "telnet"
 
 # --- GUI Apps ---
+# TODO: add personal context
 cask "cyberduck"
 cask "dbeaver-community"
 cask "microsoft-auto-update"
