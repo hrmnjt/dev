@@ -26,7 +26,6 @@ brew "duckdb"
 brew "qemu"                     # Virtualization for Gondolin sandbox
 brew "lz4"                      # Compression for Gondolin custom image builds
 brew "e2fsprogs"                # ext4 tools for Gondolin custom image builds
-brew "sinelaw/fresh/fresh-editor" # another terminal editor that I'm trying
 
 # Media
 brew "ffmpeg"                   # Image/video editor
