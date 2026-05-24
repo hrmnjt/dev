@@ -1,83 +1,108 @@
 # Brewfile
 
-# =============================================================================
-# CLI Tools
-# =============================================================================
+# things that I don't install via brew
+# - pi - check https://pi.dev/docs/latest/quickstart#install
 
-# Shell & Prompt
+# --- CLI Tools ---
+
+# Prompt
 brew "starship"                 # Shell prompt
+# Replacement for ls - I use it only for custom `l` alias
+brew "eza"
+# View markdown files on terminal - want to replace this with neovim
+brew "glow"
+# Replacement for make - I use for hrmnjt/dev and other projects
+brew "just"
+# Fuzzy finder for custom tools and other
+brew "fzf"
+# Replacement for grep that I use for neovim
+brew "ripgrep"
+# Replacement for find - still trying to find more use of it
+brew "fd"
 
-# File & Text Tools
-brew "eza"                      # Modern ls replacement
-brew "fd"                       # Fast find alternative
-brew "fzf"                      # Fuzzy finder
-brew "ripgrep"                  # Fast grep alternative
-brew "glow"                     # Markdown viewer
+# Editor
+brew "neovim"
 
-# Development
-brew "neovim"                   # Text editor
-brew "just"                     # Command runner (like make)
-brew "stow"                     # Symlink manager for dotfiles
+# Primarily for github.com/hrmnjt/dev
+brew "stow"
 
+# Install uv to install python and other py libraries
+brew "uv"
+# Node.js (unpinned now)
 brew "node"
-brew "uv"                       # Python package manager
+# SSG for hrmnjt/sttp
+brew "hugo"
 
-brew "hugo"                     # Blog SSG
-
+# DB
+# SQL analytics - exploring as a replacement for heavy data work
 brew "duckdb"
+# Document format converter - mostly for markdown to other formats
+brew "pandoc"
+# Plain-text accounting - tracking personal finances
+brew "hledger"
 
-brew "qemu"                     # Virtualization for Gondolin sandbox
-brew "lz4"                      # Compression for Gondolin custom image builds
-brew "e2fsprogs"                # ext4 tools for Gondolin custom image builds
+# Network
+# Tunnel to expose local services - primarily for pi sandbox
+brew "cloudflared"
+
+# Virtualization (Gondolin sandbox)
+# VM emulator for Gondolin sandbox in pi
+brew "qemu"
+# Compression lib needed for Gondolin custom image builds
+brew "lz4"
+# ext4 filesystem tools needed for Gondolin custom image builds
+brew "e2fsprogs"
 
 # Media
-brew "ffmpeg"                   # Image/video editor
-brew "pandoc"                   # Swiss army knife for document conversion
-
-# Cloud & Network
-brew "azure-cli"                # Azure cloud CLI
-brew "cloudflared"              # Cloudflare Tunnel client
-brew "telnet"                   # Network diagnostic tool
+# Audio/video processing - occasionally needed for media tasks
+brew "ffmpeg"
 
 # Experimental
-brew "container"                # MacOS containers
+# MacOS containers - trying out
+brew "container"
+# AI coding agent - trying out
 brew "anomalyco/tap/opencode"
+# Code review tool from modem-dev - trying out
 brew "modem-dev/tap/hunk"
-brew "hledger"
-brew "databricks/tap/databricks" # Databricks CLI
 
-# =============================================================================
-# GUI Applications (Casks)
-# =============================================================================
+# --- GUI Apps ---
 
-# Terminals
-cask "ghostty"                  # Terminal emulator
+# Terminal
+cask "ghostty"
 
-# Editors
-cask "visual-studio-code"       # Code editor
-cask "zed"                      # Code editor
+# Editors - occasional use for paired programming or debugging
+cask "visual-studio-code"
+cask "zed"
 
-# Browsers
-cask "brave-browser"			# trying out brave, waiting for ladybird
+# Browser - trying out brave, waiting for ladybird
+cask "brave-browser"
+
+# AI
+cask "claude-code"			# Clawde on terminal
 
 # Utilities
-cask "alt-tab"                  # macOS window switcher
-cask "itsycal"                  # Menubar calendar
-cask "cyberduck"                # SFTP/FTP client
-cask "dbeaver-community"        # Database IDE
-cask "monodraw"                 # Vector drawing
-cask "obsidian"                 # trying out an experimental excalidraw
-cask "claude-code"				# Clawde on terminal
+cask "alt-tab"
+cask "itsycal"
+cask "monodraw"
+cask "obsidian"				# trying out an experimental excalidraw
 
 # Fonts
-cask "font-jetbrains-mono"      # Monospace font
+cask "font-jetbrains-mono"
 
 # =============================================================================
 # Work (Required for DoH)
 # =============================================================================
 
-cask "microsoft-auto-update"    # Updates for Office apps
-cask "microsoft-excel"          # Excel for spreadsheets
-cask "microsoft-outlook"        # Outlook for emails
-cask "microsoft-word"           # Word for docs
-cask "windows-app"              # Windows App for macOS
+# --- CLI Tools ---
+brew "azure-cli"
+brew "databricks/tap/databricks"
+brew "telnet"
+
+# --- GUI Apps ---
+cask "cyberduck"
+cask "dbeaver-community"
+cask "microsoft-auto-update"
+cask "microsoft-excel"
+cask "microsoft-outlook"
+cask "microsoft-word"
+cask "windows-app"
