@@ -1,6 +1,3 @@
-
-zmodload zsh/zprof
-
 # Importing things that I want to keep locally
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 
