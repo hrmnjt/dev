@@ -6,7 +6,7 @@
 # --- CLI Tools ---
 
 # Prompt
-brew "starship"                 # Shell prompt
+brew "starship"
 # Replacement for ls - I use it only for custom `l` alias
 brew "eza"
 # View markdown files on terminal - want to replace this with neovim
@@ -33,19 +33,15 @@ brew "node"
 # SSG for hrmnjt/sttp
 brew "hugo"
 
-# DB
-# SQL analytics - exploring as a replacement for heavy data work
-brew "duckdb"
 # Document format converter - mostly for markdown to other formats
 brew "pandoc"
 # Plain-text accounting - tracking personal finances
 brew "hledger"
 
-# Network
 # Tunnel to expose local services - primarily for pi sandbox
 brew "cloudflared"
 
-# Virtualization (Gondolin sandbox)
+# Virtualization (Gondolin sandbox) that I use with pi-agent
 # VM emulator for Gondolin sandbox in pi
 brew "qemu"
 # Compression lib needed for Gondolin custom image builds
@@ -53,56 +49,61 @@ brew "lz4"
 # ext4 filesystem tools needed for Gondolin custom image builds
 brew "e2fsprogs"
 
-# Media
 # Audio/video processing - occasionally needed for media tasks
 brew "ffmpeg"
 
-# Experimental
 # MacOS containers - trying out
 brew "container"
-# AI coding agent - trying out
-brew "anomalyco/tap/opencode"
-# Code review tool from modem-dev - trying out
-brew "modem-dev/tap/hunk"
-
-# --- GUI Apps ---
 
 # Terminal
 cask "ghostty"
+cask "cmux"
 
-# Editors - occasional use for paired programming or debugging
-cask "visual-studio-code"
+# Editor that I'm experimenting to run agents parallel. Also, this is what I
+# use to read code today.
 cask "zed"
+# Editor that I use to open jupyter notebooks. Sadly, nothing else local has
+# good workflow like this. I need to experiment with jupyterlab or similar to
+# replace this one though
+cask "visual-studio-code"
 
 # Browser - trying out brave, waiting for ladybird
 cask "brave-browser"
 
-# AI
+# AI coding agent I used to use before opencode
 cask "claude-code"			# Clawde on terminal
+# AI coding agent I used to use before pi-agent
+brew "anomalyco/tap/opencode"
+
+# Code review tool from modem-dev that I'm using in pi-agent somehow
+brew "modem-dev/tap/hunk"
 
 # Utilities
 cask "alt-tab"
 cask "itsycal"
 cask "monodraw"
-cask "obsidian"				# trying out an experimental excalidraw
+cask "obsidian"
 
 # Fonts
 cask "font-jetbrains-mono"
 
+# SQL analytics - data in my laptop
+brew "duckdb"
+# a tool to work with files/data
+cask "cyberduck"
+# a tool to work with databases
+cask "dbeaver-community"
+
 # =============================================================================
-# Work (Required for DoH)
+# Work
 # =============================================================================
 
-# --- CLI Tools ---
-# TODO: add personal context
+# CLI Tools that I need at work
 brew "azure-cli"
 brew "databricks/tap/databricks"
 brew "telnet"
 
-# --- GUI Apps ---
-# TODO: add personal context
-cask "cyberduck"
-cask "dbeaver-community"
+# Shit that I need to deal with at work
 cask "microsoft-auto-update"
 cask "microsoft-excel"
 cask "microsoft-outlook"
