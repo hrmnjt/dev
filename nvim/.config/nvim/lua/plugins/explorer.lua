@@ -18,7 +18,7 @@ return {
             layout = {
               preset = "sidebar",
               layout = {
-                width = 30, -- narrower sidebar (default is 40)
+                width = 25, -- narrower sidebar (default is 40)
               },
             },
           },
