@@ -45,8 +45,8 @@ return {
         sections = {
           { section = "header" },
           { section = "keys", gap = 1, padding = 1 },
-          { icon = "󰉋 ", title = "Recent Projects", section = "projects", indent = 2, padding = 1 },
-          { icon = " ", title = "Recent Files", section = "recent_files", indent = 2, limit = 5 },
+          { icon = "󰉋 ", title = "Recent Projects", section = "projects", indent = 2, padding = 1, limit = 3 },
+          { icon = " ", title = "Recent Files", section = "recent_files", indent = 2, limit = 3 },
         },
       },
     },
