@@ -8,7 +8,6 @@ export HOMEBREW_NO_AUTO_UPDATE=1
 # Gondolin custom VM image (built with `just gondolin-image`)
 export GONDOLIN_GUEST_DIR="$HOME/.gondolin/custom-image"
 
-
 # starship.rs prompt
 # https://starship.rs/guide/
 eval "$(starship init zsh)"
@@ -16,6 +15,7 @@ eval "$(starship init zsh)"
 # Reload shell safely. `source ~/.zshrc` breaks Ghostty shell integration.
 alias loadshell='exec zsh -l'
 
+# Using eza instead of ls for an extra l command
 alias l='eza --all --git --long --show-symlinks'
 
 alias pass='cat ~/.pass | pbcopy'
