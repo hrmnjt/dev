@@ -21,7 +21,6 @@ brew "stow"                     # Symlink manager for dotfiles
 
 brew "node"
 brew "uv"                       # Python package manager
-brew "gh"                       # Github CLI
 brew "luarocks"                 # Lua package manager
 brew "hugo"                     # Blog SSG
 brew "duckdb"
