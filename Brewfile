@@ -6,7 +6,6 @@
 
 # Shell & Prompt
 brew "starship"                 # Shell prompt
-brew "zoxide"                   # Smart directory jumper
 
 # File & Text Tools
 brew "eza"                      # Modern ls replacement
