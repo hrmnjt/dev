@@ -22,6 +22,6 @@ profile or shell sets matching ANSI colors.
 - **Telemetry off** — opted out of anonymous telemetry
 - **SSH hidden** — don't use SSH workspaces in sidebar
 - **Cursor & Gemini off** — only using Claude Code integration
-- **Browser intercept on** — links from terminals open in cmux's built-in browser
+- **Browser links open externally** — links from terminals open in default browser, not cmux's built-in browser
 - **Copy on select** — matches Ghostty muscle memory
 - **matchTerminalBackground** — sidebar blends with terminal background

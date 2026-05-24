@@ -83,7 +83,7 @@
 
   "browser": {
     "theme": "dark",
-    "openTerminalLinksInCmuxBrowser": true,
-    "interceptTerminalOpenCommandInCmuxBrowser": true
+    "openTerminalLinksInCmuxBrowser": false,
+    "interceptTerminalOpenCommandInCmuxBrowser": false
   }
 }
