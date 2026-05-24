@@ -1,4 +1,4 @@
-nvim
+# nvim config
 
 LazyVim-based Neovim config for **Python · SQL · Markdown**.
 
@@ -53,24 +53,5 @@ nvim
 ```
 
 First launch takes 1-2 minutes. Restart once after everything installs.
-
-## Key LazyVim keymaps to know
-
-| Key | Action |
-|-----|--------|
-| `<leader>ff` | Find files |
-| `<leader>fg` | Live grep |
-| `<leader>fb` | Buffers |
-| `<leader>fr` | Recent files |
-| `<leader>e` | Toggle file tree |
-| `<leader>gg` | LazyGit |
-| `<leader>cf` | Format |
-| `<leader>cr` | Rename |
-| `<leader>ca` | Code action |
-| `gd` | Go to definition |
-| `gr` | Go to references |
-| `K` | Hover documentation |
-| `<leader>l` | Lazy plugin manager |
-| `<leader>L` | Mason LSP manager |
 
 Type `<leader>` (space) and wait — which-key shows all available keymaps.
