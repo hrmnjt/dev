@@ -42,6 +42,7 @@
   },
 
   "workspaceColors": {
+    "selectionColor": "#504945",
     "notificationBadgeColor": "#FE8019",
     "colors": {
       "Red": "#CC241D",
