@@ -35,6 +35,8 @@ brew "hugo"
 
 # Document format converter - mostly for markdown to other formats
 brew "pandoc"
+# Typesetting system - modern alternative to LaTeX for documents
+brew "typst"
 # Plain-text accounting - tracking personal finances
 brew "hledger"
 
