@@ -14,7 +14,8 @@
     "newWorkspacePlacement": "afterCurrent",
     "minimalMode": false,
     "focusPaneOnFirstClick": true,
-    "confirmQuit": true
+    "confirmQuit": true,
+    "reorderOnNotification": false
   },
 
   "terminal": {
@@ -24,7 +25,8 @@
   },
 
   "notifications": {
-    "unreadPaneRing": true,
+    "unreadPaneRing": false,
+    "paneFlash": false,
     "dockBadge": true,
     "sound": "default"
   },
@@ -40,7 +42,6 @@
   },
 
   "workspaceColors": {
-    "selectionColor": "#504945",
     "notificationBadgeColor": "#FE8019",
     "colors": {
       "Red": "#CC241D",
