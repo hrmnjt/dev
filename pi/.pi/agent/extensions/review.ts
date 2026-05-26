@@ -122,6 +122,48 @@ function repoRoot(cwd: string): string {
   return git(cwd, ["rev-parse", "--show-toplevel"]) || cwd;
 }
 
+function reviewHelpText(): string {
+  return `# /review help
+
+Open a terminal-native code review UI for the current git changes.
+
+## Usage
+
+- /review — review working tree changes vs HEAD
+- /review HEAD — same as /review
+- /review staged — review staged changes
+- /review unstaged — review unstaged changes
+- /review main..HEAD — review an explicit git range
+- /review --base main — review changes against a base branch
+- /review help — show this help
+
+## Keyboard
+
+- j/k — move selected line, or selected file when file sidebar is focused
+- h/l — previous/next file
+- n/N — next/previous hunk
+- c — comment selected line
+- Enter — save comment in the comment dialog
+- Esc — cancel comment dialog, or quit/cancel from navigation
+- dd — delete selected line comment
+- s — submit review comments to pi
+- ? — show in-UI help
+- q — quit review
+- Tab — switch focus between file sidebar and diff
+
+## Mouse
+
+- click sidebar file — select file
+- click diff line — select line
+- mouse wheel over diff — scroll through lines
+
+## Comments
+
+Comments are saved in memory while the review UI is open. Press s to preview and submit them directly to the current pi conversation.
+
+Deleted files are preserved as deleted unless a comment explicitly asks pi to restore them.`;
+}
+
 function parseTarget(args: string): ReviewTarget {
   const trimmed = args.trim();
   if (!trimmed || trimmed === "HEAD") return { kind: "head" };
@@ -1137,6 +1179,12 @@ class ReviewComponent implements Component {
 }
 
 async function review(pi: ExtensionAPI, args: string, ctx: ExtensionContext) {
+  const trimmedArgs = args.trim();
+  if (trimmedArgs === "help" || trimmedArgs === "--help" || trimmedArgs === "-h") {
+    pi.sendUserMessage(reviewHelpText());
+    return;
+  }
+
   if (!ctx.hasUI) {
     ctx.ui.notify("/review requires interactive mode", "error");
     return;
@@ -1149,7 +1197,7 @@ async function review(pi: ExtensionAPI, args: string, ctx: ExtensionContext) {
   }
 
   const root = repoRoot(cwd);
-  const target = parseTarget(args);
+  const target = parseTarget(trimmedArgs);
   const { files, context } = collectReview(root, target);
 
   if (files.length === 0) {
