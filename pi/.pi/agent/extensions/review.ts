@@ -87,6 +87,8 @@ type GitContext = {
 type FocusPane = "files" | "diff";
 type Mode = "navigate" | "edit-comment" | "confirm-submit" | "help" | "confirm-cancel";
 
+type SimpleDone = (result: undefined) => void;
+
 type MouseEvent = {
   kind: "press" | "release" | "wheel-up" | "wheel-down";
   button: "left" | "middle" | "right" | "unknown";
@@ -122,46 +124,46 @@ function repoRoot(cwd: string): string {
   return git(cwd, ["rev-parse", "--show-toplevel"]) || cwd;
 }
 
-function reviewHelpText(): string {
-  return `# /review help
-
-Open a terminal-native code review UI for the current git changes.
-
-## Usage
-
-- /review — review working tree changes vs HEAD
-- /review HEAD — same as /review
-- /review staged — review staged changes
-- /review unstaged — review unstaged changes
-- /review main..HEAD — review an explicit git range
-- /review --base main — review changes against a base branch
-- /review help — show this help
-
-## Keyboard
-
-- j/k — move selected line, or selected file when file sidebar is focused
-- h/l — previous/next file
-- n/N — next/previous hunk
-- c — comment selected line
-- Enter — save comment in the comment dialog
-- Esc — cancel comment dialog, or quit/cancel from navigation
-- dd — delete selected line comment
-- s — submit review comments to pi
-- ? — show in-UI help
-- q — quit review
-- Tab — switch focus between file sidebar and diff
-
-## Mouse
-
-- click sidebar file — select file
-- click diff line — select line
-- mouse wheel over diff — scroll through lines
-
-## Comments
-
-Comments are saved in memory while the review UI is open. Press s to preview and submit them directly to the current pi conversation.
-
-Deleted files are preserved as deleted unless a comment explicitly asks pi to restore them.`;
+function reviewHelpLines(): string[] {
+  return [
+    "Review help",
+    "",
+    "Usage",
+    "  /review              review working tree changes vs HEAD",
+    "  /review HEAD         same as /review",
+    "  /review staged       review staged changes",
+    "  /review unstaged     review unstaged changes",
+    "  /review main..HEAD   review an explicit git range",
+    "  /review --base main  review changes against a base branch",
+    "  /review help         show this help",
+    "",
+    "Keyboard",
+    "  j/k      move selected line, or selected file when sidebar is focused",
+    "  h/l      previous/next file",
+    "  n/N      next/previous hunk",
+    "  c        comment selected line",
+    "  Enter    save comment in the comment dialog",
+    "  Esc      cancel comment dialog, or quit/cancel from navigation",
+    "  dd       delete selected line comment",
+    "  s        submit review comments to pi",
+    "  ?        show in-UI help",
+    "  q        quit review",
+    "  Tab      switch focus between file sidebar and diff",
+    "",
+    "Mouse",
+    "  click sidebar file   select file",
+    "  click diff line      select line",
+    "  mouse wheel in diff  scroll through lines",
+    "",
+    "Comments",
+    "  Comments are saved in memory while the review UI is open.",
+    "  Press s to preview and submit them directly to the current pi conversation.",
+    "",
+    "Deleted files",
+    "  Deleted files are preserved as deleted unless a comment explicitly asks pi to restore them.",
+    "",
+    "Press q, Esc, or Enter to close this help.",
+  ];
 }
 
 function parseTarget(args: string): ReviewTarget {
@@ -433,6 +435,58 @@ Please address every actionable review comment. Rules:
 <review-comments>
 ${comments || "(none)"}
 </review-comments>`;
+}
+
+class HelpComponent implements Component {
+  private tui: TUI;
+  private done: SimpleDone;
+  private scroll = 0;
+  private lines: string[];
+  private dim = (s: string) => `\x1b[2m${s}\x1b[0m`;
+  private bold = (s: string) => `\x1b[1m${s}\x1b[0m`;
+  private cyan = (s: string) => `\x1b[36m${s}\x1b[0m`;
+
+  constructor(lines: string[], tui: TUI, done: SimpleDone) {
+    this.lines = lines;
+    this.tui = tui;
+    this.done = done;
+  }
+
+  invalidate(): void {}
+
+  handleInput(data: string): void {
+    if (matchesKey(data, Key.enter) || matchesKey(data, Key.escape) || data === "q") {
+      this.done(undefined);
+      return;
+    }
+    if (data === "j" || matchesKey(data, Key.down)) this.scroll++;
+    if (data === "k" || matchesKey(data, Key.up)) this.scroll = Math.max(0, this.scroll - 1);
+    this.tui.requestRender();
+  }
+
+  render(width: number): string[] {
+    const height = Math.max(8, this.tui.terminal.rows - 6);
+    const boxWidth = Math.min(width, 100);
+    const contentWidth = boxWidth - 4;
+    const maxScroll = Math.max(0, this.lines.length - (height - 4));
+    this.scroll = Math.max(0, Math.min(maxScroll, this.scroll));
+
+    const out: string[] = [];
+    const pad = (line: string) => {
+      const text = truncateToWidth(line, contentWidth);
+      return text + " ".repeat(Math.max(0, contentWidth - visibleWidth(text)));
+    };
+    out.push(this.dim("╭" + "─".repeat(boxWidth - 2) + "╮"));
+    out.push(this.dim("│") + pad(this.bold(this.cyan("/review help"))) + this.dim("│"));
+    out.push(this.dim("├" + "─".repeat(boxWidth - 2) + "┤"));
+    for (const raw of this.lines.slice(this.scroll, this.scroll + height - 4)) {
+      const styled = raw && !raw.startsWith(" ") ? this.bold(raw) : raw;
+      out.push(this.dim("│") + pad("  " + styled) + this.dim("│"));
+    }
+    while (out.length < height - 1) out.push(this.dim("│") + " ".repeat(contentWidth) + this.dim("│"));
+    out.push(this.dim("╰" + "─".repeat(boxWidth - 2) + "╯"));
+    return out;
+  }
 }
 
 class ReviewComponent implements Component {
@@ -1181,7 +1235,13 @@ class ReviewComponent implements Component {
 async function review(pi: ExtensionAPI, args: string, ctx: ExtensionContext) {
   const trimmedArgs = args.trim();
   if (trimmedArgs === "help" || trimmedArgs === "--help" || trimmedArgs === "-h") {
-    pi.sendUserMessage(reviewHelpText());
+    if (!ctx.hasUI) {
+      ctx.ui.notify("/review help requires interactive mode", "error");
+      return;
+    }
+    await ctx.ui.custom<undefined>((tui, _theme, _kb, done) => {
+      return new HelpComponent(reviewHelpLines(), tui, done);
+    });
     return;
   }
 
