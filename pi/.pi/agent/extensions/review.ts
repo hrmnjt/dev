@@ -84,8 +84,19 @@ type GitContext = {
   diffStat: string;
 };
 
-type FocusPane = "files" | "diff" | "comments";
+type FocusPane = "files" | "diff";
 type Mode = "navigate" | "edit-comment" | "confirm-submit" | "help" | "confirm-cancel";
+
+type MouseEvent = {
+  kind: "press" | "release" | "wheel-up" | "wheel-down";
+  button: "left" | "middle" | "right" | "unknown";
+  x: number;
+  y: number;
+};
+
+type Hitbox =
+  | { kind: "file"; row: number; colStart: number; colEnd: number; fileIndex: number }
+  | { kind: "diff-line"; row: number; colStart: number; colEnd: number; fileIndex: number; hunkIndex: number; lineIndex: number };
 
 const GUEST_WORKSPACE = "/workspace";
 
@@ -148,6 +159,24 @@ function hunkFirstLine(hunk: DiffHunk): { oldLine?: number; newLine?: number } {
     }
   }
   return { oldLine: hunk.oldStart, newLine: hunk.newStart };
+}
+
+function parseMouseEvent(data: string): MouseEvent | null {
+  const match = data.match(/^\x1b\[<(\d+);(\d+);(\d+)([mM])$/);
+  if (!match) return null;
+
+  const code = Number.parseInt(match[1]!, 10);
+  const x = Number.parseInt(match[2]!, 10);
+  const y = Number.parseInt(match[3]!, 10);
+  const final = match[4]!;
+
+  if ((code & 64) === 64) {
+    return { kind: code === 64 ? "wheel-up" : "wheel-down", button: "unknown", x, y };
+  }
+
+  const buttonCode = code & 3;
+  const button = buttonCode === 0 ? "left" : buttonCode === 1 ? "middle" : buttonCode === 2 ? "right" : "unknown";
+  return { kind: final === "m" ? "release" : "press", button, x, y };
 }
 
 function parseNumstat(text: string): Map<string, { additions: number; deletions: number }> {
@@ -315,7 +344,7 @@ function collectReview(root: string, target: ReviewTarget): { files: DiffFile[];
     diffStat: git(root, diffArgs(target, ["--stat"])),
   };
 
-  const rawDiff = git(root, diffArgs(target, ["--unified=80"]));
+  const rawDiff = git(root, diffArgs(target, ["--unified=999999"]));
   const numstat = parseNumstat(git(root, diffArgs(target, ["--numstat"])));
   const statuses = parseNameStatus(git(root, diffArgs(target, ["--name-status"])));
   return { files: parseDiff(rawDiff, numstat, statuses), context, rawDiff };
@@ -355,6 +384,7 @@ Please address every actionable review comment. Rules:
 - Treat paths as relative to the current repository under /workspace.
 - Inspect the relevant files/diffs before editing.
 - Preserve unrelated changes.
+- Do not restore deleted files just because a review comment references them; only restore a deleted file if a comment explicitly asks you to restore it.
 - If a comment is unclear or impossible to fix, say so explicitly.
 - After making fixes, summarize each comment and how it was addressed.
 
@@ -371,9 +401,10 @@ class ReviewComponent implements Component {
   private comments: ReviewComment[] = [];
   private selectedFileIndex = 0;
   private selectedHunkIndex = 0;
+  private selectedLineIndex = 0;
   private diffScrollOffset = 0;
   private fileScrollOffset = 0;
-  private focusPane: FocusPane = "files";
+  private focusPane: FocusPane = "diff";
   private mode: Mode = "navigate";
   private editor: Editor;
   private pendingKey = "";
@@ -381,6 +412,11 @@ class ReviewComponent implements Component {
   private cachedWidth?: number;
   private cachedHeight?: number;
   private cachedLines?: string[];
+  private hitboxes: Hitbox[] = [];
+  private lastRenderTopRow = 1;
+  private lastRenderLineCount = 0;
+  private diffBounds: { rowStart: number; rowEnd: number; colStart: number; colEnd: number } | null = null;
+  private mouseEnabled = false;
 
   private dim = (s: string) => `\x1b[2m${s}\x1b[0m`;
   private bold = (s: string) => `\x1b[1m${s}\x1b[0m`;
@@ -408,16 +444,35 @@ class ReviewComponent implements Component {
     this.editor = new Editor(tui, editorTheme);
     this.editor.disableSubmit = true;
     this.editor.onChange = () => {
-      this.saveEditingComment(false);
       this.invalidate();
       this.tui.requestRender();
     };
+    this.enableMouse();
   }
 
   invalidate(): void {
     this.cachedWidth = undefined;
     this.cachedHeight = undefined;
     this.cachedLines = undefined;
+  }
+
+  private enableMouse(): void {
+    if (this.mouseEnabled) return;
+    // Enable xterm button events + SGR extended coordinates. We disable these
+    // before leaving the custom UI via finish().
+    this.tui.terminal.write("\x1b[?1000h\x1b[?1006h");
+    this.mouseEnabled = true;
+  }
+
+  private disableMouse(): void {
+    if (!this.mouseEnabled) return;
+    this.tui.terminal.write("\x1b[?1000l\x1b[?1006l");
+    this.mouseEnabled = false;
+  }
+
+  private finish(result: ReviewResult | null): void {
+    this.disableMouse();
+    this.done(result);
   }
 
   private currentFile(): DiffFile | undefined {
@@ -428,31 +483,54 @@ class ReviewComponent implements Component {
     return this.currentFile()?.hunks[this.selectedHunkIndex];
   }
 
+  private currentLine(): DiffLine | undefined {
+    return this.currentHunk()?.lines[this.selectedLineIndex];
+  }
+
   private clampSelection(): void {
     if (this.files.length === 0) {
       this.selectedFileIndex = 0;
       this.selectedHunkIndex = 0;
+      this.selectedLineIndex = 0;
       return;
     }
     this.selectedFileIndex = Math.max(0, Math.min(this.files.length - 1, this.selectedFileIndex));
     const hunkCount = this.currentFile()?.hunks.length || 0;
     this.selectedHunkIndex = Math.max(0, Math.min(Math.max(0, hunkCount - 1), this.selectedHunkIndex));
+    const lineCount = this.currentHunk()?.lines.length || 0;
+    this.selectedLineIndex = Math.max(0, Math.min(Math.max(0, lineCount - 1), this.selectedLineIndex));
   }
 
   private commentsFor(filePath: string, hunkIndex?: number): ReviewComment[] {
     return this.comments.filter((c) => c.filePath === filePath && (hunkIndex === undefined || c.hunkIndex === hunkIndex));
   }
 
-  private commentForCurrentHunk(): ReviewComment | undefined {
+  private sameLineComment(comment: ReviewComment, line: DiffLine): boolean {
+    if (comment.newLine !== undefined || comment.oldLine !== undefined) {
+      return comment.newLine === line.newLine && comment.oldLine === line.oldLine;
+    }
+    return false;
+  }
+
+  private commentForLine(filePath: string, hunkIndex: number, line: DiffLine): ReviewComment | undefined {
+    return this.comments.find((c) => c.filePath === filePath && c.hunkIndex === hunkIndex && this.sameLineComment(c, line));
+  }
+
+  private commentForCurrentTarget(): ReviewComment | undefined {
     const file = this.currentFile();
     if (!file) return undefined;
     const hunk = this.currentHunk();
-    return this.comments.find((c) => c.filePath === file.displayPath && c.hunkIndex === (hunk ? this.selectedHunkIndex : undefined));
+    const line = this.currentLine();
+    if (hunk && line && line.kind !== "meta") {
+      return this.commentForLine(file.displayPath, this.selectedHunkIndex, line);
+    }
+    return this.comments.find((c) => c.filePath === file.displayPath && c.hunkIndex === (hunk ? this.selectedHunkIndex : undefined) && c.newLine === undefined && c.oldLine === undefined);
   }
 
   private moveFile(delta: number): void {
     this.selectedFileIndex += delta;
     this.selectedHunkIndex = 0;
+    this.selectedLineIndex = 0;
     this.diffScrollOffset = 0;
     this.clampSelection();
     this.invalidate();
@@ -460,9 +538,61 @@ class ReviewComponent implements Component {
 
   private moveHunk(delta: number): void {
     const file = this.currentFile();
-    if (!file || file.hunks.length === 0) return;
-    this.selectedHunkIndex += delta;
-    this.diffScrollOffset = 0;
+    if (!file) return;
+
+    if (file.hunks.length > 0) {
+      const next = this.selectedHunkIndex + delta;
+      if (next >= 0 && next < file.hunks.length) {
+        this.selectedHunkIndex = next;
+        this.selectedLineIndex = delta > 0 ? 0 : 999999;
+        this.diffScrollOffset = 0;
+        this.clampSelection();
+        this.invalidate();
+        return;
+      }
+    }
+
+    let fileIndex = this.selectedFileIndex + delta;
+    while (fileIndex >= 0 && fileIndex < this.files.length) {
+      const candidate = this.files[fileIndex]!;
+      if (candidate.hunks.length > 0) {
+        this.selectedFileIndex = fileIndex;
+        this.selectedHunkIndex = delta > 0 ? 0 : candidate.hunks.length - 1;
+        this.selectedLineIndex = delta > 0 ? 0 : 999999;
+        this.diffScrollOffset = 0;
+        this.clampSelection();
+        this.invalidate();
+        return;
+      }
+      fileIndex += delta;
+    }
+  }
+
+  private moveLine(delta: number): void {
+    const file = this.currentFile();
+    const hunk = this.currentHunk();
+    if (!file || !hunk || hunk.lines.length === 0) return;
+
+    const next = this.selectedLineIndex + delta;
+    if (next >= 0 && next < hunk.lines.length) {
+      this.selectedLineIndex = next;
+    } else if (next < 0 && this.selectedHunkIndex > 0) {
+      this.selectedHunkIndex--;
+      this.selectedLineIndex = 999999;
+    } else if (next >= hunk.lines.length && this.selectedHunkIndex < file.hunks.length - 1) {
+      this.selectedHunkIndex++;
+      this.selectedLineIndex = 0;
+    } else if (next < 0 && this.selectedFileIndex > 0) {
+      this.selectedFileIndex--;
+      this.selectedHunkIndex = 999999;
+      this.selectedLineIndex = 999999;
+      this.diffScrollOffset = 0;
+    } else if (next >= hunk.lines.length && this.selectedFileIndex < this.files.length - 1) {
+      this.selectedFileIndex++;
+      this.selectedHunkIndex = 0;
+      this.selectedLineIndex = 0;
+      this.diffScrollOffset = 0;
+    }
     this.clampSelection();
     this.invalidate();
   }
@@ -471,23 +601,24 @@ class ReviewComponent implements Component {
     const file = this.currentFile();
     if (!file) return;
     const hunk = this.currentHunk();
-    const existing = this.commentForCurrentHunk();
+    const line = this.currentLine();
+    const existing = this.commentForCurrentTarget();
     const id = existing?.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     if (!existing) {
-      const first = hunk ? hunkFirstLine(hunk) : {};
+      const anchor = hunk && line && line.kind !== "meta" ? { oldLine: line.oldLine, newLine: line.newLine } : {};
       this.comments.push({
         id,
         filePath: file.displayPath,
         hunkIndex: hunk ? this.selectedHunkIndex : undefined,
-        oldLine: first.oldLine,
-        newLine: first.newLine,
+        oldLine: anchor.oldLine,
+        newLine: anchor.newLine,
         body: "",
       });
     }
     this.editingCommentId = id;
     this.editor.setText(existing?.body || "");
     this.mode = "edit-comment";
-    this.focusPane = "comments";
+    this.focusPane = "diff";
     this.invalidate();
   }
 
@@ -503,7 +634,7 @@ class ReviewComponent implements Component {
     }
   }
 
-  private exitCommentEditor(): void {
+  private saveAndExitCommentEditor(): void {
     this.saveEditingComment(true);
     this.editingCommentId = null;
     this.mode = "navigate";
@@ -511,8 +642,21 @@ class ReviewComponent implements Component {
     this.invalidate();
   }
 
+  private cancelCommentEditor(): void {
+    if (this.editingCommentId) {
+      const idx = this.comments.findIndex((c) => c.id === this.editingCommentId);
+      if (idx >= 0 && this.comments[idx]!.body.trim() === "") {
+        this.comments.splice(idx, 1);
+      }
+    }
+    this.editingCommentId = null;
+    this.mode = "navigate";
+    this.focusPane = "diff";
+    this.invalidate();
+  }
+
   private deleteCurrentComment(): void {
-    const existing = this.commentForCurrentHunk();
+    const existing = this.commentForCurrentTarget();
     if (!existing) return;
     this.comments = this.comments.filter((c) => c.id !== existing.id);
     this.invalidate();
@@ -520,7 +664,7 @@ class ReviewComponent implements Component {
 
   private submit(): void {
     const actionable = this.comments.filter((c) => c.body.trim().length > 0);
-    this.done({ target: this.target, comments: actionable });
+    this.finish({ target: this.target, comments: actionable });
   }
 
   private requestCancel(): void {
@@ -528,19 +672,74 @@ class ReviewComponent implements Component {
       this.mode = "confirm-cancel";
       this.invalidate();
     } else {
-      this.done(null);
+      this.finish(null);
     }
   }
 
+  private toRelativeMouseRow(y: number): number {
+    return y - this.lastRenderTopRow;
+  }
+
+  private handleMouse(mouse: MouseEvent): boolean {
+    if (this.mode !== "navigate") return false;
+
+    const row = this.toRelativeMouseRow(mouse.y);
+    if (row < 0 || row >= this.lastRenderLineCount) return false;
+
+    if (mouse.kind === "wheel-up" || mouse.kind === "wheel-down") {
+      if (!this.diffBounds) return false;
+      const inDiff = row >= this.diffBounds.rowStart && row <= this.diffBounds.rowEnd && mouse.x >= this.diffBounds.colStart && mouse.x <= this.diffBounds.colEnd;
+      if (!inDiff) return false;
+      const amount = mouse.kind === "wheel-up" ? -3 : 3;
+      for (let i = 0; i < Math.abs(amount); i++) this.moveLine(amount > 0 ? 1 : -1);
+      this.focusPane = "diff";
+      return true;
+    }
+
+    if (mouse.kind !== "press" || mouse.button !== "left") return false;
+
+    const hit = this.hitboxes.find((h) => h.row === row && mouse.x >= h.colStart && mouse.x <= h.colEnd);
+    if (!hit) return false;
+
+    if (hit.kind === "file") {
+      this.selectedFileIndex = hit.fileIndex;
+      this.selectedHunkIndex = 0;
+      this.selectedLineIndex = 0;
+      this.diffScrollOffset = 0;
+      this.focusPane = "diff";
+      this.clampSelection();
+      this.invalidate();
+      return true;
+    }
+
+    this.selectedFileIndex = hit.fileIndex;
+    this.selectedHunkIndex = hit.hunkIndex;
+    this.selectedLineIndex = hit.lineIndex;
+    this.focusPane = "diff";
+    this.clampSelection();
+    this.invalidate();
+    return true;
+  }
+
   handleInput(data: string): void {
+    const mouse = parseMouseEvent(data);
+    if (mouse && this.handleMouse(mouse)) {
+      this.tui.requestRender();
+      return;
+    }
+
     if (this.mode === "edit-comment") {
       if (matchesKey(data, Key.escape)) {
-        this.exitCommentEditor();
+        this.cancelCommentEditor();
+        this.tui.requestRender();
+        return;
+      }
+      if (matchesKey(data, Key.enter)) {
+        this.saveAndExitCommentEditor();
         this.tui.requestRender();
         return;
       }
       this.editor.handleInput(data);
-      this.saveEditingComment(false);
       this.invalidate();
       this.tui.requestRender();
       return;
@@ -562,7 +761,7 @@ class ReviewComponent implements Component {
 
     if (this.mode === "confirm-cancel") {
       if (matchesKey(data, Key.enter) || data === "y" || data === "Y") {
-        this.done(null);
+        this.finish(null);
         return;
       }
       if (matchesKey(data, Key.escape) || data === "n" || data === "N") {
@@ -588,6 +787,11 @@ class ReviewComponent implements Component {
       this.pendingKey = "";
       if (data === "g") {
         if (this.focusPane === "files") this.selectedFileIndex = 0;
+        else {
+          this.selectedFileIndex = 0;
+          this.selectedHunkIndex = 0;
+          this.selectedLineIndex = 0;
+        }
         this.diffScrollOffset = 0;
         this.clampSelection();
         this.invalidate();
@@ -611,7 +815,7 @@ class ReviewComponent implements Component {
     if (matchesKey(data, Key.escape)) { this.requestCancel(); this.tui.requestRender(); return; }
     if (data === "?") { this.mode = "help"; this.invalidate(); this.tui.requestRender(); return; }
     if (matchesKey(data, Key.tab)) {
-      this.focusPane = this.focusPane === "files" ? "diff" : this.focusPane === "diff" ? "comments" : "files";
+      this.focusPane = this.focusPane === "files" ? "diff" : "files";
       this.invalidate();
       this.tui.requestRender();
       return;
@@ -619,7 +823,11 @@ class ReviewComponent implements Component {
 
     if (data === "G") {
       if (this.focusPane === "files") this.selectedFileIndex = this.files.length - 1;
-      else this.diffScrollOffset = 999999;
+      else {
+        this.selectedFileIndex = this.files.length - 1;
+        this.selectedHunkIndex = 999999;
+        this.selectedLineIndex = 999999;
+      }
       this.clampSelection();
       this.invalidate();
       this.tui.requestRender();
@@ -628,13 +836,13 @@ class ReviewComponent implements Component {
 
     if (data === "j" || matchesKey(data, Key.down)) {
       if (this.focusPane === "files") this.moveFile(1);
-      else this.diffScrollOffset++;
+      else this.moveLine(1);
       this.tui.requestRender();
       return;
     }
     if (data === "k" || matchesKey(data, Key.up)) {
       if (this.focusPane === "files") this.moveFile(-1);
-      else this.diffScrollOffset = Math.max(0, this.diffScrollOffset - 1);
+      else this.moveLine(-1);
       this.invalidate();
       this.tui.requestRender();
       return;
@@ -655,10 +863,15 @@ class ReviewComponent implements Component {
       return this.cachedLines;
     }
 
+    this.hitboxes = [];
+    this.diffBounds = null;
+
     let lines: string[];
-    if (width >= 120) lines = this.renderWide(width, height);
+    if (width >= 90) lines = this.renderWide(width, height);
     else lines = this.renderNarrow(width, height);
 
+    this.lastRenderLineCount = lines.length;
+    this.lastRenderTopRow = Math.max(1, this.tui.terminal.rows - lines.length + 1);
     this.cachedWidth = width;
     this.cachedHeight = height;
     this.cachedLines = lines;
@@ -683,7 +896,7 @@ class ReviewComponent implements Component {
     return this.cyan(label);
   }
 
-  private renderFileRows(width: number, height: number): string[] {
+  private renderFileRows(width: number, height: number, rowStart = 0, colStart = 1): string[] {
     const rows: string[] = [];
     const maxOffset = Math.max(0, this.files.length - height);
     this.fileScrollOffset = Math.max(0, Math.min(maxOffset, this.fileScrollOffset));
@@ -703,17 +916,18 @@ class ReviewComponent implements Component {
       row = truncateToWidth(row, Math.max(1, room));
       row = this.pad(row, room) + " " + statText;
       rows.push(selected ? this.inverse(this.pad(row, width)) : this.pad(row, width));
+      this.hitboxes.push({ kind: "file", row: rowStart + rows.length - 1, colStart, colEnd: colStart + width - 1, fileIndex: i });
     }
     while (rows.length < height) rows.push(" ".repeat(width));
     return rows;
   }
 
-  private diffRows(width: number, height: number): string[] {
+  private diffRows(width: number, height: number, rowStart = 0, colStart = 1): string[] {
     const file = this.currentFile();
     const rows: string[] = [];
     if (!file) return Array.from({ length: height }, () => " ".repeat(width));
 
-    const source: { text: string; hunkIndex?: number; isSelectedHunk?: boolean }[] = [];
+    const source: { text: string; hunkIndex?: number; lineIndex?: number; isSelectedHunk?: boolean; isSelectedLine?: boolean }[] = [];
     source.push({ text: this.bold(file.displayPath) + this.dim(`  ${file.additions}+ ${file.deletions}-`) });
     if (file.binary) source.push({ text: this.yellow("Binary file changed") });
     if (file.hunks.length === 0) {
@@ -724,30 +938,49 @@ class ReviewComponent implements Component {
       const hunk = file.hunks[h]!;
       const count = this.commentsFor(file.displayPath, h).filter((c) => c.body.trim()).length;
       const marker = count > 0 ? this.yellow(`  [${count} comment${count === 1 ? "" : "s"}]`) : "";
-      source.push({ text: this.cyan(hunk.header) + marker, hunkIndex: h, isSelectedHunk: h === this.selectedHunkIndex });
-      for (const line of hunk.lines) {
+      source.push({ text: this.cyan(hunk.header) + marker, hunkIndex: h, isSelectedHunk: h === this.selectedHunkIndex && hunk.lines.length === 0 });
+      for (let li = 0; li < hunk.lines.length; li++) {
+        const line = hunk.lines[li]!;
         const oldNo = line.oldLine === undefined ? "    " : String(line.oldLine).padStart(4);
         const newNo = line.newLine === undefined ? "    " : String(line.newLine).padStart(4);
         const prefix = line.kind === "add" ? "+" : line.kind === "del" ? "-" : line.kind === "meta" ? "\\" : " ";
+        const lineComment = line.kind === "meta" ? undefined : this.commentForLine(file.displayPath, h, line);
+        const commentMarker = lineComment?.body.trim() ? this.yellow("  [comment]") : "";
         const raw = `${oldNo} ${newNo} ${prefix} ${line.text}`;
         const colored = line.kind === "add" ? this.green(raw)
           : line.kind === "del" ? this.red(raw)
           : line.kind === "meta" ? this.gray(raw)
           : raw;
-        source.push({ text: colored, hunkIndex: h });
+        source.push({
+          text: colored + commentMarker,
+          hunkIndex: h,
+          lineIndex: li,
+          isSelectedLine: h === this.selectedHunkIndex && li === this.selectedLineIndex,
+        });
       }
     }
 
-    const selectedHunkRow = source.findIndex((r) => r.isSelectedHunk);
-    if (selectedHunkRow >= 0 && selectedHunkRow < this.diffScrollOffset) this.diffScrollOffset = selectedHunkRow;
-    if (selectedHunkRow >= 0 && selectedHunkRow >= this.diffScrollOffset + height) this.diffScrollOffset = Math.max(0, selectedHunkRow - Math.floor(height / 3));
+    const selectedRow = source.findIndex((r) => r.isSelectedLine || r.isSelectedHunk);
+    if (selectedRow >= 0 && selectedRow < this.diffScrollOffset) this.diffScrollOffset = selectedRow;
+    if (selectedRow >= 0 && selectedRow >= this.diffScrollOffset + height) this.diffScrollOffset = Math.max(0, selectedRow - Math.floor(height / 3));
     const maxOffset = Math.max(0, source.length - height);
     this.diffScrollOffset = Math.max(0, Math.min(maxOffset, this.diffScrollOffset));
 
     for (let i = this.diffScrollOffset; i < Math.min(source.length, this.diffScrollOffset + height); i++) {
       const row = source[i]!;
       const padded = this.pad(row.text, width);
-      rows.push(row.isSelectedHunk ? this.inverse(padded) : padded);
+      rows.push(row.isSelectedLine || row.isSelectedHunk ? this.inverse(padded) : padded);
+      if (row.hunkIndex !== undefined && row.lineIndex !== undefined) {
+        this.hitboxes.push({
+          kind: "diff-line",
+          row: rowStart + rows.length - 1,
+          colStart,
+          colEnd: colStart + width - 1,
+          fileIndex: this.selectedFileIndex,
+          hunkIndex: row.hunkIndex,
+          lineIndex: row.lineIndex,
+        });
+      }
     }
     while (rows.length < height) rows.push(" ".repeat(width));
     return rows;
@@ -757,7 +990,9 @@ class ReviewComponent implements Component {
     const rows: string[] = [];
     const file = this.currentFile();
     const hunk = this.currentHunk();
-    const target = file ? `${file.displayPath}${hunk ? `, hunk ${this.selectedHunkIndex + 1}` : ""}` : "(none)";
+    const line = this.currentLine();
+    const lineLabel = line?.newLine !== undefined ? `, new line ${line.newLine}` : line?.oldLine !== undefined ? `, old line ${line.oldLine}` : "";
+    const target = file ? `${file.displayPath}${hunk ? `, hunk ${this.selectedHunkIndex + 1}${lineLabel}` : ""}` : "(none)";
     rows.push(this.pad(`${this.bold("Comment target:")} ${target}`, width));
 
     if (this.mode === "edit-comment") {
@@ -766,14 +1001,14 @@ class ReviewComponent implements Component {
         rows.push(this.pad("  " + line, width));
       }
     } else {
-      const current = this.commentForCurrentHunk();
+      const current = this.commentForCurrentTarget();
       if (current && current.body.trim()) {
-        rows.push(this.pad(this.yellow("Current hunk comment:"), width));
+        rows.push(this.pad(this.yellow(line ? "Current line comment:" : "Current hunk comment:"), width));
         for (const wrapped of wrapTextWithAnsi(current.body.trim(), width - 2).slice(0, height - 2)) {
           rows.push(this.pad("  " + wrapped, width));
         }
       } else {
-        rows.push(this.pad(this.dim("Press c to add a comment for this hunk."), width));
+        rows.push(this.pad(this.dim(line ? "Press c to add a comment for this line." : "Press c to add a comment for this hunk."), width));
       }
     }
     while (rows.length < height) rows.push(" ".repeat(width));
@@ -782,26 +1017,23 @@ class ReviewComponent implements Component {
 
   private renderWide(width: number, height: number): string[] {
     const lines: string[] = [];
-    const fileWidth = Math.min(42, Math.max(28, Math.floor(width * 0.33)));
+    const fileWidth = Math.min(38, Math.max(24, Math.floor(width * 0.32)));
     const diffWidth = width - fileWidth - 3;
-    const commentHeight = this.mode === "edit-comment" ? 7 : 5;
-    const bodyHeight = Math.max(5, height - commentHeight - 5);
+    const bodyHeight = Math.max(5, height - 6);
 
     const title = ` Review: ${targetLabel(this.target)} `;
     lines.push(this.border(width, "╭", "─", "╮"));
     lines.push(this.pad(this.dim("│") + this.bold(title) + this.dim(`Files: ${this.files.length}  Comments: ${this.comments.filter((c) => c.body.trim()).length}`), width - 1) + this.dim("│"));
     lines.push(this.dim("├") + this.dim("─".repeat(fileWidth)) + this.dim("┬") + this.dim("─".repeat(diffWidth)) + this.dim("┤"));
 
-    const fileRows = this.renderFileRows(fileWidth, bodyHeight);
-    const diffRows = this.diffRows(diffWidth, bodyHeight);
+    const bodyRowStart = 3;
+    const fileRows = this.renderFileRows(fileWidth, bodyHeight, bodyRowStart, 2);
+    const diffRows = this.diffRows(diffWidth, bodyHeight, bodyRowStart, fileWidth + 3);
+    this.diffBounds = { rowStart: bodyRowStart, rowEnd: bodyRowStart + bodyHeight - 1, colStart: fileWidth + 3, colEnd: fileWidth + 3 + diffWidth - 1 };
     for (let i = 0; i < bodyHeight; i++) {
       lines.push(this.dim("│") + fileRows[i] + this.dim("│") + diffRows[i] + this.dim("│"));
     }
 
-    lines.push(this.dim("├") + this.dim("─".repeat(fileWidth)) + this.dim("┴") + this.dim("─".repeat(diffWidth)) + this.dim("┤"));
-    for (const row of this.commentRows(width - 2, commentHeight)) {
-      lines.push(this.dim("│") + row + this.dim("│"));
-    }
     lines.push(this.dim("├") + this.dim("─".repeat(width - 2)) + this.dim("┤"));
     lines.push(this.dim("│") + this.footer(width - 2) + this.dim("│"));
     lines.push(this.border(width, "╰", "─", "╯"));
@@ -813,12 +1045,13 @@ class ReviewComponent implements Component {
     const lines: string[] = [];
     const bodyHeight = Math.max(5, height - 6);
     lines.push(this.border(width, "╭", "─", "╮"));
-    const tabs = ["files", "diff", "comments"].map((p) => p === this.focusPane ? this.inverse(` ${p} `) : ` ${p} `).join(" ");
+    const tabs = ["files", "diff"].map((p) => p === this.focusPane ? this.inverse(` ${p} `) : ` ${p} `).join(" ");
     lines.push(this.dim("│") + this.pad(tabs, width - 2) + this.dim("│"));
     lines.push(this.dim("├") + this.dim("─".repeat(width - 2)) + this.dim("┤"));
-    const rows = this.focusPane === "files" ? this.renderFileRows(width - 2, bodyHeight)
-      : this.focusPane === "comments" ? this.commentRows(width - 2, bodyHeight)
-      : this.diffRows(width - 2, bodyHeight);
+    const bodyRowStart = 3;
+    const rows = this.focusPane === "files" ? this.renderFileRows(width - 2, bodyHeight, bodyRowStart, 2)
+      : this.diffRows(width - 2, bodyHeight, bodyRowStart, 2);
+    if (this.focusPane === "diff") this.diffBounds = { rowStart: bodyRowStart, rowEnd: bodyRowStart + bodyHeight - 1, colStart: 2, colEnd: width - 1 };
     for (const row of rows) lines.push(this.dim("│") + row + this.dim("│"));
     lines.push(this.dim("├") + this.dim("─".repeat(width - 2)) + this.dim("┤"));
     lines.push(this.dim("│") + this.footer(width - 2) + this.dim("│"));
@@ -828,10 +1061,10 @@ class ReviewComponent implements Component {
 
   private footer(width: number): string {
     let text = this.mode === "edit-comment"
-      ? "Esc save/exit comment · Enter newline"
+      ? "Enter save comment · Esc cancel"
       : width < 100
-        ? "j/k move · n/N hunk · c comment · s submit · ? help · q quit"
-        : "j/k files · h/l file · n/N hunk · c comment · dd delete · s submit · ? help · q quit";
+        ? "j/k line · click/select · wheel scroll · c comment · s submit · ? help · q quit"
+        : "j/k line · h/l file · click select · wheel scroll · c comment · dd delete · s submit · ? help · q quit";
     return this.pad(this.dim(truncateToWidth(text, width)), width);
   }
 
@@ -840,11 +1073,14 @@ class ReviewComponent implements Component {
       return this.centerBox(lines, width, [
         this.bold("Review help"),
         "",
-        "j/k or ↑/↓       move / scroll",
+        "j/k or ↑/↓       move selected line / file",
         "h/l or ←/→       previous/next file",
         "n / N            next/previous hunk",
-        "c                comment current hunk",
-        "dd               delete current hunk comment",
+        "c                comment selected diff line",
+        "click file        select sidebar file",
+        "click diff line   select line",
+        "mouse wheel       scroll diff",
+        "dd               delete selected line comment",
         "s                submit review",
         "gg / G           top / bottom",
         "Ctrl+u/Ctrl+d    half page up/down",
@@ -853,6 +1089,10 @@ class ReviewComponent implements Component {
         "",
         "Esc/?/q close help",
       ]);
+    }
+    if (this.mode === "edit-comment") {
+      const dialogWidth = Math.min(90, Math.max(50, width - 10));
+      return this.centerBox(lines, width, this.commentRows(dialogWidth, 9));
     }
     if (this.mode === "confirm-submit") {
       const actionable = this.comments.filter((c) => c.body.trim());
