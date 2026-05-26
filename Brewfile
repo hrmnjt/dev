@@ -77,9 +77,6 @@ cask "claude-code"			# Clawde on terminal
 # AI coding agent I used to use before pi-agent
 brew "anomalyco/tap/opencode"
 
-# Code review tool from modem-dev that I'm using in pi-agent somehow
-brew "modem-dev/tap/hunk"
-
 # Utilities
 cask "alt-tab"
 cask "itsycal"
