@@ -3,9 +3,10 @@
 # Usage:
 #   wt                 # fzf-select an existing worktree and cd into it
 #   wt <branch>        # go to existing worktree, or create it, then cd
+#   wt --no-fetch <branch>
 #   wt ls|list         # list worktrees
 #   wt go [branch]     # go to an existing worktree
-#   wt new <branch> [base]
+#   wt new [--no-fetch] <branch> [base]
 #   wt rm|remove [--force|-f] [branch]
 #   wt clean           # fzf multi-select worktrees to remove
 #   wt prune           # prune git metadata and empty repo.worktrees dirs
@@ -23,9 +24,11 @@ __wt_usage() {
 usage:
   wt                         select existing worktree with fzf and cd into it
   wt <branch>                go to existing worktree or create it from origin/main
+  wt --no-fetch <branch>     create without fetching origin first
   wt ls|list                 list worktrees
   wt go [branch]             go to existing worktree; fzf when branch is omitted
-  wt new <branch> [base]     create worktree; base defaults to $WT_BASE or origin/main
+  wt new [--no-fetch] <branch> [base]
+                              create worktree; base defaults to $WT_BASE or origin/main
   wt rm|remove [-f] [branch] remove worktree; fzf when branch is omitted
   wt clean                   fzf multi-select worktrees to remove
   wt prune                   git worktree prune + remove empty worktree dirs
@@ -175,7 +178,13 @@ __wt_go() {
 __wt_create() {
   __wt_require_git_repo || return 1
 
-  local branch base root dir target existing
+  local branch base root dir target existing no_fetch=0
+
+  while [[ "$1" == "--no-fetch" ]]; do
+    no_fetch=1
+    shift
+  done
+
   branch="$1"
   base="${2:-${WT_BASE:-origin/main}}"
 
@@ -197,8 +206,12 @@ __wt_create() {
     return 1
   fi
 
-  print -- "wt: fetching origin"
-  git -C "$root" fetch --prune origin || return 1
+  if [[ "$no_fetch" == "1" ]]; then
+    print -- "wt: skipping fetch"
+  else
+    print -- "wt: fetching origin"
+    git -C "$root" fetch --prune origin || return 1
+  fi
 
   mkdir -p "${target:h}" || return 1
 
@@ -340,6 +353,10 @@ wt() {
     new )
       shift
       __wt_create "$@"
+      ;;
+    --no-fetch )
+      shift
+      __wt_create --no-fetch "$@"
       ;;
     rm|remove )
       shift
