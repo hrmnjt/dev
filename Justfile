@@ -2,7 +2,7 @@
 
 # --- Stow commands ---
 
-# Deploy all config directories to ~ via symlinks (ghostty, nvim, zsh, zed, starship, pi)
+# Deploy all config directories to ~ via symlinks (aerospace, ghostty, nvim, zsh, zed, starship, pi, etc.)
 stowall:
     stow -t ~ */
 

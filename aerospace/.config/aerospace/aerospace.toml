@@ -1,0 +1,260 @@
+# AeroSpace configuration
+#
+# This file lives in the repo at:
+#   aerospace/.config/aerospace/aerospace.toml
+#
+# GNU stow will symlink it to AeroSpace's XDG config path:
+#   ~/.config/aerospace/aerospace.toml
+#
+# Deploy from the repo root with:
+#   just stowall
+#
+# Reload AeroSpace after editing with:
+#   alt-shift-r
+#
+# Design goal for this starter config:
+# - Keep it small enough to learn in one week.
+# - Use predictable numbered workspaces instead of AltTab-style window hunting.
+# - Prefer direct navigation: "go to browser workspace" rather than "cycle apps".
+
+# Start AeroSpace automatically after logging in.
+# If you want a softer trial, change this to false and launch it manually.
+start-at-login = true
+
+# Commands to run after logging into macOS, before AeroSpace startup.
+# Empty for now; useful later if you want to start helper apps.
+after-login-command = []
+
+# Commands to run after AeroSpace starts.
+# Empty for now because this trial config should not surprise you by launching apps.
+after-startup-command = []
+
+# Keep AeroSpace's tree structure tidy by removing unnecessary nested containers.
+# This makes layouts easier to understand while learning.
+enable-normalization-flatten-containers = true
+
+# If a nested container would have the same orientation as its parent, AeroSpace can
+# flip it to the opposite orientation. This usually creates more useful splits.
+enable-normalization-opposite-orientation-for-nested-containers = true
+
+# Accordion layout is a stacked layout where only one window is mostly visible.
+# Padding controls how much of the other window titles/edges remain visible.
+accordion-padding = 30
+
+# New workspaces start as normal tiled layouts.
+# Other common value: 'accordion'.
+default-root-container-layout = 'tiles'
+
+# Let AeroSpace choose horizontal/vertical splits based on screen shape.
+# Other values: 'horizontal', 'vertical'.
+default-root-container-orientation = 'auto'
+
+# When focus moves to another monitor, put the mouse near the center of that monitor.
+# This keeps pointer position less surprising with multiple displays.
+on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
+
+# macOS has a separate "hide app" feature. This setting prevents hidden apps from
+# unexpectedly coming back just because AeroSpace focused one of their windows.
+automatically-unhide-macos-hidden-apps = false
+
+# Keyboard layout preset for interpreting key names below.
+[key-mapping]
+preset = 'qwerty'
+
+# Gaps are intentionally small for the first week.
+# Start practical; tune aesthetics later after the workflow is proven.
+[gaps]
+inner.horizontal = 8
+inner.vertical = 8
+outer.left = 8
+outer.bottom = 8
+outer.top = 8
+outer.right = 8
+
+# -----------------------------------------------------------------------------
+# Main mode keybindings
+# -----------------------------------------------------------------------------
+#
+# The primary modifier is alt/option.
+# This mirrors many tiling-window-manager setups and keeps cmd-tab available as
+# a fallback while you are learning.
+#
+# Workspace map used by this config:
+#   1 = cmux / agents / shell
+#   2 = general browser
+#   3 = notes / docs
+#   4 = work comms web window
+
+[mode.main.binding]
+
+# Open a new cmux window from anywhere.
+# `open -na` means "open a new instance of the app named cmux".
+alt-enter = 'exec-and-forget open -na cmux'
+
+# Switch layout for the current container/workspace.
+# `alt-slash` cycles tile orientation; useful when a split feels wrong.
+alt-slash = 'layout tiles horizontal vertical'
+
+# Accordion layout stacks windows and is useful when you want one dominant window
+# but still want other windows in the same workspace.
+alt-comma = 'layout accordion horizontal vertical'
+
+# Directional focus: move attention without cycling through every window.
+# h/j/k/l matches vim movement: left/down/up/right.
+alt-h = 'focus left'
+alt-j = 'focus down'
+alt-k = 'focus up'
+alt-l = 'focus right'
+
+# Directional move: rearrange the focused window in the tiling tree.
+alt-shift-h = 'move left'
+alt-shift-j = 'move down'
+alt-shift-k = 'move up'
+alt-shift-l = 'move right'
+
+# Resize the focused area. Smart resize chooses the useful dimension based on
+# the current split direction.
+alt-minus = 'resize smart -50'
+alt-equal = 'resize smart +50'
+
+# AeroSpace fullscreen/maximize for the focused window.
+# Prefer this over the green macOS fullscreen button while learning.
+alt-f = 'fullscreen'
+
+# Toggle the focused window between tiled and floating.
+# Use this for dialogs, tiny settings windows, or apps that behave poorly tiled.
+alt-shift-space = 'layout floating tiling'
+
+# Jump directly to predictable workspaces.
+alt-1 = 'workspace 1'
+alt-2 = 'workspace 2'
+alt-3 = 'workspace 3'
+alt-4 = 'workspace 4'
+alt-5 = 'workspace 5'
+alt-6 = 'workspace 6'
+alt-7 = 'workspace 7'
+alt-8 = 'workspace 8'
+alt-9 = 'workspace 9'
+alt-0 = 'workspace 10'
+
+# Jump back to the previous workspace. This is the closest AeroSpace equivalent
+# to "toggle between the two things I am currently working on".
+alt-tab = 'workspace-back-and-forth'
+
+# Move the focused window to a workspace.
+# After moving, use alt-1..9 / alt-0 to follow it if you want to go there.
+# `alt-0` maps to workspace 10, matching the jump binding above.
+alt-shift-1 = 'move-node-to-workspace 1'
+alt-shift-2 = 'move-node-to-workspace 2'
+alt-shift-3 = 'move-node-to-workspace 3'
+alt-shift-4 = 'move-node-to-workspace 4'
+alt-shift-5 = 'move-node-to-workspace 5'
+alt-shift-6 = 'move-node-to-workspace 6'
+alt-shift-7 = 'move-node-to-workspace 7'
+alt-shift-8 = 'move-node-to-workspace 8'
+alt-shift-9 = 'move-node-to-workspace 9'
+alt-shift-0 = 'move-node-to-workspace 10'
+
+# Reload this file after editing.
+alt-shift-r = 'reload-config'
+
+# Enter resize mode for more deliberate resizing with h/j/k/l.
+alt-r = 'mode resize'
+
+# Enter service mode for less common maintenance commands.
+alt-shift-semicolon = 'mode service'
+
+# -----------------------------------------------------------------------------
+# Resize mode
+# -----------------------------------------------------------------------------
+#
+# Press alt-r, then use h/j/k/l. Press enter or esc to return to main mode.
+
+[mode.resize.binding]
+h = 'resize width -50'
+j = 'resize height +50'
+k = 'resize height -50'
+l = 'resize width +50'
+enter = 'mode main'
+esc = 'mode main'
+
+# -----------------------------------------------------------------------------
+# Service mode
+# -----------------------------------------------------------------------------
+#
+# Press alt-shift-; to enter, then one of these keys.
+# This keeps destructive/rare commands away from everyday shortcuts.
+
+[mode.service.binding]
+
+# Escape returns to normal keybindings.
+esc = 'mode main'
+
+# Reload config and return to main mode.
+r = ['reload-config', 'mode main']
+
+# Flatten the current workspace tree if the layout becomes too nested.
+f = ['flatten-workspace-tree', 'mode main']
+
+# Close every window in the current workspace except the focused one.
+# Useful, but intentionally hidden in service mode because it is destructive.
+backspace = ['close-all-windows-but-current', 'mode main']
+
+# -----------------------------------------------------------------------------
+# App placement rules
+# -----------------------------------------------------------------------------
+#
+# These rules are intentionally simple and based on apps already present in this
+# dotfiles repo/Brewfile.
+#
+# If a rule does not work, the app id is probably different on your machine.
+# Check ids with:
+#   aerospace list-apps
+#
+# Then update the `if.app-id` value and reload with alt-shift-r.
+
+# cmux: terminal / agents / shell -> workspace 1
+# Bundle id from cmux's Homebrew cask zap paths: com.cmuxterm.app.
+# If this ever stops matching, verify with: aerospace list-apps
+[[on-window-detected]]
+if.app-id = 'com.cmuxterm.app'
+run = 'move-node-to-workspace 1'
+
+# Brave is intentionally NOT auto-moved.
+# Reason: Outlook/Teams/Office are used as Brave tabs, and AeroSpace manages
+# windows/apps rather than individual browser tabs/URLs. Leaving Brave unpinned
+# lets one Brave window live on workspace 2 for general browsing and another
+# Brave window live on workspace 4 for work comms.
+
+# Obsidian: notes/docs -> workspace 3
+# To move an app in the future, change this `run` workspace number and reload.
+[[on-window-detected]]
+if.app-id = 'md.obsidian'
+run = 'move-node-to-workspace 3'
+
+# Microsoft Teams native app, if installed -> workspace 4.
+# Teams in a Brave tab/PWA will need its own app id from `aerospace list-apps`,
+# or can simply live in the dedicated Brave comms window on workspace 4.
+[[on-window-detected]]
+if.app-id = 'com.microsoft.teams2'
+run = 'move-node-to-workspace 4'
+
+# Older Teams bundle id; harmless if it never matches.
+[[on-window-detected]]
+if.app-id = 'com.microsoft.teams'
+run = 'move-node-to-workspace 4'
+
+# Finder windows often tile poorly and are usually temporary.
+[[on-window-detected]]
+if.app-id = 'com.apple.finder'
+run = 'layout floating'
+
+# System Settings can use either id depending on macOS version.
+# Keep both rules; the non-matching one is harmless.
+[[on-window-detected]]
+if.app-id = 'com.apple.systempreferences'
+run = 'layout floating'
+
+[[on-window-detected]]
+if.app-id = 'com.apple.systemsettings'
+run = 'layout floating'
