@@ -78,7 +78,8 @@ cask "claude-code"			# Clawde on terminal
 brew "anomalyco/tap/opencode"
 
 # Utilities
-cask "alt-tab"
+# Tiling window manager trial to replace AltTab with workspace-based navigation.
+cask "nikitabobko/tap/aerospace"
 cask "itsycal"
 cask "monodraw"
 cask "obsidian"

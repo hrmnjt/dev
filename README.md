@@ -80,5 +80,5 @@ just brewclean
     - Connect Readwise account
     - Rearrange extensions from Customize Toolbar section
     - From new tab, remove background and shortcuts
-- Alt-tab: open at login
-- Alt-tab: change shortcuts to use <kbd>cmd</kbd> instead of <kbd>opt</kbd>
+- If AltTab is installed from old setup, uninstall it; macOS has Spotlight and the default app switcher as fallback
+- AeroSpace: grant Accessibility permission on first launch; see `aerospace/README.md`
