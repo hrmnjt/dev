@@ -76,8 +76,32 @@ if [ -z "$VPN_NAME" ]; then
 fi
 PROC="Ivanti Secure Access"
 
+applescript_error_help() {
+  cat >&2 <<'EOF'
+
+AppleScript UI automation failed.
+If this started after launching AeroSpace or switching terminals, the usual
+cause is macOS Privacy permissions: Accessibility is granted per app. Grant it
+to the app running this command (cmux, Ghostty, Terminal, etc.) — granting it to
+AeroSpace alone is not enough.
+
+Open:
+  System Settings → Privacy & Security → Accessibility
+
+Then enable the current terminal app. If macOS also shows an Automation entry,
+allow it to control System Events / Ivanti Secure Access.
+EOF
+}
+
 # Check if Ivanti is running
-if ! osascript -e 'tell application "System Events" to get name of every process' 2>/dev/null | grep -q "$PROC"; then
+if ! process_names=$(osascript -e 'tell application "System Events" to get name of every process' 2>&1); then
+  echo "Could not query running processes via AppleScript." >&2
+  echo "$process_names" >&2
+  applescript_error_help
+  exit 1
+fi
+
+if ! echo "$process_names" | grep -q "$PROC"; then
   echo "Ivanti Secure Access Client is not running."
   echo "Start it from /Applications and try again."
   exit 1
@@ -87,7 +111,7 @@ fi
 # Returns: "connected", "suspended", or "disconnected"
 get_vpn_state() {
   local status_text
-  status_text=$(osascript <<'APPLESCRIPT' 2>/dev/null
+  if ! status_text=$(osascript <<'APPLESCRIPT' 2>&1
     ignoring application responses
       tell application "System Events"
         click menu bar item 1 of menu bar 2 of application process "Ivanti Secure Access"
@@ -108,7 +132,12 @@ get_vpn_state() {
 
     return itemNames
 APPLESCRIPT
-  )
+  ); then
+    echo "Could not read the Ivanti menu via AppleScript." >&2
+    echo "$status_text" >&2
+    applescript_error_help
+    return 10
+  fi
 
   if echo "$status_text" | grep -qi "Connected"; then
     echo "connected"
@@ -125,7 +154,7 @@ APPLESCRIPT
 vpn_do() {
   local intent="$1"  # connect, disconnect, suspend, resume
   local result
-  result=$(osascript <<APPLESCRIPT 2>/dev/null
+  if ! result=$(osascript <<APPLESCRIPT 2>&1
     -- Open the menu bar dropdown
     ignoring application responses
       tell application "System Events"
@@ -211,13 +240,19 @@ vpn_do() {
 
     return "ok:" & actionToClick
 APPLESCRIPT
-  )
+  ); then
+    echo "Could not control the Ivanti menu via AppleScript." >&2
+    echo "$result" >&2
+    applescript_error_help
+    return 10
+  fi
+
   echo "$result"
 }
 
 vpn_status() {
   local state
-  state=$(get_vpn_state)
+  state=$(get_vpn_state) || return $?
   case "$state" in
     connected)    echo "VPN is connected";    return 0 ;;
     suspended)    echo "VPN is suspended";    return 2 ;;
@@ -227,7 +262,7 @@ vpn_status() {
 
 vpn_connect() {
   local result
-  result=$(vpn_do "connect")
+  result=$(vpn_do "connect") || return $?
   case "$result" in
     already_connected)
       echo "VPN is already connected" ;;
@@ -242,7 +277,7 @@ vpn_connect() {
 
 vpn_disconnect() {
   local result
-  result=$(vpn_do "disconnect")
+  result=$(vpn_do "disconnect") || return $?
   case "$result" in
     already_disconnected)
       echo "VPN is already disconnected" ;;
@@ -253,7 +288,7 @@ vpn_disconnect() {
 
 vpn_suspend() {
   local result
-  result=$(vpn_do "suspend")
+  result=$(vpn_do "suspend") || return $?
   case "$result" in
     already_suspended)
       echo "VPN is already suspended" ;;
@@ -267,7 +302,7 @@ vpn_suspend() {
 
 vpn_resume() {
   local result
-  result=$(vpn_do "resume")
+  result=$(vpn_do "resume") || return $?
   case "$result" in
     already_connected)
       echo "VPN is already connected" ;;

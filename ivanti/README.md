@@ -32,7 +32,9 @@ No opening the app window. No hunting through the menu bar dropdown.
 
 - macOS (AppleScript)
 - Ivanti Secure Access Client installed and running
-- Accessibility permission for your terminal app (System Settings → Privacy & Security → Accessibility)
+- Accessibility permission for the app running `vpn` (System Settings → Privacy & Security → Accessibility)
+  - This is per app. If you switch from Ghostty/Terminal to cmux, grant cmux too.
+  - Granting Accessibility to AeroSpace does **not** grant it to your terminal.
 - `IVANTI_VPN_NAME` env var set to your VPN connection name
 
 ## Alternatives & tradeoffs
@@ -47,6 +49,25 @@ No opening the app window. No hunting through the menu bar dropdown.
 The script can break if Ivanti renames menu items or restructures the menu
 bar dropdown. When that happens, the fix is adjusting the AppleScript menu
 navigation paths.
+
+## Troubleshooting after AeroSpace/cmux
+
+AeroSpace itself does not control the VPN. The common failure is macOS TCC
+permissions: the script uses AppleScript UI automation, and Accessibility is
+checked against the app that launched `osascript`.
+
+If `vpn status` stops working after adopting AeroSpace/cmux:
+
+1. Open System Settings → Privacy & Security → Accessibility.
+2. Enable the exact app where you run `vpn` (`cmux`, `Ghostty`, or Terminal).
+3. If prompted under Privacy & Security → Automation, allow that app to control
+   System Events / Ivanti Secure Access.
+4. Run `vpn status` again. The script now prints AppleScript errors instead of
+   failing silently.
+
+If Ivanti login/dialog windows get tiled oddly by AeroSpace, find the bundle id
+with `aerospace list-apps | grep -i ivanti` and add a floating rule in
+`aerospace/.config/aerospace/aerospace.toml`.
 
 ## Usage
 
