@@ -80,16 +80,18 @@ outer.right = 8
 # a fallback while you are learning.
 #
 # Workspace map used by this config:
-#   1 = cmux / agents / shell
-#   2 = general browser
-#   3 = notes / docs
-#   4 = work comms web window
+#   1 = Ghostty / agents / shell
+#   2 = Zed
+#   3 = Brave / Safari
+#   4 = Microsoft Teams / Outlook PWA
+#   5 = Obsidian
+#   6-10 = manual / temporary
 
 [mode.main.binding]
 
-# Open a new cmux window from anywhere.
-# `open -na` means "open a new instance of the app named cmux".
-alt-enter = 'exec-and-forget open -na cmux'
+# Open a new Ghostty window from anywhere.
+# `open -na` means "open a new instance of the app named Ghostty".
+alt-enter = 'exec-and-forget open -na Ghostty'
 
 # Switch layout for the current container/workspace.
 # `alt-slash` cycles tile orientation; useful when a split feels wrong.
@@ -213,28 +215,26 @@ backspace = ['close-all-windows-but-current', 'mode main']
 #
 # Then update the `if.app-id` value and reload with alt-shift-r.
 
-# cmux: terminal / agents / shell -> workspace 1
-# Bundle id from cmux's Homebrew cask zap paths: com.cmuxterm.app.
-# If this ever stops matching, verify with: aerospace list-apps
+# Ghostty: terminal / agents / shell -> workspace 1.
 [[on-window-detected]]
-if.app-id = 'com.cmuxterm.app'
+if.app-id = 'com.mitchellh.ghostty'
 run = 'move-node-to-workspace 1'
 
-# Brave is intentionally NOT auto-moved.
-# Reason: Outlook/Teams/Office are used as Brave tabs, and AeroSpace manages
-# windows/apps rather than individual browser tabs/URLs. Leaving Brave unpinned
-# lets one Brave window live on workspace 2 for general browsing and another
-# Brave window live on workspace 4 for work comms.
-
-# Obsidian: notes/docs -> workspace 3
-# To move an app in the future, change this `run` workspace number and reload.
+# Zed -> workspace 2.
 [[on-window-detected]]
-if.app-id = 'md.obsidian'
+if.app-id = 'dev.zed.Zed'
+run = 'move-node-to-workspace 2'
+
+# Browsers -> workspace 3.
+[[on-window-detected]]
+if.app-id = 'com.brave.Browser'
 run = 'move-node-to-workspace 3'
 
-# Microsoft Teams native app, if installed -> workspace 4.
-# Teams in a Brave tab/PWA will need its own app id from `aerospace list-apps`,
-# or can simply live in the dedicated Brave comms window on workspace 4.
+[[on-window-detected]]
+if.app-id = 'com.apple.Safari'
+run = 'move-node-to-workspace 3'
+
+# Work comms -> workspace 4.
 [[on-window-detected]]
 if.app-id = 'com.microsoft.teams2'
 run = 'move-node-to-workspace 4'
@@ -243,6 +243,17 @@ run = 'move-node-to-workspace 4'
 [[on-window-detected]]
 if.app-id = 'com.microsoft.teams'
 run = 'move-node-to-workspace 4'
+
+# Outlook PWA -> workspace 4.
+[[on-window-detected]]
+if.app-id = 'com.brave.Browser.app.eoficlgicibekocmfdomjbfnjmehnhcd'
+run = 'move-node-to-workspace 4'
+
+# Obsidian -> workspace 5.
+# To move an app in the future, change this `run` workspace number and reload.
+[[on-window-detected]]
+if.app-id = 'md.obsidian'
+run = 'move-node-to-workspace 5'
 
 # Finder windows often tile poorly and are usually temporary.
 [[on-window-detected]]

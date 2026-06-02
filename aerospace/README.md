@@ -65,10 +65,12 @@ The current config is intentionally small. The important ideas are:
 
 | Workspace / screen | Shortcut | Intended home | Auto-moved apps |
 | --- | --- | --- | --- |
-| 1 | `option-1` | cmux / agents / shell | cmux |
-| 2 | `option-2` | general browser | none; put a Brave window here manually |
-| 3 | `option-3` | notes / docs | Obsidian |
-| 4 | `option-4` | work comms web window | native Teams if installed; otherwise manual Brave window |
+| 1 | `option-1` | Ghostty / agents / shell | Ghostty |
+| 2 | `option-2` | editor | Zed |
+| 3 | `option-3` | browsers | Brave, Safari |
+| 4 | `option-4` | work comms | Microsoft Teams, Outlook PWA |
+| 5 | `option-5` | notes / docs | Obsidian |
+| 6-10 | `option-6`..`option-0` | manual / temporary | none |
 
 Key behaviors to understand:
 
@@ -80,19 +82,11 @@ Key behaviors to understand:
 - `option-shift-space` toggles a weird window between tiled and floating.
 - Finder and System Settings are configured to float because they are usually temporary.
 
-What changed for Obsidian: in `aerospace/.config/aerospace/aerospace.toml`, the
-`md.obsidian` `on-window-detected` rule now says
-`run = 'move-node-to-workspace 3'`. That is the pattern to reuse later: find the
-app id with `aerospace list-apps`, then point its rule at the workspace number
-you want.
-
-Work comms setup: AeroSpace cannot reliably route individual Brave tabs by URL.
-It manages windows/apps, not "the Outlook tab" inside Brave. So Brave is
-intentionally **not** auto-moved in the config. Use `option-4`, open a separate
-Brave window there, and keep Outlook Web + Teams Web as pinned tabs in that
-window. If the window is elsewhere, move it once with `option-shift-4`. If I
-later install Teams/Outlook as standalone web apps/PWAs, I can run
-`aerospace list-apps` and add app-id rules for those apps.
+The pattern for app routing is: find the app id with `aerospace list-apps`,
+then point its `on-window-detected` rule at the workspace number you want.
+AeroSpace manages app windows, not individual browser tabs, so browser tabs stay
+inside whatever Brave/Safari window owns them. The Outlook PWA has its own Brave
+PWA app id and is routed to workspace 4.
 
 ## First week plan
 
@@ -109,7 +103,7 @@ Goal: make sure AeroSpace runs and remove the AltTab escape hatch.
    - `option-shift-h/j/k/l`: move the focused window
    - `option-f`: fullscreen the focused window using AeroSpace
    - `option-shift-space`: toggle a window between tiling and floating
-   - `option-enter`: open cmux
+   - `option-enter`: open Ghostty
 5. Use Spotlight or macOS `cmd-tab` only as fallback.
 6. Avoid the green macOS fullscreen button. Use `option-f` instead.
 
@@ -149,21 +143,21 @@ Practice:
 Suggested drill:
 
 1. Open a browser from anywhere.
-2. Move it to workspace 2 with `option-shift-2`.
-3. Jump to workspace 2 with `option-2`.
+2. Move it to workspace 3 with `option-shift-3`.
+3. Jump to workspace 3 with `option-3`.
 4. Move it around with `option-shift-h/j/k/l`.
 
 ### Day 4: observe app assignment rules
 
 Goal: let AeroSpace do boring placement for you.
 
-The starter config includes only the app rules I want right now:
+The starter config includes these app rules:
 
-- cmux -> workspace 1
-- Obsidian -> workspace 3
-- native Microsoft Teams, if installed -> workspace 4
-- Brave is deliberately not auto-moved, so separate Brave windows can live on
-  different workspaces.
+- Ghostty -> workspace 1
+- Zed -> workspace 2
+- Brave and Safari -> workspace 3
+- Microsoft Teams and Outlook PWA -> workspace 4
+- Obsidian -> workspace 5
 
 Today, notice where new windows land. If an app lands somewhere surprising,
 check its app id with:

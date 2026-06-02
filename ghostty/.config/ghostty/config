@@ -1,8 +1,9 @@
 
-# start ghostty in fullscreen mode
+# Do not force new Ghostty windows to open maximized/fullscreen.
+# AeroSpace should control window size/tiling.
 # fullscreen = true
 # macos-non-native-fullscreen = visible-menu
-maximize = true
+# maximize = true
 
 # making things bigger
 font-size = 18
