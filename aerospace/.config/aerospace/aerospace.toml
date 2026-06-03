@@ -239,18 +239,12 @@ run = 'move-node-to-workspace 3'
 if.app-id = 'com.microsoft.teams2'
 run = 'move-node-to-workspace 4'
 
-# Older Teams bundle id; harmless if it never matches.
-[[on-window-detected]]
-if.app-id = 'com.microsoft.teams'
-run = 'move-node-to-workspace 4'
-
 # Outlook PWA -> workspace 4.
 [[on-window-detected]]
 if.app-id = 'com.brave.Browser.app.eoficlgicibekocmfdomjbfnjmehnhcd'
 run = 'move-node-to-workspace 4'
 
 # Obsidian -> workspace 5.
-# To move an app in the future, change this `run` workspace number and reload.
 [[on-window-detected]]
 if.app-id = 'md.obsidian'
 run = 'move-node-to-workspace 5'
@@ -261,11 +255,6 @@ if.app-id = 'com.apple.finder'
 run = 'layout floating'
 
 # System Settings can use either id depending on macOS version.
-# Keep both rules; the non-matching one is harmless.
 [[on-window-detected]]
 if.app-id = 'com.apple.systempreferences'
-run = 'layout floating'
-
-[[on-window-detected]]
-if.app-id = 'com.apple.systemsettings'
 run = 'layout floating'
