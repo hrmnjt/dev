@@ -38,6 +38,60 @@ print them for the user to execute manually on their host Mac:
    ```
 3. Tell the user to run `/reload` in pi to hot-reload extensions.
 
+## Git Workflow
+
+When the user asks you to create a feature branch or make commits in this repo,
+use the repository's Conventional Commits-style naming conventions.
+
+### Branch names
+
+Create branches using this pattern:
+
+```text
+<type>/<scope>/<short-kebab-description>
+```
+
+Use common Conventional Commit types such as `feat`, `fix`, `chore`, `docs`,
+`refactor`, or `test`.
+
+Use scopes that match the area being changed, for example:
+
+- `pi` — pi agent configuration, extensions, themes, skills, prompts, settings
+- `nvim` — Neovim configuration
+- `meta` — repository-wide work that affects multiple areas
+
+Examples:
+
+```text
+feat/pi/new-feat
+fix/nvim/random-issue
+chore/pi/cleanup
+chore/meta/some-work-that-affects-multiple-elements
+docs/pi/readme-has-more-details
+```
+
+### Commit messages
+
+Commit using Conventional Commits with a scope:
+
+```text
+<type>(<scope>): <short imperative summary>
+```
+
+Examples:
+
+```text
+feat(pi): add review summary extension
+fix(nvim): correct random issue
+chore(pi): clean up extension config
+docs(pi): expand README details
+chore(meta): update repository-wide guidance
+```
+
+Prefer concise, imperative summaries such as `add`, `fix`, `update`, `remove`,
+or `document`. Match the `scope` to the files being changed. If a change spans
+multiple major areas, use `meta`.
+
 ## Pi Documentation Inside the VM
 
 Pi's own documentation and example extensions are auto-mounted inside the VM at:
