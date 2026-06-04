@@ -22,7 +22,7 @@
  * Based on: https://github.com/mitsuhiko/agent-stuff/blob/main/extensions/uv.ts
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 // ---------------------------------------------------------------------------
 // Command detection
@@ -38,12 +38,9 @@ export function getBlockedCommandMessage(command: string): string | null {
   // The patterns accept optional path prefixes to catch explicit invocations
   // like .venv/bin/pip or ./node_modules/.bin/poetry.
 
-  const pipPattern =
-    /(?:^|\n|[;|&]{1,2})\s*(?:\S+\/)?pip\s*(?:$|\s)/m;
-  const pip3Pattern =
-    /(?:^|\n|[;|&]{1,2})\s*(?:\S+\/)?pip3\s*(?:$|\s)/m;
-  const poetryPattern =
-    /(?:^|\n|[;|&]{1,2})\s*(?:\S+\/)?poetry\s*(?:$|\s)/m;
+  const pipPattern = /(?:^|\n|[;|&]{1,2})\s*(?:\S+\/)?pip\s*(?:$|\s)/m;
+  const pip3Pattern = /(?:^|\n|[;|&]{1,2})\s*(?:\S+\/)?pip3\s*(?:$|\s)/m;
+  const poetryPattern = /(?:^|\n|[;|&]{1,2})\s*(?:\S+\/)?poetry\s*(?:$|\s)/m;
   const pythonPipPattern =
     /(?:^|\n|[;|&]{1,2})\s*(?:\S+\/)?python(?:3(?:\.\d+)?)?\b[^\n;|&]*(?:\s-m\s*pip\b|\s-mpip\b)/m;
   const pythonVenvPattern =

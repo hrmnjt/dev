@@ -156,8 +156,9 @@ PI_NOTIFY_LABEL=tab-2-api   # override label shown in notifications
 
 ### Gondolin
 
-Sandboxes pi's `read`/`write`/`edit`/`bash` tools inside a lightweight Alpine
-Linux micro-VM. Based on the [official example](https://github.com/earendil-works/gondolin/blob/main/host/examples/pi-gondolin.ts).
+Sandboxes pi's `read`/`write`/`edit`/`bash`/`ls`/`find`/`grep` tools inside a
+lightweight Alpine Linux micro-VM. Based on pi's official Gondolin extension
+example.
 
 **Prerequisites:**
 - QEMU installed (`brew install qemu`) — fallback backend
@@ -166,7 +167,7 @@ Linux micro-VM. Based on the [official example](https://github.com/earendil-work
 **What it does:**
 - Starts a Gondolin VM on each pi session
 - Mounts your project directory at `/workspace` inside the VM
-- Redirects all assistant file and shell tool operations into the sandbox
+- Redirects assistant file, shell, listing, find, and grep tool operations into the sandbox
 - Leaves user-entered `!`/`!!` commands on the host via pi's default handling
 - Patches the system prompt so the model sees `/workspace` paths
 - Enables full git (commit, push, pull, clone) from inside the VM via an SSH bridge (see below)
@@ -236,6 +237,7 @@ and noticeably snappier for file operations.
 If krun is unavailable, it falls back to QEMU automatically.
 
 **Usage:** Just start `pi` in any project directory. The VM starts automatically.
+Use `/gondolin` to inspect VM status, shell path, and docs/example mounts.
 
 ```bash
 cd /path/to/your/project
