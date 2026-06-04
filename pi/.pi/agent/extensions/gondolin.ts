@@ -487,21 +487,9 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
-  pi.on("user_bash", (_event, _ctx) => {
-    if (!vm) return;
-    const gondolinOps = createGondolinBashOps(vm, localCwd);
-    return {
-      operations: {
-        exec: async (command, cwd, opts) => {
-          const blockedMessage = getBlockedCommandMessage(command);
-          if (blockedMessage) {
-            throw new Error(blockedMessage);
-          }
-          return gondolinOps.exec(command, cwd, opts);
-        },
-      },
-    };
-  });
+  // Intentionally do not override the `user_bash` event.
+  // User-entered `!`/`!!` commands run on the host via pi's default handling,
+  // while model-invoked bash tool calls stay sandboxed in Gondolin above.
 
   pi.on("before_agent_start", async (event, ctx) => {
     await ensureVm(ctx);

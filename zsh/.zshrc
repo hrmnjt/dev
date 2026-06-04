@@ -37,9 +37,6 @@ export FZF_DEFAULT_OPTS=" \
 --color=selected-bg:#45475A \
 --color=border:#6C7086,label:#CDD6F4"
 
-# amp
-export PATH="$HOME/.local/bin:$PATH"
-
 # Ghostty shell integration
 #
 # Ghostty auto-injects this only for shells it directly spawns. Re-exec'd shells
