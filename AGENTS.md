@@ -204,8 +204,8 @@ When writing new extensions or modifying existing ones:
 2. **Read pi docs first** — `read /pi/docs/extensions.md` for the full API
 3. **Look at examples** — `read /pi/examples/extensions/` for patterns
 4. **Test in interactive mode** — Some features (commands, UI) only work interactively
-5. **Import from `@mariozechner/pi-coding-agent`** — This is the main SDK package
-6. **Import from `@mariozechner/pi-tui`** — For TUI components (`Key`, `Component`, etc.)
+5. **Import from `@earendil-works/pi-coding-agent`** — This is the main SDK package
+6. **Import from `@earendil-works/pi-tui`** — For TUI components (`Key`, `Component`, etc.)
 
 ## Existing Extensions
 
