@@ -166,8 +166,8 @@ Linux micro-VM. Based on the [official example](https://github.com/earendil-work
 **What it does:**
 - Starts a Gondolin VM on each pi session
 - Mounts your project directory at `/workspace` inside the VM
-- Redirects all file and shell tool operations into the sandbox
-- Runs user `!` commands inside the VM too
+- Redirects all assistant file and shell tool operations into the sandbox
+- Leaves user-entered `!`/`!!` commands on the host via pi's default handling
 - Patches the system prompt so the model sees `/workspace` paths
 - Enables full git (commit, push, pull, clone) from inside the VM via an SSH bridge (see below)
 

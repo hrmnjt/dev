@@ -314,6 +314,16 @@ vpn_resume() {
   esac
 }
 
+if [ -z "${1:-}" ]; then
+  case "$(basename "$0")" in
+    vc)  set -- connect ;;
+    vd)  set -- disconnect ;;
+    vs)  set -- suspend ;;
+    vr)  set -- resume ;;
+    vst) set -- status ;;
+  esac
+fi
+
 case "${1:-}" in
   connect|c)    vpn_connect ;;
   disconnect|d) vpn_disconnect ;;

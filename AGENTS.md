@@ -6,12 +6,16 @@ context applies.
 
 ## ⚠️ Critical: VM vs Host Boundary
 
-All `read`, `write`, `edit`, and `bash` tool calls — as well as user `!` shell
-commands — execute inside a **Gondolin micro-VM** (Alpine Linux), not directly
-on the host Mac. The project directory is mounted at `/workspace` inside the VM.
+All assistant `read`, `write`, `edit`, and `bash` tool calls execute inside a
+**Gondolin micro-VM** (Alpine Linux), not directly on the host Mac. The project
+directory is mounted at `/workspace` inside the VM.
 
-**The following commands DO NOT WORK inside the VM.** If you need to run them,
-print them for the user to execute manually on their host Mac:
+User-entered pi shell commands (`!` / `!!`) intentionally use pi's default host
+execution instead of Gondolin, so the user can run host-only commands like
+`vpn`, `brew`, or `stow` directly.
+
+**The following commands DO NOT WORK from assistant tools inside the VM.** If you
+need to run them, print them for the user to execute manually on their host Mac:
 
 | Command | Why it fails | What to do instead |
 |---------|-------------|-------------------|

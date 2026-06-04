@@ -8,7 +8,13 @@ with repeated clickops.
 
 ```
 ivanti/
-└── .local/bin/vpn     # AppleScript-driven VPN control script
+└── .local/bin/
+    ├── vpn     # AppleScript-driven VPN control script
+    ├── vc      # vpn connect
+    ├── vd      # vpn disconnect
+    ├── vs      # vpn suspend
+    ├── vr      # vpn resume
+    └── vst     # vpn status
 ```
 
 The script clicks the Ivanti menu bar icon, reads available menu items to
@@ -75,13 +81,8 @@ with `aerospace list-apps | grep -i ivanti` and add a floating rule in
 stow -t ~ ivanti
 ```
 
-Ensure `~/.local/bin` is in `$PATH` and set up zsh aliases:
+Ensure `~/.local/bin` is in `$PATH` and set the VPN connection name:
 
 ```bash
 export IVANTI_VPN_NAME="DOH VPN"
-alias vc="vpn connect"
-alias vd="vpn disconnect"
-alias vs="vpn suspend"
-alias vr="vpn resume"
-alias vst="vpn status"
 ```
