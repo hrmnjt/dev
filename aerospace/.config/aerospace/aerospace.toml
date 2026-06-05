@@ -254,6 +254,16 @@ run = 'move-node-to-workspace 5'
 if.app-id = 'com.apple.finder'
 run = 'layout floating'
 
+# App Store is usually temporary and tiles poorly.
+[[on-window-detected]]
+if.app-id = 'com.apple.AppStore'
+run = 'layout floating'
+
+# WhatsApp works better as a floating utility window.
+[[on-window-detected]]
+if.app-id = 'net.whatsapp.WhatsApp'
+run = 'layout floating'
+
 # System Settings can use either id depending on macOS version.
 [[on-window-detected]]
 if.app-id = 'com.apple.systempreferences'
