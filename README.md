@@ -129,5 +129,9 @@ just brewclean
     - Automatically hide and show dock: On
     - Animate opening windows: Off
     - Show suggested and recent apps in Dock: Off
-    - Default web browser: Firefox Developer Edition
+    - Default web browser: Brave Browser
+- Brave
+  - Install extensions: Bitwarden, Readwise Highlighter, Dark Reader
+  - Install themes: Gruvbox Slate
+  - Go through settings and change the details where applicable
 - AeroSpace: grant Accessibility permission on first launch; see `aerospace/README.md`
