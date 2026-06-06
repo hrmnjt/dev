@@ -72,6 +72,8 @@ cask "brave-browser"
 
 # Messaging
 cask "whatsapp"
+# Email client
+cask "thunderbird"
 
 # Utilities
 # Tiling window manager trial to replace AltTab with workspace-based navigation.
