@@ -70,11 +70,6 @@ cask "visual-studio-code"
 # Browser - trying out brave, waiting for ladybird
 cask "brave-browser"
 
-# AI coding agent I used to use before opencode
-cask "claude-code"			# Clawde on terminal
-# AI coding agent I used to use before pi-agent
-brew "anomalyco/tap/opencode"
-
 # Utilities
 # Tiling window manager trial to replace AltTab with workspace-based navigation.
 cask "nikitabobko/tap/aerospace"
@@ -104,6 +99,5 @@ brew "telnet"
 # Shit that I need to deal with at work
 cask "microsoft-auto-update"
 cask "microsoft-excel"
-cask "microsoft-outlook"
 cask "microsoft-word"
 cask "windows-app"
