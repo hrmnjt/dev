@@ -14,6 +14,7 @@
  * - PI_NOTIFY_LABEL=...        Override the window/session label shown in alerts
  */
 
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
