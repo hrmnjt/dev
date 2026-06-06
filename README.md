@@ -19,32 +19,37 @@ BTW, Borrowed reference from [XKCD 149](https://xkcd.com/149/), BTW.
 When you get a new macosx:
 
 ```bash
-# Step 1: [Install Homebrew](https://brew.sh/)
+# Step 1: Set the Mac hostname (replace with your preferred name)
+sudo scutil --set ComputerName "Harman's MacBook"
+sudo scutil --set LocalHostName "harmans-macbook"
+sudo scutil --set HostName "harmans-macbook"
 
-# Step 2: Install just and stow: 
+# Step 2: [Install Homebrew](https://brew.sh/)
+
+# Step 3: Install just and stow: 
 brew install just stow
 
-# Step 3: Clone this repo:
+# Step 4: Clone this repo:
 mkdir -p ~/code/github.com/hrmnjt
 git clone https://github.com/hrmnjt/dev.git ~/code/github.com/hrmnjt/dev
 cd dev
 
-# Step 4: Setup XDG and zsh config
+# Step 5: Setup XDG and zsh config
 just xdgsetup
 
-# Step 5: Restart terminal to load zsh config, then install all packages
+# Step 6: Restart terminal to load zsh config, then install all packages
 just brewinst
 
-# Step 6: .dotfiles in place with stow
+# Step 7: .dotfiles in place with stow
 `just stowall`
 
-# Step 7: Install pi extension dependencies
+# Step 8: Install pi extension dependencies
 `just pi-deps`
 
-# Step 8: Generate SSH key for GitHub
+# Step 9: Generate SSH key for GitHub
 `just ghsshkey`
 
-# Step 9: Create git directory structure
+# Step 10: Create git directory structure
 `just gitsetup`
 ```
 
