@@ -49,6 +49,9 @@ just brewinst
 # Step 9: Install pi extension dependencies
 `just pi-deps`
 
+# Step 9.5: Apply gruvbox-inspired macOS appearance and wallpaper
+`just macos-gruvbox`
+
 # If ~/.pi was accidentally folded as a symlink into this repo, fix it before using pi:
 # ls -ld ~/.pi ~/.pi/agent
 # If either points into ~/code/github.com/hrmnjt/dev/pi/.pi, run:
@@ -72,6 +75,35 @@ git remote set-url origin git@github.com:hrmnjt/dev.git
 # Step 13: Create git directory structure
 `just gitsetup`
 ```
+
+
+## Gruvbox macOS appearance
+
+This repo tracks the Pink Floyd gruvbox wallpaper at:
+
+```text
+wallpapers/.local/share/wallpapers/pink-floyd-gruvbox-dark.jpg
+```
+
+After `just stowall`, apply the wallpaper and dark macOS appearance on the host Mac:
+
+```bash
+just macos-gruvbox
+```
+
+That recipe:
+
+- sets macOS dark mode
+- sets the macOS accent color to orange
+- applies the tracked wallpaper to every desktop/space
+
+The wallpaper is deployed through stow to:
+
+```text
+~/.local/share/wallpapers/pink-floyd-gruvbox-dark.jpg
+```
+
+If macOS does not immediately refresh accent/highlight colors, log out and back in.
 
 "Business as Usual" workflow
 
