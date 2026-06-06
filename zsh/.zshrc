@@ -30,12 +30,13 @@ alias cdw='cd ~/code/work/doh'
 # pi + Hunk review bridge
 [[ -f ~/.config/zsh/pihunk.zsh ]] && source ~/.config/zsh/pihunk.zsh
 
+# fzf theme: Gruvbox Dark Hard, matching Ghostty and Starship.
 export FZF_DEFAULT_OPTS=" \
---color=bg+:#313244,bg:#1E1E2E,spinner:#F5E0DC,hl:#F38BA8 \
---color=fg:#CDD6F4,header:#F38BA8,info:#CBA6F7,pointer:#F5E0DC \
---color=marker:#B4BEFE,fg+:#CDD6F4,prompt:#CBA6F7,hl+:#F38BA8 \
---color=selected-bg:#45475A \
---color=border:#6C7086,label:#CDD6F4"
+--color=bg:#1d2021,bg+:#282828,fg:#ebdbb2,fg+:#fbf1c7 \
+--color=hl:#d65d0e,hl+:#fe8019,header:#98971a,info:#458588 \
+--color=prompt:#d79921,pointer:#d65d0e,marker:#689d6a,spinner:#689d6a \
+--color=border:#665c54,label:#ebdbb2,separator:#504945 \
+--color=selected-bg:#3c3836"
 
 # Ghostty shell integration
 #
