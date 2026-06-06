@@ -70,6 +70,9 @@ cask "visual-studio-code"
 # Browser - trying out brave, waiting for ladybird
 cask "brave-browser"
 
+# Messaging
+cask "whatsapp"
+
 # Utilities
 # Tiling window manager trial to replace AltTab with workspace-based navigation.
 cask "nikitabobko/tap/aerospace"
