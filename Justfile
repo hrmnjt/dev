@@ -3,12 +3,14 @@
 # --- Stow commands ---
 
 # Deploy all config directories to ~ via symlinks (aerospace, ghostty, nvim, zsh, zed, starship, pi, etc.)
+# --no-folding keeps target directories like ~/.pi real, so pi/npm runtime files
+# are created on the host instead of inside this repo via a folded directory symlink.
 stowall:
-    stow -t ~ */
+    stow --no-folding -t ~ */
 
 # Remove all symlinks created by stowall (safe: only removes symlinks, not actual files)
 unstowall:
-    stow -t ~ -D */
+    stow --no-folding -t ~ -D */
 
 # --- Homebrew commands ---
 # 1. Install new packages manually: `brew install <package>`

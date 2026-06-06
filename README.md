@@ -49,6 +49,15 @@ just brewinst
 # Step 9: Install pi extension dependencies
 `just pi-deps`
 
+# If ~/.pi was accidentally folded as a symlink into this repo, fix it before using pi:
+# ls -ld ~/.pi ~/.pi/agent
+# If either points into ~/code/github.com/hrmnjt/dev/pi/.pi, run:
+# just unstowall
+# rm ~/.pi
+# mkdir -p ~/.pi/agent
+# just stowall
+# just pi-deps
+
 # Step 10: Build the custom Gondolin VM image for pi tools
 `just gondolin-image`
 
