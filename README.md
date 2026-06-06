@@ -40,21 +40,27 @@ just xdgsetup
 # Step 6: Restart terminal to load zsh config, then install all packages
 just brewinst
 
-# Step 7: .dotfiles in place with stow
+# Step 7: Install pi separately (not in Brewfile)
+# Use the current curl installer from: https://pi.dev/docs/latest/quickstart#install
+
+# Step 8: .dotfiles in place with stow
 `just stowall`
 
-# Step 8: Install pi extension dependencies
+# Step 9: Install pi extension dependencies
 `just pi-deps`
 
-# Step 9: Generate SSH key for GitHub
+# Step 10: Build the custom Gondolin VM image for pi tools
+`just gondolin-image`
+
+# Step 11: Generate SSH key for GitHub
 `just ghsshkey`
 # Add the copied public key to GitHub, then test SSH auth:
 ssh -T git@github.com
 
-# Step 10: Switch this repo from HTTPS to SSH once GitHub SSH is working
+# Step 12: Switch this repo from HTTPS to SSH once GitHub SSH is working
 git remote set-url origin git@github.com:hrmnjt/dev.git
 
-# Step 11: Create git directory structure
+# Step 13: Create git directory structure
 `just gitsetup`
 ```
 
