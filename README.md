@@ -92,18 +92,10 @@ just brewclean
 - Settings: General > Software Update
 - Settings: Desktop & Dock
     - Reduce dock icon size
-    - Position on screen: Left
+    - Position on screen: Right
     - Minimize windows to application icon: On
     - Automatically hide and show dock: On
     - Animate opening windows: Off
     - Show suggested and recent apps in Dock: Off
     - Default web browser: Firefox Developer Edition
-- Firefox
-    - Install extensions: uBlock Origin, Privacy Badger, Decentraleyes, 
-    Readwise Highlighter, Bitwarden
-    - Sign in to web.whatsapp.com, and Bitwarden
-    - Connect Readwise account
-    - Rearrange extensions from Customize Toolbar section
-    - From new tab, remove background and shortcuts
-- If AltTab is installed from old setup, uninstall it; macOS has Spotlight and the default app switcher as fallback
 - AeroSpace: grant Accessibility permission on first launch; see `aerospace/README.md`
