@@ -48,8 +48,13 @@ just brewinst
 
 # Step 9: Generate SSH key for GitHub
 `just ghsshkey`
+# Add the copied public key to GitHub, then test SSH auth:
+ssh -T git@github.com
 
-# Step 10: Create git directory structure
+# Step 10: Switch this repo from HTTPS to SSH once GitHub SSH is working
+git remote set-url origin git@github.com:hrmnjt/dev.git
+
+# Step 11: Create git directory structure
 `just gitsetup`
 ```
 
