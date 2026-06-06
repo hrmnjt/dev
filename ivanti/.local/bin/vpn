@@ -82,7 +82,7 @@ applescript_error_help() {
 AppleScript UI automation failed.
 If this started after launching AeroSpace or switching terminals, the usual
 cause is macOS Privacy permissions: Accessibility is granted per app. Grant it
-to the app running this command (cmux, Ghostty, Terminal, etc.) — granting it to
+to the app running this command (Ghostty, Terminal, etc.) — granting it to
 AeroSpace alone is not enough.
 
 Open:
