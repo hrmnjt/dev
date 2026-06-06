@@ -1,0 +1,21 @@
+# Glow markdown renderer config.
+# Custom Glamour JSON stylesheet using the same Gruvbox Dark Hard palette as
+# starship and Ghostty.
+#
+# Note: Glow validates '~' in style paths but passes the unexpanded path to
+# Glamour, so keep this as an absolute host path.
+style: "/Users/hrmnjt/.config/glow/themes/gruvbox-dark-hard.json"
+
+# Render through less -r for normal CLI usage.
+pager: true
+
+# Let Glow use terminal width when possible.
+width: 0
+
+# TUI niceties.
+mouse: true
+showLineNumbers: false
+
+# Keep markdown readable without unexpectedly surfacing ignored/hidden files.
+all: false
+preserveNewLines: false
