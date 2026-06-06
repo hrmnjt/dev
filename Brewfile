@@ -59,10 +59,8 @@ brew "container"
 
 # Terminal
 cask "ghostty"
-cask "cmux"
 
-# Editor that I'm experimenting to run agents parallel. Also, this is what I
-# use to read code today.
+# Editor that I use to read code today.
 cask "zed"
 # Editor that I use to open jupyter notebooks. Sadly, nothing else local has
 # good workflow like this. I need to experiment with jupyterlab or similar to

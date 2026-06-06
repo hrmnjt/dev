@@ -14,7 +14,6 @@
  * - PI_NOTIFY_LABEL=...        Override the window/session label shown in alerts
  */
 
-import { spawnSync } from "node:child_process";
 import path from "node:path";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 
@@ -156,30 +155,6 @@ function formatNotification(
   };
 }
 
-function cmuxSetStatus(value: string): void {
-  // Update cmux sidebar progress indicator via the cmux CLI.
-  // No-op when not running inside cmux (no CMUX_SOCKET_PATH).
-  if (!process.env.CMUX_SOCKET_PATH) return;
-  try {
-    spawnSync("cmux", ["set-status", "pi", value], {
-      encoding: "utf8",
-      stdio: ["ignore", "ignore", "ignore"],
-      timeout: 3000,
-    });
-  } catch (_) {}
-}
-
-function cmuxClearStatus(): void {
-  if (!process.env.CMUX_SOCKET_PATH) return;
-  try {
-    spawnSync("cmux", ["clear-status", "pi"], {
-      encoding: "utf8",
-      stdio: ["ignore", "ignore", "ignore"],
-      timeout: 3000,
-    });
-  } catch (_) {}
-}
-
 function notifyOSC777(title: string, body: string): void {
   // Ghostty, iTerm2, rxvt-unicode: ESC ] 777 ; notify ; title ; body BEL
   process.stdout.write(`\x1b]777;notify;${sanitizeOSCField(title)};${sanitizeOSCField(body)}\x07`);
@@ -189,28 +164,13 @@ export default function (pi: ExtensionAPI) {
   let enabled = envFlag("PI_NOTIFY", true);
   const sessionLabel = getSessionLabel();
 
-  pi.on("before_agent_start", async (_event, _ctx) => {
-    cmuxSetStatus("Running");
-  });
-
   pi.on("agent_end", async (event, ctx) => {
-    // Always update sidebar status regardless of notification toggle
-    if (ctx.hasPendingMessages()) {
-      cmuxSetStatus("Waiting");
-    } else {
-      cmuxSetStatus("Idle");
-    }
-
     if (!enabled) return;
     if (ctx.hasPendingMessages()) return;
 
     const text = extractLastAssistantText((event.messages ?? []) as MessageLike[]);
     const { title, body } = formatNotification(text, sessionLabel);
     notifyOSC777(title, body);
-  });
-
-  pi.on("session_shutdown", async (_event, _ctx) => {
-    cmuxClearStatus();
   });
 
   pi.registerCommand("notify", {
