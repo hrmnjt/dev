@@ -81,6 +81,8 @@ cask "nikitabobko/tap/aerospace"
 cask "itsycal"
 cask "monodraw"
 cask "obsidian"
+# Image editor
+cask "gimp"
 
 # Fonts
 cask "font-jetbrains-mono"
