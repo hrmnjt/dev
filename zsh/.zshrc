@@ -20,6 +20,11 @@ alias l='eza --all --git --long --show-symlinks'
 
 alias pass='cat ~/.pass | pbcopy'
 
+# Databricks Asset Bundles
+dab() {
+  databricks bundle "$@"
+}
+
 # git folder navigation
 alias cdp='cd ~/code/github.com/hrmnjt'
 alias cdw='cd ~/code/work/doh'
