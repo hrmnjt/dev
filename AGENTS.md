@@ -1,82 +1,58 @@
 # Pi Development Context
 
-This repository contains personal configuration for the [pi coding agent](https://pi.dev).
-When working on pi extensions, themes, or settings in this repo, the following
-context applies.
+This repo contains personal dotfiles, including configuration for the [pi coding agent](https://pi.dev).
 
-## ⚠️ Critical: VM vs Host Boundary
+## Critical: VM vs host boundary
 
-All assistant `read`, `write`, `edit`, and `bash` tool calls execute inside a
-**Gondolin micro-VM** (Alpine Linux), not directly on the host Mac. The project
-directory is mounted at `/workspace` inside the VM.
+Assistant `read`, `write`, `edit`, and `bash` tool calls run inside a **Gondolin micro-VM** (Alpine Linux), not directly on the host Mac. The repo is mounted at `/workspace` in the VM.
 
-User-entered pi shell commands (`!` / `!!`) intentionally use pi's default host
-execution instead of Gondolin, so the user can run host-only commands like
-`vpn`, `brew`, or `stow` directly.
+User-entered pi shell commands (`!` / `!!`) intentionally still run on the host, so the user can run host-only commands such as `brew`, `stow`, and VPN tooling.
 
-**The following commands DO NOT WORK from assistant tools inside the VM.** If you
-need to run them, print them for the user to execute manually on their host Mac:
+Do **not** try to run these from assistant tools:
 
 | Command | Why it fails | What to do instead |
-|---------|-------------|-------------------|
-| `stow` | Not installed in VM | Print the stow command for the user to run on host |
-| `npm install` in `~/.pi/agent` | `~` is the VM's root, not the host's | Tell user to run `cd ~/.pi/agent && npm install` on host |
-| `brew` | macOS-only, not in VM | Print brew commands for the user to run on host |
+|---------|--------------|--------------------|
+| `stow` | Not installed in VM | Print the host command for the user |
+| `brew` | macOS-only | Print the host command for the user |
+| `npm install` in `~/.pi/agent` | VM `~` is not host `~` | Tell the user to run `just pi-deps` on the host |
 
-> **Note:** `npm install` inside `/workspace` (any project mounted into the VM)
-> works fine. Only `~/.pi/agent` is unreachable because the VM's home directory
-> is not the host's home.
->
-> **Note:** `git` fully works inside the VM (commit, push, pull, etc.) when the
-> custom VM image is in use (see gondolin extension below). The extension mounts
-> host git config (`~/.config/git/`) and uses an SSH bridge via the host's
-> `SSH_AUTH_SOCK` to authenticate with GitHub.
+`npm install` inside `/workspace` is fine. Only host paths such as `~/.pi/agent` are outside the VM.
 
-**Example workflow when editing extensions:**
-1. Edit files in `/workspace/pi/.pi/agent/extensions/` (this works in VM)
-2. Tell the user: *"Run this on your host to deploy changes:"*
-   ```bash
-   cd ~/code/github.com/hrmnjt/dev   # or wherever this repo is cloned
-   stow -t ~ pi
-   cd ~/.pi/agent && npm install
-   ```
-3. Tell the user to run `/reload` in pi to hot-reload extensions.
+## Deploying pi changes
 
-## Git Workflow
+After editing pi config, tell the user to run this on the host Mac:
 
-When the user asks you to create a feature branch or make commits in this repo,
-use the repository's Conventional Commits-style naming conventions.
+```bash
+cd ~/code/github.com/hrmnjt/dev   # adjust if the repo is elsewhere
+stow --no-folding -t ~ pi
+just pi-deps                       # runs: npm install --prefix ~/.pi/agent
+```
 
-### Branch names
+Then tell the user to run `/reload` in pi.
 
-Create branches using this pattern:
+Use `--no-folding` so directories such as `~/.pi` remain real host directories while tracked files/directories are symlinked into them.
+
+## Git workflow
+
+When the user asks you to create a branch or commit, use Conventional Commits-style naming.
+
+Branch pattern:
 
 ```text
 <type>/<scope>/<short-kebab-description>
 ```
 
-Use common Conventional Commit types such as `feat`, `fix`, `chore`, `docs`,
-`refactor`, or `test`.
-
-Use scopes that match the area being changed, for example:
-
-- `pi` — pi agent configuration, extensions, themes, skills, prompts, settings
-- `nvim` — Neovim configuration
-- `meta` — repository-wide work that affects multiple areas
-
 Examples:
 
 ```text
-feat/pi/new-feat
+feat/pi/new-feature
 fix/nvim/random-issue
 chore/pi/cleanup
-chore/meta/some-work-that-affects-multiple-elements
-docs/pi/readme-has-more-details
+docs/pi/update-readme
+chore/meta/repo-wide-change
 ```
 
-### Commit messages
-
-Commit using Conventional Commits with a scope:
+Commit pattern:
 
 ```text
 <type>(<scope>): <short imperative summary>
@@ -85,161 +61,141 @@ Commit using Conventional Commits with a scope:
 Examples:
 
 ```text
-feat(pi): add review summary extension
-fix(nvim): correct random issue
-chore(pi): clean up extension config
-docs(pi): expand README details
-chore(meta): update repository-wide guidance
+feat(pi): add review command
+fix(nvim): correct keymap
+docs(pi): update setup notes
+chore(meta): update repo guidance
 ```
 
-Prefer concise, imperative summaries such as `add`, `fix`, `update`, `remove`,
-or `document`. Match the `scope` to the files being changed. If a change spans
-multiple major areas, use `meta`.
+Use scopes such as `pi`, `nvim`, or `meta`.
 
-## Pi Documentation Inside the VM
+## Pi docs in the VM
 
-Pi's own documentation and example extensions are auto-mounted inside the VM at:
+Pi docs and examples are mounted in the VM:
 
-- `/pi/docs/` — Full API documentation
-  - `/pi/docs/extensions.md` — Extension API (`registerCommand`, `registerTool`, events)
-  - `/pi/docs/tui.md` — TUI component API (`Component`, `Editor`, `Key`, etc.)
-  - `/pi/docs/themes.md` — Theme JSON format
-  - `/pi/docs/skills.md` — Skill format and frontmatter
-  - `/pi/docs/prompt-templates.md` — Prompt template system
-  - `/pi/docs/keybindings.md` — Keybinding definitions
-  - `/pi/docs/models.md` — Model/provider configuration
-  - `/pi/docs/sdk.md` — SDK for building tools and sessions
+- `/pi/docs/`
+  - `extensions.md`
+  - `tui.md`
+  - `themes.md`
+  - `skills.md`
+  - `prompt-templates.md`
+  - `keybindings.md`
+  - `models.md`
+  - `sdk.md`
+- `/pi/examples/`
+  - `extensions/`
 
-- `/pi/examples/` — Working example extensions
-  - `/pi/examples/extensions/` — Example `.ts` extensions (custom providers, UI components, etc.)
+When asked to build or modify pi extensions, themes, skills, prompts, keybindings, models, SDK integrations, or TUI components, read the relevant docs/examples first and follow linked docs as needed.
 
-**Always reference these when asked to build or modify pi extensions, themes, or skills.**
-The model can `read` these files directly — they are live files from the pi
-version currently installed on the host.
+## Pi repo structure
 
-## Repository Structure
-
-```
+```text
 pi/
 ├── .pi/
 │   └── agent/
 │       ├── extensions/
-│       │   ├── answer.ts              # User-initiated Q&A extraction
-│       │   ├── exit.ts                # Graceful terminal exit
-│       │   └── gondolin.ts            # Gondolin VM sandboxing
-│       ├── gondolin-image.json        # Custom VM image build config (git, ripgrep, etc.)
-│       ├── package.json               # Extension dependencies
-│       ├── settings.template.json     # Intentional settings (tracked in git)
-│       ├── settings.json              # Runtime settings (gitignored)
+│       │   ├── answer.ts          # User-initiated Q&A extraction
+│       │   ├── exit.ts            # Graceful terminal exit
+│       │   ├── gondolin.ts        # Gondolin VM sandboxing
+│       │   ├── notify.ts          # Desktop notifications
+│       │   ├── review.ts          # Terminal-native diff review UI
+│       │   ├── review-summary.ts  # Model-driven PR review summary
+│       │   ├── usage.ts           # Token/cost tracking
+│       │   └── uv.ts              # uv guidance and Python-tool blocking
+│       ├── gondolin-image.json    # Custom VM image config
+│       ├── package.json           # Extension dependencies
+│       ├── settings.template.json # Intentional settings tracked in git
+│       ├── settings.json          # Runtime settings, gitignored
+│       ├── usage-data/            # Usage data, gitignored
 │       └── themes/
-│           └── catppuccin-mocha.json
+│           ├── catppuccin-mocha.json
+│           └── gruvbox-dark.json
 └── README.md
 ```
 
-## Settings Management
-
-Two settings files with different purposes:
+## Settings management
 
 | File | Tracked? | Purpose |
 |------|----------|---------|
-| `settings.template.json` | ✅ Git | Intentional settings (`theme`, `defaultThinkingLevel`) |
-| `settings.json` | ❌ Gitignored | Runtime state (`defaultModel`, `defaultProvider`, `lastChangelogVersion`) |
+| `settings.template.json` | Yes | Intentional defaults (`theme`, `defaultThinkingLevel`) |
+| `settings.json` | No | Runtime state written by pi (`defaultModel`, `defaultProvider`, `lastChangelogVersion`, etc.) |
 
-`settings.json` is written by pi at runtime — `defaultModel` and
-`defaultProvider` change every time the user switches models, and
-`lastChangelogVersion` auto-updates. The template lets the repo track only
-intentional defaults while the actual settings evolve naturally.
+Current intentional defaults:
 
-### First-time setup (or after cloning)
+- theme: `gruvbox-dark`
+- default thinking level: `medium`
 
-```bash
-# Merge template into settings.json (overriding volatile keys)
-cd pi/.pi/agent
-jq -s '.[0] * .[1]' settings.template.json settings.json > tmp && mv tmp settings.json
-```
-
-If no `settings.json` exists yet, copy the template instead:
+First-time setup if no runtime settings exist:
 
 ```bash
 cp pi/.pi/agent/settings.template.json pi/.pi/agent/settings.json
 ```
 
-### When adding a new intentional setting
-
-Add it to `settings.template.json`. The user merges on next setup.
-
-## Deploying Changes
-
-Since `stow` is unavailable in the VM, **print these commands for the user to
-run on their host** after making changes:
+Merge template into an existing runtime settings file while preserving other runtime keys:
 
 ```bash
-# Deploy config changes (symlink into ~/.pi/agent)
-cd ~/code/github.com/hrmnjt/dev   # adjust path as needed
-stow -t ~ pi
-just pi-deps                       # runs: npm install --prefix ~/.pi/agent
+cd pi/.pi/agent
+jq -s '.[1] * .[0]' settings.template.json settings.json > tmp && mv tmp settings.json
 ```
 
-Then tell the user to type `/reload` in pi to hot-reload extensions.
+When adding a new intentional setting, add it to `settings.template.json`.
 
-## Growing the Config
+## Growing the pi config
 
-When asked to create new pi resources, place them in the appropriate directory
-under `pi/.pi/agent/`:
+Add resources under `pi/.pi/agent/`:
 
 | Directory | What | Auto-discovered? |
-|-----------|------|-----------------|
-| `themes/` | JSON theme files | Yes |
-| `extensions/` | TypeScript `.ts`/`.js` modules | Yes |
-| `skills/` | `SKILL.md` folders or `.md` files | Yes |
-| `prompts/` | `.md` prompt templates | Via `settings.json` |
+|-----------|------|------------------|
+| `themes/` | JSON themes | Yes |
+| `extensions/` | TypeScript/JavaScript modules | Yes |
+| `skills/` | `SKILL.md` folders or Markdown files | Yes |
+| `prompts/` | Markdown prompt templates | Via settings |
 
-After adding files, tell the user to run `stow -t ~ pi` and `/reload`.
+After adding files, tell the user to deploy with `stow --no-folding -t ~ pi`, run `just pi-deps` if dependencies changed, and run `/reload` in pi.
 
-## Extension Development Guidelines
+## Extension development guidelines
 
-When writing new extensions or modifying existing ones:
+1. Use `ctx.shutdown()` for exit; never `process.exit()` because it can corrupt terminal state.
+2. Read `/pi/docs/extensions.md` before changing extension APIs.
+3. Read `/pi/docs/tui.md` and examples before changing TUI code.
+4. Prefer imports from `@earendil-works/pi-coding-agent` and `@earendil-works/pi-tui` for new code.
+5. Some features only work interactively; ask the user to test commands/UI in pi when needed.
 
-1. **Use `ctx.shutdown()` for exit** — Never `process.exit()`, it corrupts the terminal
-2. **Read pi docs first** — `read /pi/docs/extensions.md` for the full API
-3. **Look at examples** — `read /pi/examples/extensions/` for patterns
-4. **Test in interactive mode** — Some features (commands, UI) only work interactively
-5. **Import from `@earendil-works/pi-coding-agent`** — This is the main SDK package
-6. **Import from `@earendil-works/pi-tui`** — For TUI components (`Key`, `Component`, etc.)
+## Existing pi extensions
 
-## Existing Extensions
+- `answer` — `/answer`; extracts questions from the previous assistant message into an interactive Q&A UI.
+- `exit` — `/exit`; gracefully exits pi.
+- `gondolin` — sandboxes assistant tools in a VM; mounts workspace at `/workspace` and pi docs/examples at `/pi`.
+- `notify` — `/notify test|on|off|status`; desktop notifications via OSC 777.
+- `review` — `/review`; TUI for reviewing git diffs and sending comments back to pi.
+- `review-summary` — `/review-summary [base]`; model-driven review summary with rubric.
+- `usage` — `/usage [today|month|all]`; local token and cost summaries.
+- `uv` — `/uv-help`; blocks common pip/poetry/venv commands in Gondolin bash and suggests uv alternatives.
 
-### answer
-Extracts questions from the last assistant message into an interactive Q&A UI.
-Usage: `/answer` after assistant asks questions.
+## Gondolin notes
 
-### exit
-Gracefully exits pi using `ctx.shutdown()`. Avoids terminal corruption.
-Usage: `/exit`
+The custom VM image is defined in `pi/.pi/agent/gondolin-image.json` and currently includes common dev tools such as `bash`, `git`, `ripgrep`, `jq`, `fd`, `nodejs`, `npm`, `python3`, `uv`, and `openssh`.
 
-### gondolin
-Sandboxes all tool operations inside a lightweight VM. Mounts workspace and
-pi docs/examples. This is the extension you're currently inside.
-
-**Custom VM image:** The default Alpine VM lacks git and other dev tools.
-A custom image with pre-installed packages is configured via
-`pi/.pi/agent/gondolin-image.json`. Build it once:
+Build it on the host Mac:
 
 ```bash
-# One-time build (on host Mac) — uses just gondolin-image which wraps npx
 just gondolin-image
 ```
 
-Then set the env var before starting pi (or add to your shell profile):
+Then start pi with:
 
 ```bash
 export GONDOLIN_GUEST_DIR="$HOME/.gondolin/custom-image"
 ```
 
-To add more tools, edit `gondolin-image.json` → `rootfsPackages`, rebuild,
-and restart pi. The build output (~200MB) is stored outside the repo.
+Git works inside the VM when the custom image is active. The extension generates a VM-specific git config based on the host path, mounts it at `/root/.config/git`, sets `/workspace` as a safe directory, and proxies SSH via the host `SSH_AUTH_SOCK` for GitHub operations.
 
-**Git over SSH:** The extension mounts your host `~/.config/git/` (identity,
-email) into the VM and proxies SSH via the host's `SSH_AUTH_SOCK`. This means
-`git commit`, `git push`, `git pull`, and `git clone` against `github.com`
-all work from inside the VM — no need to switch to the host for git operations.
+Identity selection is fail-closed:
+
+| Host path prefix | Identity |
+|------------------|----------|
+| `~/code/github.com/hrmnjt/` | Personal |
+| `~/code/work/` | Work |
+| Anything else | No identity; commits fail clearly |
+
+To change identity rules, edit `GIT_IDENTITY_RULES` in `pi/.pi/agent/extensions/gondolin.ts`.
