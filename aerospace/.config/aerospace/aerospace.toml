@@ -239,7 +239,7 @@ run = 'move-node-to-workspace 3'
 
 # Work comms -> workspace 4.
 [[on-window-detected]]
-if.app-id = 'com.microsoft.teams2'
+if.app-id = 'com.brave.Browser.app.ompifgpmddkgmclendfeacglnodjjndh'
 run = 'move-node-to-workspace 4'
 
 # Outlook PWA -> workspace 4.
@@ -288,4 +288,3 @@ run = 'layout floating'
 [[on-window-detected]]
 if.app-id = 'net.pulsesecure.Pulse-Secure'
 run = 'layout floating'
-
