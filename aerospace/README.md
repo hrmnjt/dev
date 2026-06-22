@@ -1,13 +1,11 @@
-# AeroSpace weekly trial plan
+# AeroSpace configuration
 
-> **Temporary plan:** this is my one-week onboarding plan for AeroSpace, not a
-> permanent README. It is meant to hook me into tiling window managers and will
-> become obsolete after **June 7th**.
+This is the permanent reference for my AeroSpace setup. The goal is predictable
+window placement: jump directly to a workspace instead of hunting through
+windows.
 
-AeroSpace is not meant to be a prettier AltTab. The experiment is to stop
-searching through windows and start putting windows in predictable workspaces.
-macOS Spotlight and the default `cmd-tab` app switcher are enough fallback while
-I uninstall AltTab and try this workflow properly.
+macOS Spotlight is the preferred app launcher. `cmd-tab` remains available as a
+fallback, but the intended habit is workspace-first navigation.
 
 ## Where the config lives
 
@@ -19,31 +17,14 @@ repo: aerospace/.config/aerospace/aerospace.toml
 home: ~/.config/aerospace/aerospace.toml
 ```
 
-This folder is stowed into `~`, so deploy from the repo root with:
+Deploy from the repo root with:
 
 ```bash
 cd ~/code/github.com/hrmnjt/dev
 just stowall
 ```
 
-## Setup
-
-Install from the repo Brewfile and deploy the dotfiles:
-
-```bash
-just brewinst
-just stowall
-```
-
-Uninstall AltTab now so the trial is real:
-
-```bash
-brew uninstall --cask alt-tab
-```
-
-Then launch AeroSpace once and grant Accessibility permissions when macOS asks.
-
-If you edit the config, reload AeroSpace with:
+Reload AeroSpace after editing:
 
 ```text
 option-shift-r
@@ -51,180 +32,141 @@ option-shift-r
 
 ## Shortcut notation
 
-AeroSpace calls the Mac Option key `alt` in config. In this plan:
+AeroSpace calls the Mac Option key `alt` in config. In this README:
 
 ```text
 alt = option / opt / ⌥
 ```
 
-So `alt-1` means `option-1`, and `alt-shift-r` means `option-shift-r`.
+So `alt-1` in the config means `option-1` on the keyboard.
 
-## Configured workflow at a glance
+## Workspace map
 
-The current config is intentionally small. The important ideas are:
-
-| Workspace / screen | Shortcut | Intended home | Auto-moved apps |
+| Workspace | Shortcut | Intended home | Auto-moved apps |
 | --- | --- | --- | --- |
-| 1 | `option-1` | Ghostty / agents / shell | Ghostty |
+| 1 | `option-1` | Ghostty / shell | Ghostty |
 | 2 | `option-2` | editor | Zed |
-| 3 | `option-3` | browsers | Brave, Safari |
+| 3 | `option-3` | browser | Brave |
 | 4 | `option-4` | work comms | Microsoft Teams, Outlook PWA |
 | 5 | `option-5` | notes / docs | Obsidian |
-| 6-10 | `option-6`..`option-0` | manual / temporary | none |
+| 6 | `option-6` | email | Thunderbird |
+| 7 | `option-7` | ad hoc personal project | manual |
+| 8 | `option-8` | ad hoc personal project | manual |
+| 9 | `option-9` | spare / temporary | manual |
+| 10 | `option-0` | spare / temporary | manual |
 
-Key behaviors to understand:
+## Main shortcuts
 
-- `option-h/j/k/l` focuses windows spatially, like vim movement.
-- `option-shift-h/j/k/l` moves the focused window within the layout.
-- `option-shift-1..9` sends the focused window to that numbered workspace; `option-shift-0` sends it to workspace 10.
-- `option-tab` toggles back to the previous workspace.
-- `option-f` uses AeroSpace fullscreen; avoid the green macOS fullscreen button.
-- `option-shift-space` toggles a weird window between tiled and floating.
-- Finder and System Settings are configured to float because they are usually temporary.
+| Shortcut | Action |
+| --- | --- |
+| `option-1..9`, `option-0` | switch to workspace 1..10 |
+| `option-tab` | toggle back to previous workspace |
+| `option-shift-tab` | move the current workspace to the other monitor |
+| `option-h/j/k/l` | focus left/down/up/right |
+| `option-shift-h/j/k/l` | move focused window left/down/up/right |
+| `option-shift-1..9`, `option-shift-0` | move focused window to workspace 1..10 |
+| `option-enter` | open a new Ghostty window |
+| `option-f` | AeroSpace fullscreen/maximize |
+| `option-shift-space` | toggle focused window between floating and tiled |
+| `option-slash` | cycle tiled layout orientation |
+| `option-comma` | cycle accordion layout orientation |
+| `option-shift-r` | reload config |
 
-The pattern for app routing is: find the app id with `aerospace list-apps`,
-then point its `on-window-detected` rule at the workspace number you want.
-AeroSpace manages app windows, not individual browser tabs, so browser tabs stay
-inside whatever Brave/Safari window owns them. The Outlook PWA has its own Brave
-PWA app id and is routed to workspace 4.
+Prefer `option-f` over the green macOS fullscreen button.
 
-## First week plan
+## Two-display workflow
 
-### Day 0: install and orient yourself
+The external BenQ is a 22-inch portrait display, while the MacBook Pro screen is
+the high-resolution primary working display. Because neither display should own a
+fixed set of workspaces forever, the config intentionally does **not** force
+workspaces onto monitors.
 
-Goal: make sure AeroSpace runs and remove the AltTab escape hatch.
+Use this instead:
 
-1. Install and stow the config.
-2. Uninstall AltTab.
-3. Launch AeroSpace.
-4. Confirm these shortcuts work:
-   - `option-1` through `option-9`, plus `option-0` for workspace 10: switch workspaces
-   - `option-h/j/k/l`: move focus left/down/up/right
-   - `option-shift-h/j/k/l`: move the focused window
-   - `option-f`: fullscreen the focused window using AeroSpace
-   - `option-shift-space`: toggle a window between tiling and floating
-   - `option-enter`: open Ghostty
-5. Use Spotlight or macOS `cmd-tab` only as fallback.
-6. Avoid the green macOS fullscreen button. Use `option-f` instead.
+```text
+option-shift-tab
+```
 
-### Day 1: fixed homes for common work
+That moves the current workspace to the next monitor. With two displays, it means
+“send this whole workspace to the other screen.” Good candidates for the portrait
+monitor are Teams/Outlook, Thunderbird, Obsidian, docs, logs, or reference
+browser windows.
 
-Goal: build the habit of jumping directly to a known place.
+Avoid adding `[workspace-to-monitor-force-assignment]` unless a workspace truly
+must always live on one display; forced assignments make
+`move-workspace-to-monitor` ineffective for those workspaces.
 
-Use the workspace map from the configured workflow section above.
+## Resizing
 
-Practice rule for the day: when you want an app, switch to its workspace first.
-Do not cycle windows unless you genuinely do not know where the window is.
+Current resize bindings:
 
-### Day 2: directional focus only
+| Shortcut | Action |
+| --- | --- |
+| `option-minus` | smart resize smaller |
+| `option-equal` | smart resize larger |
+| `option-r`, then `h/j/k/l` | resize with vim directions |
+| `enter` or `esc` | leave resize mode |
 
-Goal: replace local window cycling inside a workspace.
+Trackpad resizing is still fine when it is faster; keyboard resizing is available
+for deliberate layout adjustments.
 
-When multiple windows are on one workspace:
+## App routing notes
 
-- use `option-h/j/k/l` to focus neighbors
-- use `option-shift-h/j/k/l` to rearrange windows
-- use `option-slash` to reset to tiled layout if things get weird
-- use `option-f` if one window needs temporary attention
+The pattern for routing an app is:
 
-Do not worry about perfect layouts. The win is getting comfortable with
-spatial navigation.
+1. Open the app.
+2. Run:
 
-### Day 3: moving windows intentionally
+   ```bash
+   aerospace list-apps
+   ```
 
-Goal: stop dragging windows with the mouse.
+3. Copy the app id into an `on-window-detected` rule in
+   `aerospace/.config/aerospace/aerospace.toml`.
+4. Reload with `option-shift-r`.
 
-Practice:
-
-- `option-shift-1` through `option-shift-9`, plus `option-shift-0`, moves the focused window to a workspace
-- `option-shift-h/j/k/l` moves the focused window within the current workspace
-- `option-tab` jumps back to the previous workspace
-
-Suggested drill:
-
-1. Open a browser from anywhere.
-2. Move it to workspace 3 with `option-shift-3`.
-3. Jump to workspace 3 with `option-3`.
-4. Move it around with `option-shift-h/j/k/l`.
-
-### Day 4: observe app assignment rules
-
-Goal: let AeroSpace do boring placement for you.
-
-The starter config includes these app rules:
+Current important rules:
 
 - Ghostty -> workspace 1
 - Zed -> workspace 2
-- Brave and Safari -> workspace 3
-- Microsoft Teams and Outlook PWA -> workspace 4
+- Brave -> workspace 3
+- Microsoft Teams -> workspace 4
+- Outlook Brave PWA -> workspace 4
 - Obsidian -> workspace 5
+- Thunderbird -> workspace 6
 
-Today, notice where new windows land. If an app lands somewhere surprising,
-check its app id with:
+Thunderbird compose/send windows have a best-effort floating rule based on window
+title. If a Thunderbird dialog still tiles, inspect it with:
 
 ```bash
-aerospace list-apps
+aerospace list-windows --format '%{app-name} | %{window-title}'
 ```
 
-Then update `aerospace/.config/aerospace/aerospace.toml` in this repo and
-reload with `option-shift-r`.
+Then update the `if.window-title-regex-substring` matcher.
 
-### Day 5: floating exceptions
-
-Goal: learn when *not* to tile.
+## Floating exceptions
 
 Some windows are better floating: settings windows, file pickers, small dialogs,
-copy/paste helpers, calendar popovers.
+copy/paste helpers, VPN windows, and one-off utility apps.
 
-Use:
+Current floating rules include:
 
-- `option-shift-space`: toggle floating/tiling for the current window
-- `option-f`: fullscreen/maximize when you need focus
+- Finder
+- App Store
+- WhatsApp
+- System Settings
+- Pulse Secure / Ivanti-style VPN window
+- Thunderbird compose/send windows, when title matching catches them
 
-If a window is always annoying when tiled, add an `on-window-detected` rule for
-it and make it floating.
+Use `option-shift-space` for one-off floating/tiling toggles.
 
-### Day 6: mouse reduction day
+## Aesthetic improvements to consider later
 
-Goal: use keyboard navigation for most window management.
+The current gaps and layout are intentionally practical. Possible future tweaks:
 
-Try to avoid these for one work session:
+- Increase gaps from `8` to `10` or `12` if the layout feels cramped.
+- Use per-monitor gaps if the portrait display needs different spacing.
+- Increase `accordion-padding` if accordion mode needs more visible context.
+- Add a small shell/notes cheatsheet if any shortcuts still need reinforcement.
 
-- dragging windows
-- resizing by edges
-- clicking Dock icons
-- window cycling as the first instinct
-
-Use these instead:
-
-- Spotlight to open apps
-- `option-1..9` / `option-0` to jump to places
-- `option-h/j/k/l` to focus
-- `option-shift-1..9` / `option-shift-0` to move windows between workspaces
-
-At the end of the day, write down the two shortcuts that felt awkward. Change
-only those if needed.
-
-### Day 7: review and decide
-
-Goal: decide whether AeroSpace is improving your workflow.
-
-Ask:
-
-- Did I rely less on window cycling?
-- Can I predict where my main apps are?
-- Are workspaces helping me avoid window search?
-- Which apps need better assignment rules?
-- Which windows should always float?
-
-Keep AeroSpace if the answer is "this is starting to feel predictable," even if
-it is not faster yet. Fluency usually comes in week two.
-
-## Later / week two notes
-
-- Add monitor-specific workspace rules if using an external display.
-- Tune gaps after the workflow feels good; do not start with aesthetics.
-- Add or remove app assignment rules based on real app ids from `aerospace list-apps`.
-- Consider adding a small cheatsheet to your shell startup or notes app.
-- If `option` shortcuts conflict with app text input, consider changing the
-  modifier to `ctrl-option` or `cmd-option` in `aerospace.toml`.
+Do these only after the two-display workflow feels natural.

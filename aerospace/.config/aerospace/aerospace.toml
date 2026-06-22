@@ -12,10 +12,10 @@
 # Reload AeroSpace after editing with:
 #   alt-shift-r
 #
-# Design goal for this starter config:
-# - Keep it small enough to learn in one week.
+# Design goals:
 # - Use predictable numbered workspaces instead of AltTab-style window hunting.
 # - Prefer direct navigation: "go to browser workspace" rather than "cycle apps".
+# - Keep monitor placement flexible; move workspaces to another display on demand.
 
 # Start AeroSpace automatically after logging in.
 # If you want a softer trial, change this to false and launch it manually.
@@ -80,12 +80,14 @@ outer.right = 8
 # a fallback while you are learning.
 #
 # Workspace map used by this config:
-#   1 = Ghostty / agents / shell
+#   1 = Ghostty / shell
 #   2 = Zed
-#   3 = Brave / Safari
+#   3 = Brave
 #   4 = Microsoft Teams / Outlook PWA
 #   5 = Obsidian
-#   6-10 = manual / temporary
+#   6 = Thunderbird
+#   7-8 = ad hoc personal projects
+#   9-10 = spare / temporary
 
 [mode.main.binding]
 
@@ -142,6 +144,11 @@ alt-0 = 'workspace 10'
 # Jump back to the previous workspace. This is the closest AeroSpace equivalent
 # to "toggle between the two things I am currently working on".
 alt-tab = 'workspace-back-and-forth'
+
+# Move the current workspace to the next monitor. With two displays, this means
+# "send this whole workspace to the other screen". This keeps the MacBook +
+# portrait monitor setup flexible instead of pinning workspaces to displays.
+alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
 
 # Move the focused window to a workspace.
 # After moving, use alt-1..9 / alt-0 to follow it if you want to go there.
@@ -225,13 +232,9 @@ run = 'move-node-to-workspace 1'
 if.app-id = 'dev.zed.Zed'
 run = 'move-node-to-workspace 2'
 
-# Browsers -> workspace 3.
+# Brave -> workspace 3.
 [[on-window-detected]]
 if.app-id = 'com.brave.Browser'
-run = 'move-node-to-workspace 3'
-
-[[on-window-detected]]
-if.app-id = 'com.apple.Safari'
 run = 'move-node-to-workspace 3'
 
 # Work comms -> workspace 4.
@@ -248,6 +251,19 @@ run = 'move-node-to-workspace 4'
 [[on-window-detected]]
 if.app-id = 'md.obsidian'
 run = 'move-node-to-workspace 5'
+
+# Thunderbird compose/send windows should float, but still live with mail on 6.
+# If this title matcher misses a Thunderbird dialog, inspect it with:
+#   aerospace list-windows --format '%{app-name} | %{window-title}'
+[[on-window-detected]]
+if.app-id = 'org.mozilla.thunderbird'
+if.window-title-regex-substring = '^(write:|compose:|send message|sending message)'
+run = ['move-node-to-workspace 6', 'layout floating']
+
+# Thunderbird main window -> workspace 6.
+[[on-window-detected]]
+if.app-id = 'org.mozilla.thunderbird'
+run = 'move-node-to-workspace 6'
 
 # Finder windows often tile poorly and are usually temporary.
 [[on-window-detected]]
