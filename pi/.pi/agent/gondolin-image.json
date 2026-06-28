@@ -17,6 +17,7 @@
       "python3",
       "openssh",
       "git",
+      "hugo",
       "ripgrep",
       "jq",
       "fd"
