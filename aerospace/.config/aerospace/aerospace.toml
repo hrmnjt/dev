@@ -87,7 +87,8 @@ outer.right = 8
 #   5 = Obsidian
 #   6 = Thunderbird
 #   7-8 = ad hoc personal projects
-#   9-10 = spare / temporary
+#   9 = spare / temporary
+#   10 = Codex
 
 [mode.main.binding]
 
@@ -264,6 +265,11 @@ run = ['move-node-to-workspace 6', 'layout floating']
 [[on-window-detected]]
 if.app-id = 'org.mozilla.thunderbird'
 run = 'move-node-to-workspace 6'
+
+# Codex -> workspace 10.
+[[on-window-detected]]
+if.app-id = 'com.openai.codex'
+run = 'move-node-to-workspace 10'
 
 # Finder windows often tile poorly and are usually temporary.
 [[on-window-detected]]
