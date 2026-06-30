@@ -66,6 +66,8 @@ cask "zed"
 # good workflow like this. I need to experiment with jupyterlab or similar to
 # replace this one though
 cask "visual-studio-code"
+# AI coding assistant app
+cask "codex-app"
 
 # Browser - trying out brave, waiting for ladybird
 cask "brave-browser"
