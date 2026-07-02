@@ -29,6 +29,9 @@ dab() {
 alias cdp='cd ~/code/github.com/hrmnjt'
 alias cdw='cd ~/code/work/doh'
 
+# Delete local branches whose upstream is gone and are merged into the current branch.
+alias gbclean='git fetch --prune && git branch -vv --merged | awk '\''$1 != "*" && /: gone]/{print $1}'\'' | while read -r branch; do git branch -d "$branch"; done'
+
 # git worktree helper
 [[ -f ~/.config/zsh/wt.zsh ]] && source ~/.config/zsh/wt.zsh
 
