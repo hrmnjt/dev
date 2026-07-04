@@ -76,8 +76,8 @@ outer.right = 8
 # -----------------------------------------------------------------------------
 #
 # The primary modifier is alt/option.
-# This mirrors many tiling-window-manager setups and keeps cmd-tab available as
-# a fallback while you are learning.
+# This mirrors many tiling-window-manager setups. cmd-tab is also mapped to
+# workspace-back-and-forth as a trial to replace the macOS app switcher habit.
 #
 # Workspace map used by this config:
 #   1 = Ghostty / shell
@@ -91,6 +91,11 @@ outer.right = 8
 #   10 = Codex
 
 [mode.main.binding]
+
+# Trial: make cmd-tab do AeroSpace previous-workspace switching instead of
+# macOS app switching, if AeroSpace can intercept it on this macOS version.
+cmd-tab = 'workspace-back-and-forth'
+cmd-shift-tab = 'workspace-back-and-forth'
 
 # Open a new Ghostty window from anywhere.
 # `open -na` means "open a new instance of the app named Ghostty".
