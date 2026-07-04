@@ -4,9 +4,8 @@ This is the permanent reference for my AeroSpace setup. The goal is predictable
 window placement: jump directly to a workspace instead of hunting through
 windows.
 
-macOS Spotlight is the preferred app launcher. `cmd-tab` is mapped to the same
-previous-workspace action as `option-tab` as a trial replacement for the macOS
-app switcher.
+macOS Spotlight is the preferred app launcher. `cmd-tab` remains available as a
+fallback, but the intended habit is workspace-first navigation.
 
 ## Where the config lives
 
@@ -61,7 +60,7 @@ So `alt-1` in the config means `option-1` on the keyboard.
 | Shortcut | Action |
 | --- | --- |
 | `option-1..9`, `option-0` | switch to workspace 1..10 |
-| `option-tab`, `command-tab`, `command-shift-tab` | toggle back to previous workspace |
+| `option-tab` | toggle back to previous workspace |
 | `option-shift-tab` | move the current workspace to the other monitor |
 | `option-h/j/k/l` | focus left/down/up/right |
 | `option-shift-h/j/k/l` | move focused window left/down/up/right |
