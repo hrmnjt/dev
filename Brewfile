@@ -43,6 +43,9 @@ brew "hledger"
 # Tunnel to expose local services - primarily for pi sandbox
 brew "cloudflared"
 
+# Local LLM runner for pi via OpenAI-compatible llama-server
+brew "llama.cpp"
+
 # Virtualization (Gondolin sandbox) that I use with pi-agent
 # VM emulator for Gondolin sandbox in pi
 brew "qemu"

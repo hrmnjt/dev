@@ -18,6 +18,7 @@ pi/
 │       │   ├── usage.ts           # Token/cost usage tracking
 │       │   └── uv.ts              # Prefer uv over pip/poetry/venv
 │       ├── gondolin-image.json    # Custom Alpine VM image definition
+│       ├── models.json            # Local/custom model providers for pi
 │       ├── package.json           # Extension dependencies
 │       ├── settings.template.json # Intentional settings tracked in git
 │       └── themes/
@@ -45,6 +46,24 @@ just pi-deps
 Then run `/reload` inside pi to hot-reload extension changes.
 
 `--no-folding` keeps directories like `~/.pi` real on the host, so pi and npm can write runtime files there instead of turning the whole directory into a symlink to this repo.
+
+## Local model provider
+
+`models.json` registers a localhost llama.cpp provider for pi:
+
+- provider: `local-llama-cpp`
+- model: `qwen2.5-coder-32b-local`
+- endpoint: `http://127.0.0.1:8080/v1`
+
+Model weights are not tracked in this repo. Download and serve them on the host Mac:
+
+```bash
+just brewinst                         # installs llama.cpp if needed
+just local-llm-download-qwen32b       # downloads GGUF to ~/Models/llm/...
+just local-llm-serve-qwen32b          # starts llama-server on localhost:8080
+```
+
+In pi, open `/model` and select `local-llama-cpp` / `qwen2.5-coder-32b-local`. If the model is already selected, restart the server in another terminal before using pi.
 
 ## First-time settings setup
 

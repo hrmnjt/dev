@@ -79,3 +79,42 @@ gondolin-image:
 # Install pi extension dependencies (run after stowall)
 pi-deps:
     npm install --prefix ~/.pi/agent
+
+# --- Local LLM for pi ---
+
+# Download the recommended local coding model GGUF outside this repo.
+# Requires: uv. Downloads to ~/Models/llm/qwen2.5-coder-32b-instruct-q4_k_m
+local-llm-download-qwen32b:
+    mkdir -p "$HOME/Models/llm/qwen2.5-coder-32b-instruct-q4_k_m"
+    uvx --from huggingface_hub huggingface-cli download \
+        bartowski/Qwen2.5-Coder-32B-Instruct-GGUF \
+        --include "*Q4_K_M.gguf" \
+        --local-dir "$HOME/Models/llm/qwen2.5-coder-32b-instruct-q4_k_m"
+
+# Run llama.cpp's OpenAI-compatible server for pi on localhost:8080.
+# Stop with Ctrl-C. Run this in a host terminal before selecting the local model in pi.
+local-llm-serve-qwen32b:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    model_dir="$HOME/Models/llm/qwen2.5-coder-32b-instruct-q4_k_m"
+    if [ ! -d "$model_dir" ]; then
+        echo "Model directory not found: $model_dir. Run: just local-llm-download-qwen32b" >&2
+        exit 1
+    fi
+    model="$(find "$model_dir" -name '*Q4_K_M.gguf' -type f -print | head -n 1)"
+    if [ -z "$model" ]; then
+        echo "Model file not found in $model_dir. Run: just local-llm-download-qwen32b" >&2
+        exit 1
+    fi
+    exec llama-server \
+        --model "$model" \
+        --alias qwen2.5-coder-32b-local \
+        --host 127.0.0.1 \
+        --port 8080 \
+        --ctx-size 65536 \
+        --n-gpu-layers 999 \
+        --parallel 1
+
+# Verify the local llama.cpp server is responding.
+local-llm-smoke:
+    curl -s http://127.0.0.1:8080/v1/models | jq .
