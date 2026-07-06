@@ -101,7 +101,8 @@ pi/
 │       │   ├── review.ts          # Terminal-native diff review UI
 │       │   ├── review-summary.ts  # Model-driven PR review summary
 │       │   ├── usage.ts           # Token/cost tracking
-│       │   └── uv.ts              # uv guidance and Python-tool blocking
+│       │   ├── uv.ts              # uv guidance and Python-tool blocking
+│       │   └── wal-writer.ts      # Host Obsidian WAL daily-note writer
 │       ├── gondolin-image.json    # Custom VM image config
 │       ├── package.json           # Extension dependencies
 │       ├── settings.template.json # Intentional settings tracked in git
@@ -171,6 +172,7 @@ After adding files, tell the user to deploy with `stow --no-folding -t ~ pi`, ru
 - `review-summary` — `/review-summary [base]`; model-driven review summary with rubric.
 - `usage` — `/usage [today|month|all]`; local token and cost summaries.
 - `uv` — `/uv-help`; blocks common pip/poetry/venv commands in Gondolin bash and suggests uv alternatives.
+- `wal-writer` — `wal_append` tool plus `/wal status|append`; appends host Obsidian WAL notes to the end of `~/code/github.com/hrmnjt/worklog/wal/YYYYMMDD.md` without mounting the vault into Gondolin.
 
 ## Gondolin notes
 

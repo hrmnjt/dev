@@ -16,7 +16,8 @@ pi/
 │       │   ├── review.ts          # Terminal-native diff review UI
 │       │   ├── review-summary.ts  # Model-driven PR review summary
 │       │   ├── usage.ts           # Token/cost usage tracking
-│       │   └── uv.ts              # Prefer uv over pip/poetry/venv
+│       │   ├── uv.ts              # Prefer uv over pip/poetry/venv
+│       │   └── wal-writer.ts      # Append host Obsidian WAL notes
 │       ├── gondolin-image.json    # Custom Alpine VM image definition
 │       ├── package.json           # Extension dependencies
 │       ├── settings.template.json # Intentional settings tracked in git
@@ -110,6 +111,7 @@ To add tools, edit `pi/.pi/agent/gondolin-image.json`, rebuild with `just gondol
 - `/review-summary [base]` — asks the model for a structured review summary against `main` or another base branch.
 - `/usage [today|month|all]` — shows token and estimated cost totals from local JSONL usage data.
 - `/uv-help` — quick uv reference. The Gondolin bash wrapper blocks common `pip`, `poetry`, `python -m pip`, `python -m venv`, and `python -m py_compile` commands and suggests uv alternatives.
+- `/wal status|append <markdown>` — status/manual append for the host Obsidian WAL writer. Also exposes the `wal_append` model tool for appending to the end of `~/code/github.com/hrmnjt/worklog/wal/YYYYMMDD.md` from any Pi session without mounting the vault into Gondolin.
 
 ## Themes
 
