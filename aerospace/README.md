@@ -65,7 +65,6 @@ So `alt-1` in the config means `option-1` on the keyboard.
 | `option-h/j/k/l` | focus left/down/up/right |
 | `option-shift-h/j/k/l` | move focused window left/down/up/right |
 | `option-shift-1..9`, `option-shift-0` | move focused window to workspace 1..10 |
-| `option-enter` | open a new Ghostty window |
 | `option-f` | AeroSpace fullscreen/maximize |
 | `option-shift-space` | toggle focused window between floating and tiled |
 | `option-slash` | cycle tiled layout orientation |

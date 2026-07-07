@@ -92,10 +92,6 @@ outer.right = 8
 
 [mode.main.binding]
 
-# Open a new Ghostty window from anywhere.
-# `open -na` means "open a new instance of the app named Ghostty".
-alt-enter = 'exec-and-forget open -na Ghostty'
-
 # Switch layout for the current container/workspace.
 # `alt-slash` cycles tile orientation; useful when a split feels wrong.
 alt-slash = 'layout tiles horizontal vertical'
