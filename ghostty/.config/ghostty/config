@@ -8,7 +8,7 @@
 # making things bigger
 font-size = 18
 # setting fontface for terminal
-font-family = "JetBrains Mono"
+font-family = "JetBrainsMono Nerd Font Mono"
 
 # theme for ghostty
 theme = "Gruvbox Dark Hard"

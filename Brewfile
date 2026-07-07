@@ -86,8 +86,8 @@ cask "obsidian"
 # Image editor
 cask "gimp"
 
-# Fonts
-cask "font-jetbrains-mono"
+# JetBrains Mono plus Nerd Font glyphs for starship prompt icons in terminals.
+cask "font-jetbrains-mono-nerd-font"
 
 # SQL analytics - data in my laptop
 brew "duckdb"
