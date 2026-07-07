@@ -117,9 +117,23 @@ Commands:
 /review help
 ```
 
-The generated message tells pi to inspect the referenced files under
-`/workspace`, preserve unrelated changes, avoid resurrecting deleted files unless
-explicitly requested, and summarize how each comment was addressed.
+The review UI is optimized for reading diffs in-place:
+
+- wide terminals show a full-width diff with a two-line current-file header
+  (`status + basename + file position/comments`, then `directory + +N/-N`)
+- narrow terminals keep a separate file-list tab and diff tab
+- diff rows reserve a marker column, show both old/new line numbers in muted
+  text, and keep the code indentation aligned
+- selected rows use a bright `›` marker instead of inverse video so added/removed
+  lines keep their normal colors and indentation
+- mouse clicks select files/lines, and the wheel scrolls through the diff
+
+Submitted comments include an anchor snapshot: file path, hunk, selected line,
+line kind, and nearby diff context. The generated message tells pi to treat the
+reviewer's feedback as authoritative, use the embedded snippet only as a locator,
+inspect the referenced files under `/workspace`, preserve unrelated changes,
+avoid resurrecting deleted files unless explicitly requested, and summarize how
+each comment was addressed.
 
 ### Review summary — `extensions/review-summary.ts`
 
