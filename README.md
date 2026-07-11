@@ -49,6 +49,10 @@ just brewinst
 # Step 9: Install pi extension dependencies
 `just pi-deps`
 
+# Optional: download and start the local coding model (see "Local LLM inference")
+`just llm-download`
+`llm-start`
+
 # Step 9.5: Apply gruvbox-inspired macOS appearance and wallpaper
 `just macos-gruvbox`
 
@@ -76,6 +80,49 @@ git remote set-url origin git@github.com:hrmnjt/dev.git
 `just gitsetup`
 ```
 
+
+## Local LLM inference
+
+The inference stack uses Homebrew `llama.cpp`, a tracked `launchd` service, and
+a Qwen3.5 9B Q4_K_M GGUF stored under the repo's ignored `_models/` directory.
+The server binds only to `127.0.0.1:8080` and exposes an OpenAI-compatible API
+to pi.
+
+Install, download, deploy, and start it on the host Mac:
+
+```bash
+just brewinst       # or: brew install llama.cpp
+just llm-download   # resumable ~5.3 GiB download with SHA-256 verification
+just stowall
+loadshell
+llm-start
+just llm-check
+```
+
+Then run `/reload` in pi, open `/model`, and choose:
+
+```text
+llama.cpp / qwen3.5-9b-q4_k_m
+```
+
+Service commands:
+
+```bash
+llm-start
+llm-stop
+llm-restart
+llm-status
+llm-logs
+```
+
+The LaunchAgent plist is deployed to
+`$XDG_CONFIG_HOME/llama/` (default: `~/.config/llama/`) and loaded on demand
+rather than automatically at login. `llm-stop` unloads it completely. See
+`_models/README.md` for model provenance, checksums, runtime settings, and
+upgrade guidance.
+
+Top-level directories beginning with `_` are repo-local and excluded from
+`stowall`; other top-level directories are Stow packages.
 
 ## Gruvbox macOS appearance
 

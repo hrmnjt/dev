@@ -30,6 +30,8 @@ brew "stow"
 brew "uv"
 # Node.js (unpinned now)
 brew "node"
+# Local LLM inference server with Metal acceleration and an OpenAI-compatible API
+brew "llama.cpp"
 # SSG for hrmnjt/sttp
 brew "hugo"
 

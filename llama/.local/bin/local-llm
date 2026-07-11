@@ -1,0 +1,177 @@
+#!/bin/sh
+
+set -eu
+
+label="com.hrmnjt.llama-server"
+domain="gui/$(id -u)"
+service="$domain/$label"
+config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+plist="$config_home/llama/$label.plist"
+log="$HOME/Library/Logs/llama-server.log"
+
+usage() {
+    cat <<'EOF'
+usage: local-llm <command>
+
+commands:
+  start      load and start the llama.cpp LaunchAgent
+  stop       stop and unload the LaunchAgent
+  restart    restart the LaunchAgent
+  status     show launchd state and server health
+  logs       follow the server log
+  server     run llama-server in the foreground (used by launchd)
+EOF
+}
+
+is_loaded() {
+    launchctl print "$service" >/dev/null 2>&1
+}
+
+wait_for_server() {
+    attempt=0
+    printf 'Waiting for the model to load (this may take 2-5 minutes for a 5.3 GiB model)'
+    while [ "$attempt" -lt 120 ]; do
+        if /usr/bin/curl --fail --silent --max-time 1 \
+            http://127.0.0.1:8080/health >/dev/null 2>&1; then
+            printf '\nReady at http://127.0.0.1:8080\n'
+            return 0
+        fi
+        printf '.'
+        sleep 1
+        attempt=$((attempt + 1))
+    done
+    printf '\nTimed out waiting for llama-server; inspect: %s\n' "$log" >&2
+    return 1
+}
+
+start_service() {
+    if [ ! -f "$plist" ]; then
+        printf 'local-llm: LaunchAgent plist not found at %s\n' "$plist" >&2
+        printf 'local-llm: deploy it from the repository with: just stowall\n' >&2
+        exit 1
+    fi
+    if ! is_loaded; then
+        launchctl bootstrap "$domain" "$plist"
+    fi
+    launchctl kickstart -k "$service"
+    printf 'Started %s\n' "$label"
+    wait_for_server
+}
+
+stop_service() {
+    if is_loaded; then
+        launchctl bootout "$service"
+        printf 'Stopped %s\n' "$label"
+    else
+        printf '%s is not loaded\n' "$label"
+    fi
+}
+
+run_server() {
+    repo="${LOCAL_LLM_REPO:-$HOME/code/github.com/hrmnjt/dev}"
+    model="${LOCAL_LLM_MODEL:-$repo/_models/qwen3.5-9b/Qwen3.5-9B-Q4_K_M.gguf}"
+    binary="${LOCAL_LLM_BINARY:-/opt/homebrew/bin/llama-server}"
+
+    if [ ! -x "$binary" ]; then
+        printf 'local-llm: llama-server not found at %s\n' "$binary" >&2
+        printf 'local-llm: install it with: brew install llama.cpp\n' >&2
+        exit 1
+    fi
+    if [ ! -f "$model" ]; then
+        printf 'local-llm: model not found at %s\n' "$model" >&2
+        printf 'local-llm: download it from the repo with: just llm-download\n' >&2
+        exit 1
+    fi
+
+    exec "$binary" \
+        --model "$model" \
+        --alias qwen3.5-9b-q4_k_m \
+        --host 127.0.0.1 \
+        --port 8080 \
+        --ctx-size 131072 \
+        --parallel 1 \
+        --gpu-layers all \
+        --flash-attn on \
+        --jinja \
+        --temperature 0.6 \
+        --top-p 0.95 \
+        --top-k 20 \
+        --min-p 0.0 \
+        --presence-penalty 0.0 \
+        --no-webui \
+        --log-file "$log"
+}
+
+command="${1:-}"
+case "$command" in
+    start)
+        start_service
+        ;;
+    stop)
+        stop_service
+        ;;
+    restart)
+        stop_service
+        start_service
+        ;;
+    status)
+        if is_loaded; then
+            launchctl print "$service"
+        else
+            printf '%s is not loaded\n' "$label"
+        fi
+        printf '\nServer health:\n'
+        /usr/bin/curl --fail --silent --show-error http://127.0.0.1:8080/health || true
+        printf '\n'
+        ;;
+    logs)
+        mkdir -p "${log%/*}"
+        touch "$log"
+        exec tail -n 100 -f "$log"
+        ;;
+    server)
+        run_server
+        ;;
+    fast)
+        # Quick-start with minimal context for testing
+        repo="${LOCAL_LLM_REPO:-$HOME/code/github.com/hrmnjt/dev}"
+        model="${LOCAL_LLM_MODEL:-$repo/_models/qwen3.5-9b/Qwen3.5-9B-Q4_K_M.gguf}"
+        binary="${LOCAL_LLM_BINARY:-/opt/homebrew/bin/llama-server}"
+
+        if [ ! -x "$binary" ]; then
+            printf 'local-llm: llama-server not found at %s\n' "$binary" >&2
+            printf 'local-llm: install it with: brew install llama.cpp\n' >&2
+            exit 1
+        fi
+        if [ ! -f "$model" ]; then
+            printf 'local-llm: model not found at %s\n' "$model" >&2
+            printf 'local-llm: download it from the repo with: just llm-download\n' >&2
+            exit 1
+        fi
+
+        exec "$binary" \
+            --model "$model" \
+            --alias qwen3.5-9b-q4_k_m \
+            --host 127.0.0.1 \
+            --port 8080 \
+            --ctx-size 32768 \
+            --parallel 1 \
+            --gpu-layers all \
+            --flash-attn on \
+            --jinja \
+            --temperature 0.6 \
+            --top-p 0.95 \
+            --top-k 20 \
+            --min-p 0.0 \
+            --presence-penalty 0.0 \
+            --no-webui \
+            --log-file "$log"
+        ;;
+    help|-h|--help)
+        usage
+        ;;
+    *)
+        usage >&2
+        exit 2
+        ;;
+esac

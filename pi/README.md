@@ -25,6 +25,7 @@ pi/
 │       │   ├── uv.ts              # Prefer uv over pip/poetry/venv
 │       │   └── wal-writer.ts      # Append host Obsidian WAL notes
 │       ├── gondolin-image.json    # Custom Alpine VM image definition
+│       ├── models.json            # Tracked local/custom model providers
 │       ├── package.json           # Extension dependencies
 │       ├── settings.template.json # Intentional settings tracked in git
 │       └── themes/
@@ -307,6 +308,19 @@ runtime keys:
 cd pi/.pi/agent
 jq -s '.[1] * .[0]' settings.template.json settings.json > tmp && mv tmp settings.json
 ```
+
+## Local llama.cpp model
+
+`models.json` registers the local llama.cpp server as an OpenAI-compatible pi
+provider. Its initial model is `qwen3.5-9b-q4_k_m`, served on
+`http://127.0.0.1:8080/v1` with Qwen chat-template thinking and tool-call
+compatibility.
+
+The server, model download, and launchd setup are documented in
+`../_models/README.md`. After deploying and starting the service, open `/model`
+and select provider `llama.cpp` and model `qwen3.5-9b-q4_k_m`. Pi reloads
+`models.json` whenever `/model` is opened, so edits to model metadata do not
+require restarting pi.
 
 ## Custom Gondolin image
 
