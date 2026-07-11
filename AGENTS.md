@@ -104,6 +104,7 @@ pi/
 │       │   ├── uv.ts              # uv guidance and Python-tool blocking
 │       │   └── wal-writer.ts      # Host Obsidian WAL daily-note writer
 │       ├── gondolin-image.json    # Custom VM image config
+│       ├── models.json            # Tracked local/custom model providers
 │       ├── package.json           # Extension dependencies
 │       ├── settings.template.json # Intentional settings tracked in git
 │       ├── settings.json          # Runtime settings, gitignored
@@ -173,6 +174,37 @@ After adding files, tell the user to deploy with `stow --no-folding -t ~ pi`, ru
 - `usage` — `/usage [today|month|all]`; local token and cost summaries.
 - `uv` — `/uv-help`; blocks common pip/poetry/venv commands in Gondolin bash and suggests uv alternatives.
 - `wal-writer` — `wal_append` tool plus `/wal status|append`; appends host Obsidian WAL notes to the end of `~/code/github.com/hrmnjt/worklog/wal/YYYYMMDD.md` without mounting the vault into Gondolin.
+
+## Local model inference
+
+The host Mac runs llama.cpp as an inference-only OpenAI-compatible server:
+
+- Homebrew dependency: `llama.cpp`
+- model data: `_models/` (GGUF files are gitignored)
+- initial model: Qwen3.5 9B Q4_K_M
+- server wrapper: `llama/.local/bin/local-llm`
+- LaunchAgent plist: `llama/.config/llama/com.hrmnjt.llama-server.plist`
+  (deployed to `$XDG_CONFIG_HOME/llama/`; defaults to `~/.config/llama/`)
+- pi provider: `pi/.pi/agent/models.json`
+- endpoint: `http://127.0.0.1:8080/v1`
+
+Top-level directories beginning with `_` are repo-local and excluded from Stow
+by the `[!_]*/` pattern in `Justfile`. Other top-level directories are Stow
+packages.
+
+The user must run model and service commands on the host Mac:
+
+```bash
+just llm-download
+just stowall
+loadshell
+llm-start
+just llm-check
+```
+
+Service aliases are `llm-start`, `llm-stop`, `llm-restart`, `llm-status`, and
+`llm-logs`. Do not attempt to run Homebrew, launchd, or the Metal inference
+server from Gondolin.
 
 ## Gondolin notes
 
