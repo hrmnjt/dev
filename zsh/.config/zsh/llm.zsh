@@ -3,5 +3,6 @@
 alias llm-start='local-llm start'
 alias llm-stop='local-llm stop'
 alias llm-restart='local-llm restart'
+alias llm-switch='local-llm switch'
 alias llm-status='local-llm status'
 alias llm-logs='local-llm logs'

@@ -6,18 +6,39 @@ label="com.hrmnjt.llama-server"
 domain="gui/$(id -u)"
 service="$domain/$label"
 config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+config_file="${LOCAL_LLM_CONFIG:-$config_home/llama/server.env}"
+config_example="$config_home/llama/server.env.example"
 plist="$config_home/llama/$label.plist"
 log="$HOME/Library/Logs/llama-server.log"
+
+if [ -f "$config_file" ]; then
+    # This is a trusted, host-local shell configuration file.
+    # shellcheck disable=SC1090
+    . "$config_file"
+fi
+
+model="${LOCAL_LLM_MODEL:-}"
+model_alias="${LOCAL_LLM_ALIAS:-local-model}"
+host="${LOCAL_LLM_HOST:-127.0.0.1}"
+port="${LOCAL_LLM_PORT:-8080}"
+context_size="${LOCAL_LLM_CONTEXT_SIZE:-32768}"
+parallel="${LOCAL_LLM_PARALLEL:-1}"
+start_timeout="${LOCAL_LLM_START_TIMEOUT:-300}"
+binary="${LOCAL_LLM_BINARY:-/opt/homebrew/bin/llama-server}"
+mmproj="${LOCAL_LLM_MMPROJ:-}"
+models_dir="${LOCAL_LLM_MODELS_DIR:-$HOME/code/github.com/hrmnjt/dev/_models}"
 
 usage() {
     cat <<'EOF'
 usage: local-llm <command>
 
 commands:
-  start      load and start the llama.cpp LaunchAgent
+  start      load and start the configured llama.cpp LaunchAgent
   stop       stop and unload the LaunchAgent
   restart    restart the LaunchAgent
+  switch     select a GGUF with fzf, save it, and restart the service
   status     show launchd state and server health
+  check      require a healthy server and list its OpenAI API models
   logs       follow the server log
   server     run llama-server in the foreground (used by launchd)
 EOF
@@ -27,13 +48,140 @@ is_loaded() {
     launchctl print "$service" >/dev/null 2>&1
 }
 
+require_launch_config() {
+    if [ ! -f "$config_file" ]; then
+        printf 'local-llm: model config not found at %s\n' "$config_file" >&2
+        printf 'local-llm: select and configure a model with: llm-switch\n' >&2
+        exit 1
+    fi
+}
+
+validate_runtime() {
+    if [ -z "$model" ]; then
+        printf 'local-llm: LOCAL_LLM_MODEL is not set in %s\n' "$config_file" >&2
+        exit 1
+    fi
+    if [ ! -f "$model" ]; then
+        printf 'local-llm: model not found at %s\n' "$model" >&2
+        exit 1
+    fi
+    if [ ! -x "$binary" ]; then
+        printf 'local-llm: llama-server not found at %s\n' "$binary" >&2
+        printf 'local-llm: install it with: brew install llama.cpp\n' >&2
+        exit 1
+    fi
+}
+
+list_models() {
+    find "$models_dir" -type f -name '*.gguf' -print |
+        awk '
+            {
+                name = $0
+                sub(/^.*\//, "", name)
+                lower = tolower(name)
+
+                if (lower ~ /^mmproj.*[.]gguf$/) {
+                    next
+                }
+
+                if (lower ~ /-[0-9]+-of-[0-9]+[.]gguf$/ &&
+                    lower !~ /-00001-of-[0-9]+[.]gguf$/) {
+                    next
+                }
+
+                print
+            }
+        '
+}
+
+update_model_config() {
+    selected_model="$1"
+    mkdir -p "${config_file%/*}"
+
+    if [ ! -f "$config_file" ]; then
+        if [ -f "$config_example" ]; then
+            cp "$config_example" "$config_file"
+        else
+            : >"$config_file"
+        fi
+    fi
+
+    escaped_model=$(printf '%s' "$selected_model" | sed 's/[\\"`$]/\\&/g')
+    replacement="LOCAL_LLM_MODEL=\"$escaped_model\""
+    temporary=$(mktemp "${config_file}.tmp.XXXXXX")
+    found=0
+
+    while IFS= read -r line || [ -n "$line" ]; do
+        case "$line" in
+            LOCAL_LLM_MODEL=*)
+                if [ "$found" -eq 0 ]; then
+                    printf '%s\n' "$replacement" >>"$temporary"
+                    found=1
+                fi
+                ;;
+            *)
+                printf '%s\n' "$line" >>"$temporary"
+                ;;
+        esac
+    done <"$config_file"
+
+    if [ "$found" -eq 0 ]; then
+        printf '\n%s\n' "$replacement" >>"$temporary"
+    fi
+
+    mv "$temporary" "$config_file"
+}
+
+switch_model() {
+    if ! command -v fzf >/dev/null 2>&1; then
+        printf 'local-llm: fzf is required; install it with: brew install fzf\n' >&2
+        exit 1
+    fi
+    if [ ! -d "$models_dir" ]; then
+        printf 'local-llm: model directory not found at %s\n' "$models_dir" >&2
+        exit 1
+    fi
+
+    if ! list_models | grep -q .; then
+        printf 'local-llm: no model GGUF files found under %s\n' "$models_dir" >&2
+        exit 1
+    fi
+
+    selected_model=$(
+        list_models |
+            sort |
+            fzf \
+                --height=60% \
+                --layout=reverse \
+                --border \
+                --prompt='model> ' \
+                --header="active: ${model:-none}" \
+                --preview='ls -lh {}' \
+                --preview-window=down,3
+    )
+
+    if [ -z "$selected_model" ]; then
+        printf 'local-llm: no model selected\n' >&2
+        exit 1
+    fi
+
+    update_model_config "$selected_model"
+    printf 'Selected %s\n' "$selected_model"
+
+    if is_loaded; then
+        stop_service
+    fi
+
+    exec "$HOME/.local/bin/local-llm" start
+}
+
 wait_for_server() {
     attempt=0
-    printf 'Waiting for the model to load (this may take 2-5 minutes for a 5.3 GiB model)'
-    while [ "$attempt" -lt 120 ]; do
+    printf 'Waiting for the configured model to load (timeout: %ss)' "$start_timeout"
+    while [ "$attempt" -lt "$start_timeout" ]; do
         if /usr/bin/curl --fail --silent --max-time 1 \
-            http://127.0.0.1:8080/health >/dev/null 2>&1; then
-            printf '\nReady at http://127.0.0.1:8080\n'
+            "http://$host:$port/health" >/dev/null 2>&1; then
+            printf '\nReady at http://%s:%s\n' "$host" "$port"
             return 0
         fi
         printf '.'
@@ -45,6 +193,8 @@ wait_for_server() {
 }
 
 start_service() {
+    require_launch_config
+    validate_runtime
     if [ ! -f "$plist" ]; then
         printf 'local-llm: LaunchAgent plist not found at %s\n' "$plist" >&2
         printf 'local-llm: deploy it from the repository with: just stowall\n' >&2
@@ -61,6 +211,11 @@ start_service() {
 stop_service() {
     if is_loaded; then
         launchctl bootout "$service"
+        attempt=0
+        while is_loaded && [ "$attempt" -lt 50 ]; do
+            sleep 0.1
+            attempt=$((attempt + 1))
+        done
         printf 'Stopped %s\n' "$label"
     else
         printf '%s is not loaded\n' "$label"
@@ -68,37 +223,25 @@ stop_service() {
 }
 
 run_server() {
-    repo="${LOCAL_LLM_REPO:-$HOME/code/github.com/hrmnjt/dev}"
-    model="${LOCAL_LLM_MODEL:-$repo/_models/qwen3.5-9b/Qwen3.5-9B-Q4_K_M.gguf}"
-    binary="${LOCAL_LLM_BINARY:-/opt/homebrew/bin/llama-server}"
+    validate_runtime
 
-    if [ ! -x "$binary" ]; then
-        printf 'local-llm: llama-server not found at %s\n' "$binary" >&2
-        printf 'local-llm: install it with: brew install llama.cpp\n' >&2
-        exit 1
-    fi
-    if [ ! -f "$model" ]; then
-        printf 'local-llm: model not found at %s\n' "$model" >&2
-        printf 'local-llm: download it from the repo with: just llm-download\n' >&2
-        exit 1
-    fi
-
-    exec "$binary" \
+    set -- "$binary" \
         --model "$model" \
-        --alias qwen3.5-9b-q4_k_m \
-        --host 127.0.0.1 \
-        --port 8080 \
-        --ctx-size 131072 \
-        --parallel 1 \
+        --alias "$model_alias" \
+        --host "$host" \
+        --port "$port" \
+        --ctx-size "$context_size" \
+        --parallel "$parallel" \
         --gpu-layers all \
         --flash-attn on \
         --jinja \
-        --temperature 0.6 \
-        --top-p 0.95 \
-        --top-k 20 \
-        --min-p 0.0 \
-        --presence-penalty 0.0 \
         --no-webui
+
+    if [ -n "$mmproj" ]; then
+        set -- "$@" --mmproj "$mmproj"
+    fi
+
+    exec "$@"
 }
 
 command="${1:-}"
@@ -113,6 +256,9 @@ case "$command" in
         stop_service
         start_service
         ;;
+    switch)
+        switch_model
+        ;;
     status)
         if is_loaded; then
             launchctl print "$service"
@@ -120,7 +266,16 @@ case "$command" in
             printf '%s is not loaded\n' "$label"
         fi
         printf '\nServer health:\n'
-        /usr/bin/curl --fail --silent --show-error http://127.0.0.1:8080/health || true
+        /usr/bin/curl --fail --silent --show-error \
+            "http://$host:$port/health" || true
+        printf '\n'
+        ;;
+    check)
+        /usr/bin/curl --fail --silent --show-error \
+            "http://$host:$port/health"
+        printf '\n'
+        /usr/bin/curl --fail --silent --show-error \
+            "http://$host:$port/v1/models"
         printf '\n'
         ;;
     logs)
@@ -130,40 +285,6 @@ case "$command" in
         ;;
     server)
         run_server
-        ;;
-    fast)
-        # Quick-start with minimal context for testing
-        repo="${LOCAL_LLM_REPO:-$HOME/code/github.com/hrmnjt/dev}"
-        model="${LOCAL_LLM_MODEL:-$repo/_models/qwen3.5-9b/Qwen3.5-9B-Q4_K_M.gguf}"
-        binary="${LOCAL_LLM_BINARY:-/opt/homebrew/bin/llama-server}"
-
-        if [ ! -x "$binary" ]; then
-            printf 'local-llm: llama-server not found at %s\n' "$binary" >&2
-            printf 'local-llm: install it with: brew install llama.cpp\n' >&2
-            exit 1
-        fi
-        if [ ! -f "$model" ]; then
-            printf 'local-llm: model not found at %s\n' "$model" >&2
-            printf 'local-llm: download it from the repo with: just llm-download\n' >&2
-            exit 1
-        fi
-
-        exec "$binary" \
-            --model "$model" \
-            --alias qwen3.5-9b-q4_k_m \
-            --host 127.0.0.1 \
-            --port 8080 \
-            --ctx-size 32768 \
-            --parallel 1 \
-            --gpu-layers all \
-            --flash-attn on \
-            --jinja \
-            --temperature 0.6 \
-            --top-p 0.95 \
-            --top-k 20 \
-            --min-p 0.0 \
-            --presence-penalty 0.0 \
-            --no-webui
         ;;
     help|-h|--help)
         usage

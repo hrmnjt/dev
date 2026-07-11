@@ -14,6 +14,19 @@ BTW, Borrowed reference from [XKCD 149](https://xkcd.com/149/), BTW.
 - stuff that might not suit your workflow!
 - might not work for anything other than macosx as of now.
 
+## Top-level directory nomenclature
+
+Top-level directory names indicate whether GNU Stow deploys them:
+
+| Form | Meaning |
+|---|---|
+| `<name>/` | Stow package whose contents are symlinked into `$HOME` |
+| `_<name>/` | Repository-local data or helper files that must not be Stowed |
+
+The `[!_]*/` glob in `Justfile` enforces this convention. For example,
+`llama/` is deployed, while `_scripts/` and `_models/` remain inside the repo.
+When adding a repo-local top-level directory, prefix it with `_`.
+
 ## for future Harman
 
 When you get a new macosx:
@@ -49,9 +62,8 @@ just brewinst
 # Step 9: Install pi extension dependencies
 `just pi-deps`
 
-# Optional: download and start the local coding model (see "Local LLM inference")
-`just llm-download`
-`llm-start`
+# Optional: select and start a downloaded GGUF (see "Local LLM inference")
+llm-switch
 
 # Step 9.5: Apply gruvbox-inspired macOS appearance and wallpaper
 `just macos-gruvbox`
@@ -84,25 +96,26 @@ git remote set-url origin git@github.com:hrmnjt/dev.git
 ## Local LLM inference
 
 The inference stack uses Homebrew `llama.cpp`, a tracked `launchd` service, and
-a Qwen3.5 9B Q4_K_M GGUF stored under the repo's ignored `_models/` directory.
-The server binds only to `127.0.0.1:8080` and exposes an OpenAI-compatible API
-to pi.
+GGUF weights stored under the repo's ignored `_models/` directory. The active
+model is host-local state rather than tracked dotfiles configuration. By
+default, the server binds only to `127.0.0.1:8080` and exposes the stable
+`local-model` alias through an OpenAI-compatible API to pi.
 
-Install, download, deploy, and start it on the host Mac:
+After downloading a GGUF into `_models/`, install, deploy, configure, and start
+the service on the host Mac:
 
 ```bash
 just brewinst       # or: brew install llama.cpp
-just llm-download   # resumable ~5.3 GiB download with SHA-256 verification
 just stowall
 loadshell
-llm-start
+llm-switch          # fzf-select a GGUF, save it, and start the service
 just llm-check
 ```
 
 Then run `/reload` in pi, open `/model`, and choose:
 
 ```text
-llama.cpp / qwen3.5-9b-q4_k_m
+llama.cpp / local-model
 ```
 
 Service commands:
@@ -111,6 +124,7 @@ Service commands:
 llm-start
 llm-stop
 llm-restart
+llm-switch
 llm-status
 llm-logs
 ```
@@ -118,11 +132,8 @@ llm-logs
 The LaunchAgent plist is deployed to
 `$XDG_CONFIG_HOME/llama/` (default: `~/.config/llama/`) and loaded on demand
 rather than automatically at login. `llm-stop` unloads it completely. See
-`_models/README.md` for model provenance, checksums, runtime settings, and
-upgrade guidance.
-
-Top-level directories beginning with `_` are repo-local and excluded from
-`stowall`; other top-level directories are Stow packages.
+`_models/README.md` for the model-directory convention, host-local settings,
+and model-switching workflow.
 
 ## Gruvbox macOS appearance
 

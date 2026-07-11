@@ -2,9 +2,10 @@
 
 # --- Stow commands ---
 
-# Deploy config directories to ~ via symlinks (aerospace, ghostty, llama, nvim, pi, etc.).
-# Top-level directories beginning with "_" contain repo-local data or scripts and are
-# deliberately not Stow packages. --no-folding keeps writable target directories real.
+# Top-level directory nomenclature:
+#   <name>/  = Stow package deployed into $HOME
+#   _<name>/ = repo-local data or helpers that must not be Stowed
+# The [!_]*/ glob enforces this convention. --no-folding keeps writable targets real.
 stowall:
     stow --no-folding -t ~ [!_]*/
 
@@ -82,27 +83,6 @@ pi-deps:
 
 # --- Local LLM inference ---
 
-# Download the pinned Qwen3.5 9B Q4_K_M GGUF (~5.3 GiB). The partial download is
-# resumable; the final file is checked against the publisher's Git LFS SHA-256.
-llm-download:
-    #!/bin/sh
-    set -eu
-    dir="{{justfile_directory()}}/_models/qwen3.5-9b"
-    file="$dir/Qwen3.5-9B-Q4_K_M.gguf"
-    partial="$file.part"
-    mkdir -p "$dir"
-    if [ ! -f "$file" ]; then
-        curl --fail --location --retry 3 --continue-at - --output "$partial" \
-            "https://huggingface.co/unsloth/Qwen3.5-9B-GGUF/resolve/3885219b6810b007914f3a7950a8d1b469d598a5/Qwen3.5-9B-Q4_K_M.gguf"
-        mv "$partial" "$file"
-    fi
-    printf '%s  %s\n' \
-        '03b74727a860a56338e042c4420bb3f04b2fec5734175f4cb9fa853daf52b7e8' \
-        "$file" | shasum -a 256 --check
-
-# Check the local server health and list the model exposed through its OpenAI API.
+# Check the configured server health and list the model exposed through its OpenAI API.
 llm-check:
-    curl --fail --silent --show-error http://127.0.0.1:8080/health
-    @printf '\n'
-    curl --fail --silent --show-error http://127.0.0.1:8080/v1/models
-    @printf '\n'
+    local-llm check

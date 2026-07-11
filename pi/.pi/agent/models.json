@@ -7,17 +7,16 @@
       "compat": {
         "supportsDeveloperRole": false,
         "supportsReasoningEffort": false,
-        "maxTokensField": "max_tokens",
-        "thinkingFormat": "qwen-chat-template"
+        "maxTokensField": "max_tokens"
       },
       "models": [
         {
-          "id": "qwen3.5-9b-q4_k_m",
-          "name": "Qwen3.5 9B Q4_K_M (local llama.cpp)",
-          "reasoning": true,
+          "id": "local-model",
+          "name": "Local model (llama.cpp)",
+          "reasoning": false,
           "input": ["text"],
-          "contextWindow": 131072,
-          "maxTokens": 32768,
+          "contextWindow": 32768,
+          "maxTokens": 16384,
           "cost": {
             "input": 0,
             "output": 0,

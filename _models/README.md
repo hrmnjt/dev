@@ -1,71 +1,74 @@
 # Local inference models
 
 This directory stores model weights used by the local llama.cpp server. GGUF
-weights and partial downloads are ignored by Git; model provenance and server
-configuration remain tracked.
+weights, multimodal projectors, and partial downloads are ignored by Git.
 
-## Initial model
-
-| Field | Value |
-|---|---|
-| Model | Qwen3.5 9B |
-| Quantization | Q4_K_M GGUF |
-| File size | 5,680,522,464 bytes (~5.3 GiB) |
-| License | Apache 2.0 |
-| GGUF publisher | [unsloth/Qwen3.5-9B-GGUF](https://huggingface.co/unsloth/Qwen3.5-9B-GGUF) |
-| Pinned revision | `3885219b6810b007914f3a7950a8d1b469d598a5` |
-| SHA-256 | `03b74727a860a56338e042c4420bb3f04b2fec5734175f4cb9fa853daf52b7e8` |
-
-The model is public and ungated. A Hugging Face token is not required and does
-not make this download inherently faster.
-
-Download and verify it from the repository root:
-
-```bash
-just llm-download
-```
-
-The resumable download is written to:
+Use one subdirectory per model or quantization so locally downloaded files stay
+organized without adding model-specific data to the dotfiles configuration:
 
 ```text
-_models/qwen3.5-9b/Qwen3.5-9B-Q4_K_M.gguf.part
+_models/
+├── README.md
+├── <model-a>/
+│   └── <model-a>.gguf
+└── <model-b>/
+    ├── <model-b>.gguf
+    └── mmproj.gguf
 ```
 
-It is renamed to `.gguf` only after the transfer finishes, then checked against
-the publisher's Git LFS SHA-256.
+Model downloads are intentionally not encoded in `Justfile`: sources, licenses,
+file layouts, checksums, and authentication requirements vary by publisher.
+Download each model from its publisher, verify it using the publisher's digest
+when available, and keep its weights under this directory.
 
-## Why this model
+## Select the active model
 
-Qwen3.5 9B is small enough for a quick first setup while supporting coding,
-reasoning, and tool calling. The server uses it in text-only mode, so the
-separate vision projector is not downloaded. Q4_K_M is intended as a setup and
-iteration-friendly starting point, not necessarily the final quality target.
-
-A natural later upgrade for sustained coding-agent work is Qwen3-Coder
-30B-A3B-Instruct. Its Q4_K_M GGUF is roughly 17.3 GiB and is well within the
-machine's 128 GiB unified-memory capacity.
-
-## Runtime defaults
-
-The tracked server wrapper at `llama/.local/bin/local-llm` uses:
-
-- localhost only: `127.0.0.1:8080`
-- one inference slot
-- 128K context
-- all model layers eligible for Metal offload
-- Flash Attention
-- the model's Jinja chat template for tool calls
-- Qwen's recommended thinking-mode sampling values for precise coding
-
-Override the repository or model path without editing the wrapper:
+After deploying with `just stowall`, use the interactive switcher:
 
 ```bash
-LOCAL_LLM_REPO=/path/to/dev local-llm server
-LOCAL_LLM_MODEL=/path/to/model.gguf local-llm server
+loadshell
+llm-switch
 ```
 
-These environment overrides are most useful for manual foreground runs. A
-`launchd` service does not inherit arbitrary interactive shell variables; edit
-the tracked wrapper when changing its persistent defaults. Its plist is
-installed at `$XDG_CONFIG_HOME/llama/com.hrmnjt.llama-server.plist` (default:
-`~/.config/llama/`) and bootstrapped from that path on demand.
+The switcher searches `_models/` recursively for GGUF files, excludes
+multimodal projector files, and shows only `00001-of-*` for sharded models so
+llama.cpp can discover the remaining shards automatically. It opens an fzf
+selector and writes the choice to the host-local configuration:
+
+```text
+~/.config/llama/server.env
+```
+
+It creates that file from the tracked example when necessary, then starts or
+restarts the service automatically. The selected weights are exposed through
+the stable `local-model` alias, so switching GGUFs does not require changing
+pi's provider ID.
+
+Advanced settings can still be edited directly in `server.env`. After changing
+one manually, apply it with `llm-restart`.
+
+## Runtime configuration
+
+Supported `server.env` values:
+
+| Variable | Default | Purpose |
+|---|---:|---|
+| `LOCAL_LLM_MODEL` | selected by `llm-switch` | Absolute path to the active GGUF |
+| `LOCAL_LLM_MODELS_DIR` | repo `_models/` | Directory searched by `llm-switch` |
+| `LOCAL_LLM_ALIAS` | `local-model` | Model ID exposed by the API; keep aligned with pi |
+| `LOCAL_LLM_CONTEXT_SIZE` | `32768` | Server context window; keep aligned with pi |
+| `LOCAL_LLM_HOST` | `127.0.0.1` | Listen address |
+| `LOCAL_LLM_PORT` | `8080` | Listen port |
+| `LOCAL_LLM_PARALLEL` | `1` | Number of inference slots |
+| `LOCAL_LLM_START_TIMEOUT` | `300` | Startup wait timeout in seconds |
+| `LOCAL_LLM_BINARY` | `/opt/homebrew/bin/llama-server` | llama-server executable |
+| `LOCAL_LLM_MMPROJ` | unset | Optional multimodal projector |
+
+The wrapper keeps Metal offload, Flash Attention, Jinja chat templates, and the
+localhost-only server behavior as generic defaults. Sampling is left to the
+client or model defaults instead of embedding model-specific recommendations.
+
+Pi's tracked `local-model` entry uses conservative text-only, non-reasoning
+metadata. When a model requires a different context limit, image input, or a
+specific reasoning format, update both `pi/.pi/agent/models.json` and
+`server.env` as appropriate.
