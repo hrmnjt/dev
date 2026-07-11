@@ -98,8 +98,7 @@ run_server() {
         --top-k 20 \
         --min-p 0.0 \
         --presence-penalty 0.0 \
-        --no-webui \
-        --log-file "$log"
+        --no-webui
 }
 
 command="${1:-}"
@@ -164,8 +163,7 @@ case "$command" in
             --top-k 20 \
             --min-p 0.0 \
             --presence-penalty 0.0 \
-            --no-webui \
-            --log-file "$log"
+            --no-webui
         ;;
     help|-h|--help)
         usage

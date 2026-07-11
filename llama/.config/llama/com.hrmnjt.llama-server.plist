@@ -9,7 +9,7 @@
     <array>
         <string>/bin/sh</string>
         <string>-c</string>
-        <string>exec "$HOME/.local/bin/local-llm" server</string>
+        <string>exec "$HOME/.local/bin/local-llm" server &gt;&gt;"$HOME/Library/Logs/llama-server.log" 2&gt;&amp;1</string>
     </array>
 
     <key>RunAtLoad</key>
