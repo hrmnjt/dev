@@ -18,6 +18,19 @@ Do **not** try to run these from assistant tools:
 
 `npm install` inside `/workspace` is fine. Only host paths such as `~/.pi/agent` are outside the VM.
 
+## Top-level directory nomenclature
+
+Top-level directory names determine Stow behavior:
+
+| Form | Meaning |
+|---|---|
+| `<name>/` | Stow package deployed into the host `$HOME` |
+| `_<name>/` | Repo-local data or helpers that must not be Stowed |
+
+The `[!_]*/` glob in `Justfile` enforces this convention. Examples: `llama/`
+is a Stow package; `_scripts/` and `_models/` stay in the repository. Prefix
+new repo-local top-level directories with `_`.
+
 ## Deploying pi changes
 
 After editing pi config, tell the user to run this on the host Mac:
@@ -181,30 +194,27 @@ The host Mac runs llama.cpp as an inference-only OpenAI-compatible server:
 
 - Homebrew dependency: `llama.cpp`
 - model data: `_models/` (GGUF files are gitignored)
-- initial model: Qwen3.5 9B Q4_K_M
+- active model config: host-local `~/.config/llama/server.env`
+- tracked config template: `llama/.config/llama/server.env.example`
+- stable API model alias: `local-model`
 - server wrapper: `llama/.local/bin/local-llm`
 - LaunchAgent plist: `llama/.config/llama/com.hrmnjt.llama-server.plist`
   (deployed to `$XDG_CONFIG_HOME/llama/`; defaults to `~/.config/llama/`)
 - pi provider: `pi/.pi/agent/models.json`
 - endpoint: `http://127.0.0.1:8080/v1`
 
-Top-level directories beginning with `_` are repo-local and excluded from Stow
-by the `[!_]*/` pattern in `Justfile`. Other top-level directories are Stow
-packages.
-
 The user must run model and service commands on the host Mac:
 
 ```bash
-just llm-download
 just stowall
 loadshell
-llm-start
+llm-switch  # fzf-select a downloaded GGUF and start/restart the service
 just llm-check
 ```
 
-Service aliases are `llm-start`, `llm-stop`, `llm-restart`, `llm-status`, and
-`llm-logs`. Do not attempt to run Homebrew, launchd, or the Metal inference
-server from Gondolin.
+Service aliases are `llm-start`, `llm-stop`, `llm-restart`, `llm-switch`,
+`llm-status`, and `llm-logs`. Do not attempt to run Homebrew, launchd, or the
+Metal inference server from Gondolin.
 
 ## Gondolin notes
 

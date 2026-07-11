@@ -312,15 +312,18 @@ jq -s '.[1] * .[0]' settings.template.json settings.json > tmp && mv tmp setting
 ## Local llama.cpp model
 
 `models.json` registers the local llama.cpp server as an OpenAI-compatible pi
-provider. Its initial model is `qwen3.5-9b-q4_k_m`, served on
-`http://127.0.0.1:8080/v1` with Qwen chat-template thinking and tool-call
-compatibility.
+provider. The server exposes whichever host-local GGUF is active through the
+stable `local-model` alias at `http://127.0.0.1:8080/v1`.
 
-The server, model download, and launchd setup are documented in
-`../_models/README.md`. After deploying and starting the service, open `/model`
-and select provider `llama.cpp` and model `qwen3.5-9b-q4_k_m`. Pi reloads
+The server, model directory, `llm-switch` fzf selector, and launchd setup are
+documented in `../_models/README.md`. After selecting and starting a model, open
+`/model` and select provider `llama.cpp` and model `local-model`. Pi reloads
 `models.json` whenever `/model` is opened, so edits to model metadata do not
 require restarting pi.
+
+The tracked entry deliberately uses conservative text-only, non-reasoning
+metadata. Update it when the active model needs a larger context, image input,
+or model-specific thinking compatibility.
 
 ## Custom Gondolin image
 
