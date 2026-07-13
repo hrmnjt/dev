@@ -38,8 +38,8 @@ alias gbclean='git fetch --prune && git branch -vv --merged | awk '\''$1 != "*" 
 # pi + Hunk review bridge
 [[ -f ~/.config/zsh/pihunk.zsh ]] && source ~/.config/zsh/pihunk.zsh
 
-# Local llama.cpp inference service
-[[ -f ~/.config/zsh/llm.zsh ]] && source ~/.config/zsh/llm.zsh
+# Short name for the standalone local llama.cpp service controller
+alias llm='local-llm'
 
 # fzf theme: Gruvbox Dark Hard, matching Ghostty and Starship.
 export FZF_DEFAULT_OPTS=" \
