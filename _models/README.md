@@ -32,8 +32,9 @@ llm-switch
 
 The switcher searches `_models/` recursively for GGUF files, excludes
 multimodal projector files, and shows only `00001-of-*` for sharded models so
-llama.cpp can discover the remaining shards automatically. It opens an fzf
-selector and writes the choice to the host-local configuration:
+llama.cpp can discover the remaining shards automatically. The fzf menu shows
+each GGUF basename followed by its containing path in parentheses, then writes
+the choice to the host-local configuration:
 
 ```text
 ~/.config/llama/server.env

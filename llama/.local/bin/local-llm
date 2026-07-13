@@ -147,18 +147,29 @@ switch_model() {
         exit 1
     fi
 
-    selected_model=$(
+    tab=$(printf '\t')
+    selected_entry=$(
         list_models |
             sort |
+            while IFS= read -r model_path; do
+                model_name=${model_path##*/}
+                model_directory=${model_path%/*}
+                printf '%s\t(%s)\t%s\n' \
+                    "$model_name" "$model_directory" "$model_path"
+            done |
             fzf \
+                --delimiter="$tab" \
+                --with-nth=1,2 \
+                --nth=1,2 \
                 --height=60% \
                 --layout=reverse \
                 --border \
                 --prompt='model> ' \
                 --header="active: ${model:-none}" \
-                --preview='ls -lh {}' \
+                --preview='ls -lh {3}' \
                 --preview-window=down,3
     )
+    selected_model=$(printf '%s\n' "$selected_entry" | cut -f3-)
 
     if [ -z "$selected_model" ]; then
         printf 'local-llm: no model selected\n' >&2
