@@ -35,9 +35,6 @@ alias gbclean='git fetch --prune && git branch -vv --merged | awk '\''$1 != "*" 
 # git worktree helper
 [[ -f ~/.config/zsh/wt.zsh ]] && source ~/.config/zsh/wt.zsh
 
-# pi + Hunk review bridge
-[[ -f ~/.config/zsh/pihunk.zsh ]] && source ~/.config/zsh/pihunk.zsh
-
 # Short name for the standalone local llama.cpp service controller
 alias llm='local-llm'
 
