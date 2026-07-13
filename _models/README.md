@@ -21,13 +21,39 @@ file layouts, checksums, and authentication requirements vary by publisher.
 Download each model from its publisher, verify it using the publisher's digest
 when available, and keep its weights under this directory.
 
+## Download the current models
+
+Run these commands from the repository root. `uvx` executes the Hugging Face CLI
+without installing `huggingface-hub` globally.
+
+### Qwen3.5 9B Q4_K_M
+
+```bash
+uvx --from huggingface-hub hf download \
+    unsloth/Qwen3.5-9B-GGUF \
+    --include "Qwen3.5-9B-Q4_K_M.gguf" \
+    --local-dir _models/qwen3.5-9b
+```
+
+### Qwen3-Coder-Next Q5_K_M
+
+```bash
+uvx --from huggingface-hub hf download \
+    Qwen/Qwen3-Coder-Next-GGUF \
+    --include "Qwen3-Coder-Next-Q5_K_M/*" \
+    --local-dir _models/qwen3-coder-next-q5-k-m
+```
+
+The coder model is sharded. `llm switch` displays only its `00001-of-*` shard;
+llama.cpp loads the remaining files automatically.
+
 ## Select the active model
 
 After deploying with `just stowall`, use the interactive switcher:
 
 ```bash
 loadshell
-llm-switch
+llm switch
 ```
 
 The switcher searches `_models/` recursively for GGUF files, excludes
@@ -46,7 +72,7 @@ the stable `local-model` alias, so switching GGUFs does not require changing
 pi's provider ID.
 
 Advanced settings can still be edited directly in `server.env`. After changing
-one manually, apply it with `llm-restart`.
+one manually, apply it with `llm restart`.
 
 ## Runtime configuration
 
@@ -54,8 +80,8 @@ Supported `server.env` values:
 
 | Variable | Default | Purpose |
 |---|---:|---|
-| `LOCAL_LLM_MODEL` | selected by `llm-switch` | Absolute path to the active GGUF |
-| `LOCAL_LLM_MODELS_DIR` | repo `_models/` | Directory searched by `llm-switch` |
+| `LOCAL_LLM_MODEL` | selected by `llm switch` | Absolute path to the active GGUF |
+| `LOCAL_LLM_MODELS_DIR` | repo `_models/` | Directory searched by `llm switch` |
 | `LOCAL_LLM_ALIAS` | `local-model` | Model ID exposed by the API; keep aligned with pi |
 | `LOCAL_LLM_CONTEXT_SIZE` | `32768` | Server context window; keep aligned with pi |
 | `LOCAL_LLM_HOST` | `127.0.0.1` | Listen address |

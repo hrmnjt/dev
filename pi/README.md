@@ -315,7 +315,7 @@ jq -s '.[1] * .[0]' settings.template.json settings.json > tmp && mv tmp setting
 provider. The server exposes whichever host-local GGUF is active through the
 stable `local-model` alias at `http://127.0.0.1:8080/v1`.
 
-The server, model directory, `llm-switch` fzf selector, and launchd setup are
+The server, model directory, `llm switch` fzf selector, and launchd setup are
 documented in `../_models/README.md`. After selecting and starting a model, open
 `/model` and select provider `llama.cpp` and model `local-model`. Pi reloads
 `models.json` whenever `/model` is opened, so edits to model metadata do not

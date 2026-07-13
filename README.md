@@ -63,7 +63,7 @@ just brewinst
 `just pi-deps`
 
 # Optional: select and start a downloaded GGUF (see "Local LLM inference")
-llm-switch
+llm switch
 
 # Step 9.5: Apply gruvbox-inspired macOS appearance and wallpaper
 `just macos-gruvbox`
@@ -108,7 +108,7 @@ the service on the host Mac:
 just brewinst       # or: brew install llama.cpp
 just stowall
 loadshell
-llm-switch          # fzf-select a GGUF, save it, and start the service
+llm switch          # fzf-select a GGUF, save it, and start the service
 just llm-check
 ```
 
@@ -121,17 +121,18 @@ llama.cpp / local-model
 Service commands:
 
 ```bash
-llm-start
-llm-stop
-llm-restart
-llm-switch
-llm-status
-llm-logs
+llm start
+llm stop
+llm restart
+llm switch
+llm status
+llm logs
+llm --help
 ```
 
 The LaunchAgent plist is deployed to
 `$XDG_CONFIG_HOME/llama/` (default: `~/.config/llama/`) and loaded on demand
-rather than automatically at login. `llm-stop` unloads it completely. See
+rather than automatically at login. `llm stop` unloads it completely. See
 `_models/README.md` for the model-directory convention, host-local settings,
 and model-switching workflow.
 

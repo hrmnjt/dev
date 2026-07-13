@@ -51,7 +51,7 @@ is_loaded() {
 require_launch_config() {
     if [ ! -f "$config_file" ]; then
         printf 'local-llm: model config not found at %s\n' "$config_file" >&2
-        printf 'local-llm: select and configure a model with: llm-switch\n' >&2
+        printf 'local-llm: select and configure a model with: llm switch\n' >&2
         exit 1
     fi
 }

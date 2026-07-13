@@ -208,13 +208,13 @@ The user must run model and service commands on the host Mac:
 ```bash
 just stowall
 loadshell
-llm-switch  # fzf-select a downloaded GGUF and start/restart the service
+llm switch  # fzf-select a downloaded GGUF and start/restart the service
 just llm-check
 ```
 
-Service aliases are `llm-start`, `llm-stop`, `llm-restart`, `llm-switch`,
-`llm-status`, and `llm-logs`. Do not attempt to run Homebrew, launchd, or the
-Metal inference server from Gondolin.
+The interactive alias is `llm`, with subcommands `start`, `stop`, `restart`,
+`switch`, `status`, `logs`, and `--help`. Do not attempt to run Homebrew,
+launchd, or the Metal inference server from Gondolin.
 
 ## Gondolin notes
 
