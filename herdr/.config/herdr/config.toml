@@ -7,4 +7,7 @@ name = "gruvbox"
 prompt_new_tab_name = true
 
 [ui.toast]
-delivery = "system"
+delivery = "herdr"
+
+[ui.toast.herdr]
+position = "top-right"
