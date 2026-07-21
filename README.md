@@ -59,7 +59,6 @@ just gondolin-image
 just ghsshkey
 # Add the copied public key to GitHub, then test SSH auth:
 ssh -T git@github.com
-
 # Step 12: Switch this repo from HTTPS to SSH once GitHub SSH is working
 git remote set-url origin git@github.com:hrmnjt/dev.git
 
@@ -123,47 +122,6 @@ The LaunchAgent plist is deployed to
 rather than automatically at login. `llm stop` unloads it completely. See
 `_models/README.md` for the model-directory convention, host-local settings,
 and model-switching workflow.
-
-## Gruvbox macOS appearance
-
-This repo tracks the Pink Floyd gruvbox wallpaper at:
-
-```text
-wallpapers/.local/share/wallpapers/pink-floyd-gruvbox-dark.jpg
-```
-
-After `just stowall`, apply the wallpaper and dark macOS appearance on the host Mac:
-
-```bash
-just macos-gruvbox
-```
-
-That recipe:
-
-- sets macOS dark mode
-- sets the macOS accent color to orange
-- applies the tracked wallpaper to every desktop/space
-
-The wallpaper is deployed through stow to:
-
-```text
-~/.local/share/wallpapers/pink-floyd-gruvbox-dark.jpg
-```
-
-If macOS does not immediately refresh accent/highlight colors, log out and back in.
-
-"Business as Usual" workflow
-
-```bash
-# Check if Brewfile matches installed packages
-just brewcheck
-
-# See what's installed but not in Brewfile
-just brewdiff
-
-# Remove packages not in Brewfile
-just brewclean
-```
 
 ## ClickOps configuration
 
