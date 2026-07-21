@@ -1,6 +1,7 @@
 # sudo make me a sandwich!
 
-## What is in the repo?
+## What is in this repo?
+
 - Ingredients...
 - ...prepared the way I like it...
 - ...so that, I handcraft my sandwich...
@@ -8,136 +9,143 @@
 
 It also reminds me how I like my sandwich, coz sometimes I forget.
 
-BTW, Borrowed reference from [XKCD 149](https://xkcd.com/149/), BTW.
+Borrowed from [XKCD 149](https://xkcd.com/149/), BTW.
 
 ## What is this not?
+
 - stuff that might not suit your workflow!
 - might not work for anything other than macosx as of now.
 
 ## for future Harman
 
-When you get a new macosx:
+### Complete the macOS first-run tasks
 
 ```bash
-# Step 1: Set the Mac hostname (replace with your preferred name)
-sudo scutil --set ComputerName "Harman's MacBook"
-sudo scutil --set LocalHostName "harmans-macbook"
-sudo scutil --set HostName "harmans-macbook"
+# 1. Sign in to iCloud.
 
-# Step 2: Install Homebrew from https://brew.sh/
+# 2. Install all available updates from **System Settings → General → Software Update**.
 
-# Step 3: Install just and stow: 
+# 3. Set the Mac hostname, replacing xxx when needed:
+sudo scutil --set ComputerName "Ghost XXX"
+sudo scutil --set LocalHostName "ghost-xxx"
+sudo scutil --set HostName "ghost-xxx"
+
+# 4. Install Homebrew and the bootstrap tools
+# Install Homebrew from https://brew.sh/
+
+# Make it available in the current shell
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# 5. Install tools to bootstrap the repo
 brew install just stow
 
-# Step 4: Clone this repo:
+# 6. Clone the repository
 mkdir -p ~/code/github.com/hrmnjt
 git clone https://github.com/hrmnjt/dev.git ~/code/github.com/hrmnjt/dev
 cd ~/code/github.com/hrmnjt/dev
 
-# Step 5: Setup XDG and zsh config
-just xdgsetup
-
-# Step 6: Restart terminal to load zsh config, then install all packages
+# 7. Install everything tracked in Brewfile
 just brewinst
 
-# Step 7: Install pi separately (not in Brewfile)
-# Use the current curl installer from: https://pi.dev/docs/latest/quickstart#install
-
-# Step 8: .dotfiles in place with stow
+# 8. Deploy the dotfiles
 just stowall
 
-# Step 9: Install pi extension dependencies
+# 9. Install tools that are not part of Brewfile and installed globally
+# 9.1. Pi - https://pi.dev/docs/latest/quickstart#install
+# 9.2. Install dependencies for pi
 just pi-deps
-
-# Step 9.5: Apply gruvbox-inspired macOS appearance and wallpaper
-just macos-gruvbox
-
-# Step 10: Build the custom Gondolin VM image for pi tools
+# 9.3. Initialize Pi's intentional settings
+if [[ ! -f ~/.pi/agent/settings.json ]]; then
+  cp ~/.pi/agent/settings.template.json ~/.pi/agent/settings.json
+fi
+# 9.4. Build the Pi sandbox
 just gondolin-image
+# Restart the login shell, then continue with step 10
+exec zsh -l
 
-# Step 11: Generate SSH key for GitHub
+# 10. Configure Git and GitHub SSH
+just gitsetup
 just ghsshkey
-# Add the copied public key to GitHub, then test SSH auth:
 ssh -T git@github.com
-# Step 12: Switch this repo from HTTPS to SSH once GitHub SSH is working
+# After SSH authentication succeeds, update this checkout:
 git remote set-url origin git@github.com:hrmnjt/dev.git
 
-# Step 13: Create git directory structure
-just gitsetup
+# 11. Complete required app permissions
+# 11.1. Grant AeroSpace Accessibility permission; see the aerospace/README.md
+# 11.2. Grant Ghostty or the active terminal Accessibility and Automation
+# permissions when using the Ivanti VPN commands; see the ivanti/README.md
+# 11.3. Sign in to required browser, email, messaging, and work applications
+
+# 12. Gruvbox macOS appearance
+just macos-gruvbox
+
+# 13. Local models
+# 13.1. Download and configure local models based on _models/README.md
+# 13.2. Select and verify models
+llm switch
+llm check
+# 13.3. On the first use in Pi, open `/model` and select llama.cpp
+
+# 14. Enable optional integrations
+# 14.1. Install Pi's generated Herdr integration when using Herdr workspaces:
+herdr integration install pi
+herdr integration status
+# 14.2. Brave configuration
+# - Brave extensions: Bitwarden, Readwise Highlighter, and Dark Reader.
+# - Install the Gruvbox Slate Brave theme.
 ```
 
-### Top-level directory nomenclature
+### frequently performed operations
 
-Top-level directory names indicate whether GNU Stow deploys them:
+**Managing packages**
+
+Install the package, add it to `Brewfile` with a descriptive comment, and verify
+that the bundle is complete:
+
+```bash
+brew install <package>
+# Edit Brewfile
+just brewcheck
+```
+
+Inspect packages installed locally but missing from `Brewfile` with:
+
+```bash
+just brewdiff
+```
+
+Remove untracked packages only after reviewing that output:
+
+```bash
+just brewclean
+```
+
+**Local models**
+
+Download or try another local model
+
+1. Download the GGUF under `_models/<model-name>/` using the publisher's
+   instructions.
+2. Verify the publisher's checksum when one is available.
+3. Select and test it:
+
+```bash
+llm switch
+llm check
+```
+
+`llm switch` updates the host-local configuration and starts or restarts the
+service. Switching GGUFs does not require changing Pi's stable model ID.
+
+**Add a top-level package or repository-local directory**
+
+Top-level names determine whether `just stowall` deploys a directory:
 
 | Form | Meaning |
 |---|---|
 | `<name>/` | Stow package whose contents are symlinked into `$HOME` |
-| `_<name>/` | Repository-local data or helper files that must not be Stowed |
+| `_<name>/` | Repository-local data or helpers that must not be Stowed |
 
 The `[!_]*/` glob in `Justfile` enforces this convention. For example,
-`llama/` is deployed, while `_scripts/` and `_models/` remain inside the repo.
-When adding a repo-local top-level directory, prefix it with `_`.
-
-
-### Local LLM inference
-
-The inference stack uses Homebrew `llama.cpp`, a tracked `launchd` service, and
-GGUF weights stored under the repo's ignored `_models/` directory. The active
-model is host-local state rather than tracked dotfiles configuration. By
-default, the server binds only to `127.0.0.1:8080` and exposes the stable
-`local-model` alias through an OpenAI-compatible API to pi.
-
-After downloading a GGUF into `_models/`, install, deploy, configure, and start
-the service on the host Mac:
-
-```bash
-just brewinst       # or: brew install llama.cpp
-just stowall
-loadshell
-llm switch          # fzf-select a GGUF, save it, and start the service
-llm check
-```
-
-Then run `/reload` in pi, open `/model`, and choose:
-
-```text
-llama.cpp / local-model
-```
-
-Service commands:
-
-```bash
-llm start
-llm stop
-llm restart
-llm switch
-llm status
-llm check
-llm logs
-llm --help
-```
-
-The LaunchAgent plist is deployed to
-`$XDG_CONFIG_HOME/llama/` (default: `~/.config/llama/`) and loaded on demand
-rather than automatically at login. `llm stop` unloads it completely. See
-`_models/README.md` for the model-directory convention, host-local settings,
-and model-switching workflow.
-
-## ClickOps configuration
-
-- Settings: iCloud sign in
-- Settings: General > Software Update
-- Settings: Desktop & Dock
-    - Reduce dock icon size
-    - Position on screen: Right
-    - Minimize windows to application icon: On
-    - Automatically hide and show dock: On
-    - Animate opening windows: Off
-    - Show suggested and recent apps in Dock: Off
-    - Default web browser: Brave Browser
-- Brave
-  - Install extensions: Bitwarden, Readwise Highlighter, Dark Reader
-  - Install themes: Gruvbox Slate
-  - Go through settings and change the details where applicable
-- AeroSpace: grant Accessibility permission on first launch; see `aerospace/README.md`
+`llama/` is deployed, while `_scripts/` and `_models/` remain in the repository.
+Prefix new repository-local top-level directories with `_`.
