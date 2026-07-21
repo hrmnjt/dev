@@ -14,19 +14,6 @@ BTW, Borrowed reference from [XKCD 149](https://xkcd.com/149/), BTW.
 - stuff that might not suit your workflow!
 - might not work for anything other than macosx as of now.
 
-## Top-level directory nomenclature
-
-Top-level directory names indicate whether GNU Stow deploys them:
-
-| Form | Meaning |
-|---|---|
-| `<name>/` | Stow package whose contents are symlinked into `$HOME` |
-| `_<name>/` | Repository-local data or helper files that must not be Stowed |
-
-The `[!_]*/` glob in `Justfile` enforces this convention. For example,
-`llama/` is deployed, while `_scripts/` and `_models/` remain inside the repo.
-When adding a repo-local top-level directory, prefix it with `_`.
-
 ## for future Harman
 
 When you get a new macosx:
@@ -92,8 +79,21 @@ git remote set-url origin git@github.com:hrmnjt/dev.git
 `just gitsetup`
 ```
 
+### Top-level directory nomenclature
 
-## Local LLM inference
+Top-level directory names indicate whether GNU Stow deploys them:
+
+| Form | Meaning |
+|---|---|
+| `<name>/` | Stow package whose contents are symlinked into `$HOME` |
+| `_<name>/` | Repository-local data or helper files that must not be Stowed |
+
+The `[!_]*/` glob in `Justfile` enforces this convention. For example,
+`llama/` is deployed, while `_scripts/` and `_models/` remain inside the repo.
+When adding a repo-local top-level directory, prefix it with `_`.
+
+
+### Local LLM inference
 
 The inference stack uses Homebrew `llama.cpp`, a tracked `launchd` service, and
 GGUF weights stored under the repo's ignored `_models/` directory. The active
