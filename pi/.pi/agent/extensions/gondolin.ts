@@ -11,7 +11,7 @@
  *   - custom VM image support via GONDOLIN_GUEST_DIR
  *   - krun auto-selection on Apple Silicon
  *   - Git over SSH via Gondolin's SSH bridge
- *   - host-path-based git identity selection
+ *   - primary-repository-based git identity selection
  *   - pi docs/examples mounted at /pi/docs and /pi/examples
  *   - user-entered !/!! commands intentionally remain host-side
  *
@@ -21,6 +21,7 @@
  *   - @earendil-works/gondolin installed in ~/.pi/agent/node_modules/
  */
 
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -200,32 +201,60 @@ function toGuestPath(localCwd: string, inputPath: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Git identity: resolve the correct user config based on the host path.
+// Git identity: resolve the correct user config from the host checkout.
 // Inside the VM every repo appears as /workspace, so git's includeIf
 // conditional can't distinguish personal from work repos by guest path.
-// Instead we resolve identity from the HOST path (localCwd) and write
-// a VM-specific git config directory that includes only the matching
-// identity file.
+// Linked worktrees may also live outside the normal source roots (Herdr uses
+// ~/.herdr/worktrees by default), so use Git's common directory to find the
+// primary repository before applying the path rules. Unknown paths remain
+// fail-closed.
 // ---------------------------------------------------------------------------
 
-const GIT_IDENTITY_RULES: { prefix: string; config: string }[] = [
+const GIT_IDENTITY_RULES: { root: string; config: string }[] = [
   {
-    prefix: path.join(os.homedir(), "code", "work") + path.sep,
+    root: path.join(os.homedir(), "code", "work"),
     config: path.join(os.homedir(), ".config", "git", "config.work"),
   },
   {
-    prefix: path.join(os.homedir(), "code", "github.com", "hrmnjt") + path.sep,
+    root: path.join(os.homedir(), "code", "github.com", "hrmnjt"),
     config: path.join(os.homedir(), ".config", "git", "config.personal"),
   },
 ];
 
-function resolveGitIdentityConfig(localCwd: string): string | null {
-  // Sort by prefix length descending so more specific (longer) paths win
+function resolveGitCommonDir(localCwd: string): string | null {
+  try {
+    const commonDir = execFileSync(
+      "git",
+      [
+        "-C",
+        localCwd,
+        "rev-parse",
+        "--path-format=absolute",
+        "--git-common-dir",
+      ],
+      {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      },
+    ).trim();
+    return commonDir || null;
+  } catch {
+    return null;
+  }
+}
+
+function resolveGitIdentityConfig(
+  localCwd: string,
+  gitCommonDir: string | null,
+): string | null {
+  // Non-git directories fall back to their own host path and remain fail-closed
+  // unless that path is under an explicit identity root.
+  const identitySourcePath = gitCommonDir ?? localCwd;
   const sorted = [...GIT_IDENTITY_RULES].sort(
-    (a, b) => b.prefix.length - a.prefix.length,
+    (a, b) => b.root.length - a.root.length,
   );
   for (const rule of sorted) {
-    if (localCwd.startsWith(rule.prefix)) {
+    if (isInsideHostPath(rule.root, identitySourcePath)) {
       return rule.config;
     }
   }
@@ -673,6 +702,7 @@ function createGondolinBashOps(
 
 export default function (pi: ExtensionAPI) {
   const localCwd = process.cwd();
+  const gitCommonDir = resolveGitCommonDir(localCwd);
 
   const localRead = createReadTool(localCwd);
   const localWrite = createWriteTool(localCwd);
@@ -720,6 +750,13 @@ export default function (pi: ExtensionAPI) {
       [GUEST_WORKSPACE]: new RealFSProvider(localCwd),
     };
 
+    // A linked worktree's .git file points to an absolute path under the
+    // primary repository's common Git directory. Preserve that path inside the
+    // guest so Git can read and update the shared refs and worktree metadata.
+    if (gitCommonDir && !isInsideHostPath(localCwd, gitCommonDir)) {
+      mounts[toPosix(gitCommonDir)] = new RealFSProvider(gitCommonDir);
+    }
+
     if (piResources) {
       mounts[GUEST_PI_DOCS] = new RealFSProvider(piResources.docs);
       mounts[GUEST_PI_EXAMPLES] = new RealFSProvider(piResources.examples);
@@ -731,9 +768,13 @@ export default function (pi: ExtensionAPI) {
     const imagePath = process.env.GONDOLIN_GUEST_DIR || undefined;
 
     // Generate a VM-specific git config directory that selects the correct
-    // identity based on the host path (since all repos appear as /workspace
-    // inside the VM, git's includeIf can't distinguish them by guest path).
-    const identityConfigPath = resolveGitIdentityConfig(localCwd);
+    // identity from the host checkout's primary repository (since all repos
+    // appear as /workspace inside the VM, git's includeIf cannot distinguish
+    // them by guest path).
+    const identityConfigPath = resolveGitIdentityConfig(
+      localCwd,
+      gitCommonDir,
+    );
     gitConfigDir = await generateGitConfigDir(identityConfigPath);
     mounts["/root/.config/git"] = new RealFSProvider(gitConfigDir);
 
