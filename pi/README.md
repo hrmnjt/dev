@@ -316,7 +316,7 @@ in a normal host terminal:
 
 ```bash
 cd ~/code/github.com/hrmnjt/dev
-stow --no-folding -t ~ pi
+just stowall
 just pi-deps
 ```
 

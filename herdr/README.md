@@ -6,7 +6,7 @@ This Stow package tracks the intentional Herdr configuration in
 Deploy and reload it from the repository root:
 
 ```bash
-stow --no-folding -t ~ herdr
+just stowall
 herdr server reload-config
 ```
 

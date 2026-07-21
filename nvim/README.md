@@ -45,8 +45,8 @@ mv ~/.local/share/nvim ~/.local/share/nvim.bak 2>/dev/null
 mv ~/.local/state/nvim ~/.local/state/nvim.bak 2>/dev/null
 mv ~/.cache/nvim ~/.cache/nvim.bak 2>/dev/null
 
-# Stow the new config
-stow -t ~ nvim
+# Deploy the dotfiles
+just stowall
 
 # First launch — plugins + LSP servers install automatically
 nvim
