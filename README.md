@@ -32,7 +32,7 @@ brew install just stow
 # Step 4: Clone this repo:
 mkdir -p ~/code/github.com/hrmnjt
 git clone https://github.com/hrmnjt/dev.git ~/code/github.com/hrmnjt/dev
-cd dev
+cd ~/code/github.com/hrmnjt/dev
 
 # Step 5: Setup XDG and zsh config
 just xdgsetup
@@ -96,7 +96,7 @@ just brewinst       # or: brew install llama.cpp
 just stowall
 loadshell
 llm switch          # fzf-select a GGUF, save it, and start the service
-just llm-check
+llm check
 ```
 
 Then run `/reload` in pi, open `/model`, and choose:
@@ -113,6 +113,7 @@ llm stop
 llm restart
 llm switch
 llm status
+llm check
 llm logs
 llm --help
 ```
