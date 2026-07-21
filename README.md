@@ -44,31 +44,19 @@ just brewinst
 # Use the current curl installer from: https://pi.dev/docs/latest/quickstart#install
 
 # Step 8: .dotfiles in place with stow
-`just stowall`
+just stowall
 
 # Step 9: Install pi extension dependencies
-`just pi-deps`
-
-# Optional: select and start a downloaded GGUF (see "Local LLM inference")
-llm switch
+just pi-deps
 
 # Step 9.5: Apply gruvbox-inspired macOS appearance and wallpaper
-`just macos-gruvbox`
-
-# If ~/.pi was accidentally folded as a symlink into this repo, fix it before using pi:
-# ls -ld ~/.pi ~/.pi/agent
-# If either points into ~/code/github.com/hrmnjt/dev/pi/.pi, run:
-# just unstowall
-# rm ~/.pi
-# mkdir -p ~/.pi/agent
-# just stowall
-# just pi-deps
+just macos-gruvbox
 
 # Step 10: Build the custom Gondolin VM image for pi tools
-`just gondolin-image`
+just gondolin-image
 
 # Step 11: Generate SSH key for GitHub
-`just ghsshkey`
+just ghsshkey
 # Add the copied public key to GitHub, then test SSH auth:
 ssh -T git@github.com
 
@@ -76,7 +64,7 @@ ssh -T git@github.com
 git remote set-url origin git@github.com:hrmnjt/dev.git
 
 # Step 13: Create git directory structure
-`just gitsetup`
+just gitsetup
 ```
 
 ### Top-level directory nomenclature
