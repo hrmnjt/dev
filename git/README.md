@@ -16,20 +16,21 @@ git/
 ```
 
 **config** sets `init.defaultBranch = main`, `rerere.enabled = true`,
-`merge.conflictStyle = zdiff3`, and these identity rules:
+`merge.conflictStyle = zdiff3`, and these host identity rules:
 
 ```ini
 [includeIf "gitdir:~/code/github.com/hrmnjt/"]
     path = ~/.config/git/config.personal
-[includeIf "gitdir:/workspace/"]
-    path = ~/.config/git/config.personal  # for when inside the Gondolin VM
 [includeIf "gitdir:~/code/work/"]
     path = ~/.config/git/config.work
 ```
 
-The `/workspace/` rule is necessary because the Gondolin VM mounts the host
-project at `/workspace`, and without it `git commit` inside the VM has no
-identity and fails.
+Gondolin does not use a tracked `/workspace/` identity rule because every host
+repository is mounted at that same guest path. Instead, the pi Gondolin
+extension resolves the host checkout's primary repository path and generates a
+VM-specific Git config with the matching personal or work identity. Unknown
+host paths remain fail-closed, so commits fail rather than using the wrong
+identity. Linked worktrees inherit the identity of their primary repository.
 
 ## What this enables
 
