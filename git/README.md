@@ -53,7 +53,7 @@ the only ongoing cost, and it's already enforced by how I organize repos.
 ## Deploy
 
 ```bash
-stow -t ~ git
+just stowall
 ```
 
 To verify: `git config --list --show-origin` from a personal and work repo.

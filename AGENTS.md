@@ -37,7 +37,7 @@ After editing pi config, tell the user to run this on the host Mac:
 
 ```bash
 cd ~/code/github.com/hrmnjt/dev   # adjust if the repo is elsewhere
-stow --no-folding -t ~ pi
+just stowall
 just pi-deps                       # runs: npm install --prefix ~/.pi/agent
 ```
 
@@ -166,7 +166,7 @@ Add resources under `pi/.pi/agent/`:
 | `skills/` | `SKILL.md` folders or Markdown files | Yes |
 | `prompts/` | Markdown prompt templates | Via settings |
 
-After adding files, tell the user to deploy with `stow --no-folding -t ~ pi`, run `just pi-deps` if dependencies changed, and run `/reload` in pi.
+After adding files, tell the user to deploy with `just stowall`, run `just pi-deps` if dependencies changed, and run `/reload` in pi.
 
 ## Extension development guidelines
 

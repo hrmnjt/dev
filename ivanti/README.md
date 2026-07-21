@@ -78,7 +78,7 @@ with `aerospace list-apps | grep -i ivanti` and add a floating rule in
 ## Usage
 
 ```bash
-stow -t ~ ivanti
+just stowall
 ```
 
 Ensure `~/.local/bin` is in `$PATH` and set the VPN connection name:
