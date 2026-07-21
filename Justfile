@@ -80,9 +80,3 @@ gondolin-image:
 # Install pi extension dependencies (run after stowall)
 pi-deps:
     npm install --prefix ~/.pi/agent
-
-# --- Local LLM inference ---
-
-# Check the configured server health and list the model exposed through its OpenAI API.
-llm-check:
-    local-llm check
