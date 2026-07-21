@@ -3,5 +3,8 @@ onboarding = false
 [theme]
 name = "gruvbox"
 
+[ui]
+prompt_new_tab_name = true
+
 [ui.toast]
 delivery = "system"
