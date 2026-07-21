@@ -24,7 +24,7 @@ sudo scutil --set ComputerName "Harman's MacBook"
 sudo scutil --set LocalHostName "harmans-macbook"
 sudo scutil --set HostName "harmans-macbook"
 
-# Step 2: [Install Homebrew](https://brew.sh/)
+# Step 2: Install Homebrew from https://brew.sh/
 
 # Step 3: Install just and stow: 
 brew install just stow
