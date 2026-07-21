@@ -68,7 +68,8 @@ Local customizations:
   fallback backend
 - supports a custom Alpine image through `GONDOLIN_GUEST_DIR`
 - bridges the host SSH agent for GitHub git operations
-- generates a VM git config with a path-based personal/work identity
+- generates a VM git config with a fail-closed personal/work identity selected
+  from the primary repository path, including linked worktrees stored elsewhere
 - marks `/workspace` as a git safe directory
 - rewrites the assistant system prompt so it sees `/workspace`, not the host path
 - intentionally leaves user-entered pi shell commands (`!` / `!!`) on the host
@@ -80,6 +81,54 @@ Command:
 ```
 
 Shows VM id, host workspace, guest workspace, shell, and mounted docs/examples.
+
+### Herdr integration
+
+[Herdr](https://herdr.dev/) provides persistent terminal workspaces and tracks
+Pi's lifecycle state. Its bundled Pi integration is generated on the host rather
+than tracked in this repository:
+
+```bash
+brew install herdr
+herdr integration install pi
+herdr integration status
+```
+
+The installer writes `~/.pi/agent/extensions/herdr-agent-state.ts`. It can
+coexist with this Stow package because `--no-folding` keeps the extensions
+directory real. For linked checkouts, Gondolin mounts the primary repository's
+common Git directory at its original absolute path and uses it for identity
+selection. Herdr worktrees under `~/.herdr/worktrees` can therefore use Git and
+inherit the identity of their primary work or personal repository.
+
+The optional Herdr agent skill is not installed: model-facing shell commands run
+inside Gondolin and cannot directly access the host Herdr CLI or socket.
+
+The normal layout uses one default Herdr session, one workspace per repository
+worktree, and two full-screen tabs per workspace: `pi` and `shell`. Create a
+parallel feature directly from the current repository workspace:
+
+```bash
+git fetch --prune origin
+herdr worktree create \
+  --cwd "$PWD" \
+  --branch feat/example \
+  --base origin/main \
+  --label "Example feature" \
+  --focus
+```
+
+Herdr creates and focuses the checkout workspace while existing Pi processes
+continue in their own workspaces. After merging the side task, exit its Pi,
+switch back to the parent workspace, and remove the checkout explicitly:
+
+```bash
+herdr worktree list --cwd /path/to/primary/repository
+herdr worktree remove --workspace <workspace-id>
+```
+
+Worktree removal does not delete the Git branch. Use `ctrl+b`, then `q` to
+detach; run `herdr` to reattach to the default session.
 
 ### Answer extractor — `extensions/answer.ts`
 

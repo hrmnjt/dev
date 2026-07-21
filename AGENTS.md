@@ -232,12 +232,15 @@ Then start pi with:
 export GONDOLIN_GUEST_DIR="$HOME/.gondolin/custom-image"
 ```
 
-Git works inside the VM when the custom image is active. The extension generates a VM-specific git config based on the host path, mounts it at `/root/.config/git`, sets `/workspace` as a safe directory, and proxies SSH via the host `SSH_AUTH_SOCK` for GitHub operations.
+Git works inside the VM when the custom image is active. The extension generates a VM-specific git config based on the host checkout, mounts it at `/root/.config/git`, sets `/workspace` as a safe directory, and proxies SSH via the host `SSH_AUTH_SOCK` for GitHub operations.
 
-Identity selection is fail-closed:
+Identity selection is fail-closed. For linked worktrees, Gondolin resolves and
+mounts the Git common directory at its original host path, so centralized
+checkouts such as Herdr's `~/.herdr/worktrees/` can use Git and inherit the
+identity of their primary repository:
 
-| Host path prefix | Identity |
-|------------------|----------|
+| Primary repository path prefix | Identity |
+|-------------------------------|----------|
 | `~/code/github.com/hrmnjt/` | Personal |
 | `~/code/work/` | Work |
 | Anything else | No identity; commits fail clearly |

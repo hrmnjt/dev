@@ -59,6 +59,8 @@ brew "ffmpeg"
 # MacOS containers - trying out
 brew "container"
 
+# Agent-aware terminal workspace manager
+brew "herdr"
 # Terminal
 cask "ghostty"
 
