@@ -3,6 +3,10 @@ onboarding = false
 [theme]
 name = "gruvbox"
 
+[keys]
+open_worktree = "prefix+shift+o"
+remove_worktree = "prefix+alt+d"
+
 [ui]
 prompt_new_tab_name = true
 
