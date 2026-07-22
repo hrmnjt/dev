@@ -1,249 +1,49 @@
-# Pi Development Context
+# Agent instructions
 
-This repo contains personal dotfiles, including configuration for the [pi coding agent](https://pi.dev).
+This is a personal macOS dotfiles repository. Before changing anything, read the
+root `README.md` and the README for the relevant package. Keep this file focused
+on instructions that add to those guides rather than repeating them.
 
-## Critical: VM vs host boundary
+## Execution environment
 
-Assistant `read`, `write`, `edit`, and `bash` tool calls run inside a **Gondolin micro-VM** (Alpine Linux), not directly on the host Mac. The repo is mounted at `/workspace` in the VM.
-
-User-entered pi shell commands (`!` / `!!`) intentionally still run on the host, so the user can run host-only commands such as `brew`, `stow`, and VPN tooling.
-
-Do **not** try to run these from assistant tools:
-
-| Command | Why it fails | What to do instead |
-|---------|--------------|--------------------|
-| `stow` | Not installed in VM | Print the host command for the user |
-| `brew` | macOS-only | Print the host command for the user |
-| `npm install` in `~/.pi/agent` | VM `~` is not host `~` | Tell the user to run `just pi-deps` on the host |
-
-`npm install` inside `/workspace` is fine. Only host paths such as `~/.pi/agent` are outside the VM.
-
-## Top-level directory nomenclature
-
-Top-level directory names determine Stow behavior:
-
-| Form | Meaning |
-|---|---|
-| `<name>/` | Stow package deployed into the host `$HOME` |
-| `_<name>/` | Repo-local data or helpers that must not be Stowed |
-
-The `[!_]*/` glob in `Justfile` enforces this convention. Examples: `llama/`
-is a Stow package; `_scripts/` and `_models/` stay in the repository. Prefix
-new repo-local top-level directories with `_`.
-
-## Deploying pi changes
-
-After editing pi config, tell the user to run this on the host Mac:
-
-```bash
-cd ~/code/github.com/hrmnjt/dev   # adjust if the repo is elsewhere
-just stowall
-just pi-deps                       # runs: npm install --prefix ~/.pi/agent
-```
-
-Then tell the user to run `/reload` in pi.
-
-Use `--no-folding` so directories such as `~/.pi` remain real host directories while tracked files/directories are symlinked into them.
+Assistant tools run in Gondolin at `/workspace`; `!` and `!!` run on the host,
+so leave Homebrew, Stow deployment, launchd, VPN, and local-LLM operations to the
+user. See the **Gondolin sandbox** section in `pi/README.md`.
 
 ## Git workflow
 
-When the user asks you to create a branch or commit, use Conventional Commits-style naming.
+Use Conventional Commits-style names when asked to create branches or commits:
 
-Branch pattern:
+- Branch: `<type>/<scope>/<short-kebab-description>`
+- Commit: `<type>(<scope>): <short imperative summary>`
 
-```text
-<type>/<scope>/<short-kebab-description>
-```
+Common scopes are `pi`, `nvim`, and `meta`; for example,
+`docs/pi/update-readme` and `docs(pi): update setup notes`.
 
-Examples:
+Do not add a fallback Git identity inside Gondolin. Identity selection must
+remain fail-closed, and linked worktrees must inherit the identity of their
+primary repository.
 
-```text
-feat/pi/new-feature
-fix/nvim/random-issue
-chore/pi/cleanup
-docs/pi/update-readme
-chore/meta/repo-wide-change
-```
+## Pi development
 
-Commit pattern:
+Before modifying Pi extensions, themes, skills, prompts, keybindings, models,
+SDK integrations, or TUI components, read the relevant files under `/pi/docs`
+completely, follow their cross-references, and inspect applicable examples under
+`/pi/examples`.
 
-```text
-<type>(<scope>): <short imperative summary>
-```
+Design Pi changes toward these goals:
 
-Examples:
-
-```text
-feat(pi): add review command
-fix(nvim): correct keymap
-docs(pi): update setup notes
-chore(meta): update repo guidance
-```
-
-Use scopes such as `pi`, `nvim`, or `meta`.
-
-## Pi docs in the VM
-
-Pi docs and examples are mounted in the VM:
-
-- `/pi/docs/`
-  - `extensions.md`
-  - `tui.md`
-  - `themes.md`
-  - `skills.md`
-  - `prompt-templates.md`
-  - `keybindings.md`
-  - `models.md`
-  - `sdk.md`
-- `/pi/examples/`
-  - `extensions/`
-
-When asked to build or modify pi extensions, themes, skills, prompts, keybindings, models, SDK integrations, or TUI components, read the relevant docs/examples first and follow linked docs as needed.
-
-## Pi repo structure
-
-```text
-pi/
-├── .pi/
-│   └── agent/
-│       ├── extensions/
-│       │   ├── answer.ts          # User-initiated Q&A extraction
-│       │   ├── exit.ts            # Graceful terminal exit
-│       │   ├── gondolin.ts        # Gondolin VM sandboxing
-│       │   ├── notify.ts          # Desktop notifications
-│       │   ├── review.ts          # Terminal-native diff review UI
-│       │   ├── review-summary.ts  # Model-driven PR review summary
-│       │   ├── usage.ts           # Token/cost tracking
-│       │   ├── uv.ts              # uv guidance and Python-tool blocking
-│       │   └── wal-writer.ts      # Host Obsidian WAL daily-note writer
-│       ├── gondolin-image.json    # Custom VM image config
-│       ├── models.json            # Tracked local/custom model providers
-│       ├── package.json           # Extension dependencies
-│       ├── settings.template.json # Intentional settings tracked in git
-│       └── themes/
-│           └── gruvbox-dark.json
-└── README.md
-```
-
-## Settings management
-
-| File | Tracked? | Purpose |
-|------|----------|---------|
-| `pi/.pi/agent/settings.template.json` | Yes | Intentional defaults (`theme`, `defaultThinkingLevel`) |
-| `~/.pi/agent/settings.json` | No | Host-local runtime state written by pi (`defaultModel`, `defaultProvider`, `lastChangelogVersion`, etc.) |
-
-Current intentional defaults:
-
-- theme: `gruvbox-dark/gruvbox-dark`
-- default thinking level: `high`
-
-First-time setup if no host-local runtime settings exist:
-
-```bash
-cp ~/.pi/agent/settings.template.json ~/.pi/agent/settings.json
-```
-
-Merge the template into existing host-local runtime settings while preserving other runtime keys:
-
-```bash
-jq -s '.[1] * .[0]' \
-  ~/.pi/agent/settings.template.json \
-  ~/.pi/agent/settings.json \
-  > ~/.pi/agent/settings.json.tmp \
-  && mv ~/.pi/agent/settings.json.tmp ~/.pi/agent/settings.json
-```
-
-When adding a new intentional setting, add it to `settings.template.json`.
-
-## Growing the pi config
-
-Add resources under `pi/.pi/agent/`:
-
-| Directory | What | Auto-discovered? |
-|-----------|------|------------------|
-| `themes/` | JSON themes | Yes |
-| `extensions/` | TypeScript/JavaScript modules | Yes |
-| `skills/` | `SKILL.md` folders or Markdown files | Yes |
-| `prompts/` | Markdown prompt templates | Via settings |
-
-After adding files, tell the user to deploy with `just stowall`, run `just pi-deps` if dependencies changed, and run `/reload` in pi.
-
-## Extension development guidelines
-
-1. Use `ctx.shutdown()` for exit; never `process.exit()` because it can corrupt terminal state.
-2. Read `/pi/docs/extensions.md` before changing extension APIs.
-3. Read `/pi/docs/tui.md` and examples before changing TUI code.
-4. Prefer imports from `@earendil-works/pi-coding-agent` and `@earendil-works/pi-tui` for new code.
-5. Some features only work interactively; ask the user to test commands/UI in pi when needed.
-
-## Existing pi extensions
-
-- `answer` — `/answer`; extracts questions from the previous assistant message into an interactive Q&A UI.
-- `exit` — `/exit`; gracefully exits pi.
-- `gondolin` — sandboxes assistant tools in a VM; mounts workspace at `/workspace` and pi docs/examples at `/pi`.
-- `notify` — `/notify test|on|off|status`; desktop notifications via OSC 777.
-- `review` — `/review`; TUI for reviewing git diffs and sending comments back to pi.
-- `review-summary` — `/review-summary [base]`; model-driven review summary with rubric.
-- `usage` — `/usage [today|month|all]`; local token and cost summaries.
-- `uv` — `/uv-help`; blocks common pip/poetry/venv commands in Gondolin bash and suggests uv alternatives.
-- `wal-writer` — `wal_append` tool plus `/wal status|append`; appends host Obsidian WAL notes to the end of `~/code/github.com/hrmnjt/worklog/wal/YYYYMMDD.md` without mounting the vault into Gondolin.
-
-## Local model inference
-
-The host Mac runs llama.cpp as an inference-only OpenAI-compatible server:
-
-- documentation: `llama/README.md`
-- Homebrew dependency: `llama.cpp`
-- model data: `_models/` (GGUF files are gitignored)
-- active model config: host-local `~/.config/llama/server.env`
-- tracked config template: `llama/.config/llama/server.env.example`
-- stable API model alias: `local-model`
-- server wrapper: `llama/.local/bin/local-llm`
-- LaunchAgent plist: `llama/.config/llama/com.hrmnjt.llama-server.plist`
-  (deployed to `$XDG_CONFIG_HOME/llama/`; defaults to `~/.config/llama/`)
-- pi provider: `pi/.pi/agent/models.json`
-- endpoint: `http://127.0.0.1:8080/v1`
-
-The user must run model and service commands on the host Mac:
-
-```bash
-just stowall
-loadshell
-llm switch  # fzf-select a downloaded GGUF and start/restart the service
-llm check
-```
-
-The interactive alias is `llm`, with subcommands `start`, `stop`, `restart`,
-`switch`, `status`, `check`, `logs`, and `--help`. Do not attempt to run Homebrew,
-launchd, or the Metal inference server from Gondolin.
-
-## Gondolin notes
-
-The custom VM image is defined in `pi/.pi/agent/gondolin-image.json` and currently includes common dev tools such as `bash`, `git`, `ripgrep`, `jq`, `fd`, `nodejs`, `npm`, `python3`, `uv`, and `openssh`.
-
-Build it on the host Mac:
-
-```bash
-just gondolin-image
-```
-
-Then start pi with:
-
-```bash
-export GONDOLIN_GUEST_DIR="$HOME/.gondolin/custom-image"
-```
-
-Git works inside the VM when the custom image is active. The extension generates a VM-specific git config based on the host checkout, mounts it at `/root/.config/git`, sets `/workspace` as a safe directory, and proxies SSH via the host `SSH_AUTH_SOCK` for GitHub operations.
-
-Identity selection is fail-closed. For linked worktrees, Gondolin resolves and
-mounts the Git common directory at its original host path, so centralized
-checkouts such as Herdr's `~/.herdr/worktrees/` can use Git and inherit the
-identity of their primary repository:
-
-| Primary repository path prefix | Identity |
-|-------------------------------|----------|
-| `~/code/github.com/hrmnjt/` | Personal |
-| `~/code/work/` | Work |
-| Anything else | No identity; commits fail clearly |
-
-To change identity rules, edit `GIT_IDENTITY_RULES` in `pi/.pi/agent/extensions/gondolin.ts`.
+- Keep the configuration small, focused, terminal-native, and self-contained.
+- Prefer official Pi APIs and focused extensions over parallel frameworks or
+  external services.
+- Keep model-facing tools inside Gondolin. Avoid new host-side escape hatches;
+  when one is necessary, make it narrow, explicit, and user-approved.
+- Track intentional configuration while keeping mutable runtime state
+  Git-ignored.
+- Preserve Gondolin's workspace isolation, host-shell separation, SSH bridge,
+  linked-worktree support, and fail-closed Git identity behavior.
+- Use `ctx.shutdown()` for exit; never call `process.exit()`.
+- Prefer imports from `@earendil-works/pi-coding-agent` and
+  `@earendil-works/pi-tui` for new code.
+- Ask the user to test interactive commands and TUI behavior that cannot be
+  validated inside Gondolin.
