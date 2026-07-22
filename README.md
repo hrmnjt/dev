@@ -23,7 +23,7 @@ Borrowed from [XKCD 149](https://xkcd.com/149/), BTW.
 ```bash
 # 1. Sign in to iCloud.
 
-# 2. Install all available updates from **System Settings → General → Software Update**.
+# 2. Install all available updates from System Settings → General → Software Update.
 
 # 3. Set the Mac hostname, replacing xxx when needed:
 sudo scutil --set ComputerName "Ghost XXX"
@@ -50,7 +50,7 @@ just brewinst
 # 8. Deploy the dotfiles
 just stowall
 
-# 9. Install tools that are not part of Brewfile and installed globally
+# 9. Install and configure Pi
 # 9.1. Pi - https://pi.dev/docs/latest/quickstart#install
 # 9.2. Install dependencies for pi
 just pi-deps
@@ -66,6 +66,7 @@ exec zsh -l
 # 10. Configure Git and GitHub SSH
 just gitsetup
 just ghsshkey
+# Add the copied public key at https://github.com/settings/keys
 ssh -T git@github.com
 # After SSH authentication succeeds, update this checkout:
 git remote set-url origin git@github.com:hrmnjt/dev.git
@@ -80,11 +81,11 @@ git remote set-url origin git@github.com:hrmnjt/dev.git
 just macos-gruvbox
 
 # 13. Local models
-# 13.1. Download and configure local models based on _models/README.md
+# 13.1. Download and configure local models based on llama/README.md
 # 13.2. Select and verify models
 llm switch
 llm check
-# 13.3. On the first use in Pi, open `/model` and select llama.cpp
+# 13.3. On the first use in Pi, open /model and select llama.cpp / local-model
 
 # 14. Enable optional integrations
 # 14.1. Install Pi's generated Herdr integration when using Herdr workspaces:
@@ -95,9 +96,20 @@ herdr integration status
 # - Install the Gruvbox Slate Brave theme.
 ```
 
+#### Setup references
+
+- [AeroSpace](aerospace/README.md)
+- [Git](git/README.md)
+- [Herdr](herdr/README.md)
+- [Ivanti VPN](ivanti/README.md)
+- [Local llama.cpp inference](llama/README.md)
+- [Neovim](nvim/README.md)
+- [Pi agent package](pi/README.md)
+- [Zsh](zsh/README.md)
+
 ### frequently performed operations
 
-**Managing packages**
+#### Managing packages
 
 Install the package, add it to `Brewfile` with a descriptive comment, and verify
 that the bundle is complete:
@@ -120,12 +132,12 @@ Remove untracked packages only after reviewing that output:
 just brewclean
 ```
 
-**Local models**
+#### Local models
 
 Download or try another local model
 
-1. Download the GGUF under `_models/<model-name>/` using the publisher's
-   instructions.
+1. Follow the [llama.cpp guide](llama/README.md) and download the GGUF under
+   `_models/<model-name>/`.
 2. Verify the publisher's checksum when one is available.
 3. Select and test it:
 
@@ -137,7 +149,7 @@ llm check
 `llm switch` updates the host-local configuration and starts or restarts the
 service. Switching GGUFs does not require changing Pi's stable model ID.
 
-**Add a top-level package or repository-local directory**
+#### Add a top-level package or repository-local directory
 
 Top-level names determine whether `just stowall` deploys a directory:
 
