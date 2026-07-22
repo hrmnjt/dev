@@ -99,12 +99,16 @@ herdr integration status
 #### Setup references
 
 - [AeroSpace](aerospace/README.md)
+- [Ghostty](ghostty/README.md)
 - [Git](git/README.md)
 - [Herdr](herdr/README.md)
 - [Ivanti VPN](ivanti/README.md)
 - [Local llama.cpp inference](llama/README.md)
 - [Neovim](nvim/README.md)
 - [Pi agent package](pi/README.md)
+- [Starship](starship/README.md)
+- [Wallpapers](wallpapers/README.md)
+- [Zed](zed/README.md)
 - [Zsh](zsh/README.md)
 
 ### frequently performed operations
