@@ -14,8 +14,9 @@ nvim/.config/nvim/
 │   │   ├── keymaps.lua         -- custom keymaps
 │   │   └── autocmds.lua        -- custom autocmds
 │   └── plugins/
-│       ├── theme.lua           -- gruvbox theme
-│       └── lang.lua            -- SQL + Markdown LSP/lint/format
+│       ├── explorer.lua        -- Snacks explorer + dashboard
+│       ├── lang.lua            -- SQL + Markdown LSP/lint/format
+│       └── theme.lua           -- gruvbox theme
 ```
 
 ## What's included
@@ -32,6 +33,7 @@ nvim/.config/nvim/
 | Markdown LSP | marksman |
 | Markdown lint + format | markdownlint (via conform + nvim-lint) |
 | Markdown rendering | render-markdown.nvim |
+| File explorer + dashboard | snacks.nvim |
 | Theme | gruvbox |
 
 ## Install

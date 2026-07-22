@@ -42,11 +42,6 @@ gitsetup:
     mkdir -p ~/code/github.com/hrmnjt
     mkdir -p ~/code/work/doh
 
-# Bootstrap: create ~/.config and deploy zsh (run first - sets XDG_CONFIG_HOME for other configs)
-xdgsetup:
-    mkdir -p ~/.config
-    stow -t ~ zsh
-
 # Generate ed25519 SSH key for GitHub, add to ssh-agent, copy pubkey to clipboard
 ghsshkey:
     ./_scripts/sshsetup.sh

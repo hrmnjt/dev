@@ -1,7 +1,7 @@
 # pi agent package
 
-This directory is my personal package for [pi](https://pi.dev): extensions, 
-themes, settings defaults, and a custom Gondolin VM image. It is deliberately 
+This directory is my personal package for [pi](https://pi.dev): extensions,
+themes, settings defaults, and a custom Gondolin VM image. It is deliberately
 small and self-contained.
 
 The package is deployed into `~/.pi/agent` with GNU stow. Pi then auto-discovers
@@ -29,16 +29,16 @@ pi/
 │       ├── package.json           # Extension dependencies
 │       ├── settings.template.json # Intentional settings tracked in git
 │       └── themes/
-│           ├── catppuccin-mocha.json
 │           └── gruvbox-dark.json
 └── README.md
 ```
 
-Runtime files are intentionally not tracked:
+Runtime files live under the real host directory `~/.pi/agent` and are
+intentionally not tracked:
 
-- `pi/.pi/agent/settings.json` — written by pi at runtime
-- `pi/.pi/agent/usage-data/` — local token/cost history
-- host-local pi files such as `auth.json`, `sessions/`, and `node_modules/`
+- `~/.pi/agent/settings.json` — written by pi at runtime
+- `~/.pi/agent/usage-data/` — local token/cost history
+- other host-local files such as `auth.json`, `sessions/`, and `node_modules/`
 
 
 ## The tools and commands
@@ -105,30 +105,9 @@ The optional Herdr agent skill is not installed: model-facing shell commands run
 inside Gondolin and cannot directly access the host Herdr CLI or socket.
 
 The normal layout uses one default Herdr session, one workspace per repository
-worktree, and two full-screen tabs per workspace: `pi` and `shell`. Create a
-parallel feature directly from the current repository workspace:
-
-```bash
-git fetch --prune origin
-herdr worktree create \
-  --cwd "$PWD" \
-  --branch feat/example \
-  --base origin/main \
-  --label "Example feature" \
-  --focus
-```
-
-Herdr creates and focuses the checkout workspace while existing Pi processes
-continue in their own workspaces. After merging the side task, exit its Pi,
-switch back to the parent workspace, and remove the checkout explicitly:
-
-```bash
-herdr worktree list --cwd /path/to/primary/repository
-herdr worktree remove --workspace <workspace-id>
-```
-
-Worktree removal does not delete the Git branch. Use `ctrl+b`, then `q` to
-detach; run `herdr` to reattach to the default session.
+worktree, and two full-screen tabs per workspace: `pi` and `shell`. Worktree
+creation, shortcuts, explicit `origin/main` branching, and cleanup are documented
+in the [Herdr package guide](../herdr/README.md).
 
 ### Answer extractor — `extensions/answer.ts`
 
@@ -336,27 +315,33 @@ to this repo.
 
 ```json
 {
-  "theme": "gruvbox-dark",
-  "defaultThinkingLevel": "medium"
+  "theme": "gruvbox-dark/gruvbox-dark",
+  "defaultThinkingLevel": "high"
 }
 ```
 
 Pi owns `settings.json` and may update volatile keys such as `defaultModel`,
 `defaultProvider`, and `lastChangelogVersion`.
 
-If `settings.json` does not exist yet:
+If the host-local `settings.json` does not exist yet:
 
 ```bash
-cp pi/.pi/agent/settings.template.json pi/.pi/agent/settings.json
+cp ~/.pi/agent/settings.template.json ~/.pi/agent/settings.json
 ```
 
 If it already exists and you want to apply the template while preserving other
 runtime keys:
 
 ```bash
-cd pi/.pi/agent
-jq -s '.[1] * .[0]' settings.template.json settings.json > tmp && mv tmp settings.json
+jq -s '.[1] * .[0]' \
+  ~/.pi/agent/settings.template.json \
+  ~/.pi/agent/settings.json \
+  > ~/.pi/agent/settings.json.tmp \
+  && mv ~/.pi/agent/settings.json.tmp ~/.pi/agent/settings.json
 ```
+
+Do not create runtime settings under `pi/.pi/agent/`; that directory contains
+the tracked package source, while Pi should write to the real host directory.
 
 ## Local llama.cpp model
 
@@ -364,9 +349,10 @@ jq -s '.[1] * .[0]' settings.template.json settings.json > tmp && mv tmp setting
 provider. The server exposes whichever host-local GGUF is active through the
 stable `local-model` alias at `http://127.0.0.1:8080/v1`.
 
-The server, model directory, `llm switch` fzf selector, and launchd setup are
-documented in `../_models/README.md`. After selecting and starting a model, open
-`/model` and select provider `llama.cpp` and model `local-model`. Pi reloads
+The server, model downloads, `llm switch` fzf selector, and launchd setup are
+documented in the [llama.cpp guide](../llama/README.md). After selecting and
+starting a model, open `/model` and select provider `llama.cpp` and model
+`local-model`. Pi reloads
 `models.json` whenever `/model` is opened, so edits to model metadata do not
 require restarting pi.
 
@@ -408,10 +394,9 @@ restart pi.
 
 Themes are auto-discovered from `~/.pi/agent/themes/*.json`.
 
-Tracked themes:
+Tracked theme:
 
 - `gruvbox-dark` — current default
-- `catppuccin-mocha`
 
 ## Adding more pi resources
 

@@ -120,10 +120,7 @@ pi/
 │       ├── models.json            # Tracked local/custom model providers
 │       ├── package.json           # Extension dependencies
 │       ├── settings.template.json # Intentional settings tracked in git
-│       ├── settings.json          # Runtime settings, gitignored
-│       ├── usage-data/            # Usage data, gitignored
 │       └── themes/
-│           ├── catppuccin-mocha.json
 │           └── gruvbox-dark.json
 └── README.md
 ```
@@ -132,25 +129,28 @@ pi/
 
 | File | Tracked? | Purpose |
 |------|----------|---------|
-| `settings.template.json` | Yes | Intentional defaults (`theme`, `defaultThinkingLevel`) |
-| `settings.json` | No | Runtime state written by pi (`defaultModel`, `defaultProvider`, `lastChangelogVersion`, etc.) |
+| `pi/.pi/agent/settings.template.json` | Yes | Intentional defaults (`theme`, `defaultThinkingLevel`) |
+| `~/.pi/agent/settings.json` | No | Host-local runtime state written by pi (`defaultModel`, `defaultProvider`, `lastChangelogVersion`, etc.) |
 
 Current intentional defaults:
 
-- theme: `gruvbox-dark`
-- default thinking level: `medium`
+- theme: `gruvbox-dark/gruvbox-dark`
+- default thinking level: `high`
 
-First-time setup if no runtime settings exist:
+First-time setup if no host-local runtime settings exist:
 
 ```bash
-cp pi/.pi/agent/settings.template.json pi/.pi/agent/settings.json
+cp ~/.pi/agent/settings.template.json ~/.pi/agent/settings.json
 ```
 
-Merge template into an existing runtime settings file while preserving other runtime keys:
+Merge the template into existing host-local runtime settings while preserving other runtime keys:
 
 ```bash
-cd pi/.pi/agent
-jq -s '.[1] * .[0]' settings.template.json settings.json > tmp && mv tmp settings.json
+jq -s '.[1] * .[0]' \
+  ~/.pi/agent/settings.template.json \
+  ~/.pi/agent/settings.json \
+  > ~/.pi/agent/settings.json.tmp \
+  && mv ~/.pi/agent/settings.json.tmp ~/.pi/agent/settings.json
 ```
 
 When adding a new intentional setting, add it to `settings.template.json`.
@@ -192,6 +192,7 @@ After adding files, tell the user to deploy with `just stowall`, run `just pi-de
 
 The host Mac runs llama.cpp as an inference-only OpenAI-compatible server:
 
+- documentation: `llama/README.md`
 - Homebrew dependency: `llama.cpp`
 - model data: `_models/` (GGUF files are gitignored)
 - active model config: host-local `~/.config/llama/server.env`

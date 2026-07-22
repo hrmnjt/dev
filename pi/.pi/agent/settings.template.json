@@ -1,4 +1,4 @@
 {
-  "theme": "gruvbox-dark",
-  "defaultThinkingLevel": "medium"
+  "theme": "gruvbox-dark/gruvbox-dark",
+  "defaultThinkingLevel": "high"
 }
