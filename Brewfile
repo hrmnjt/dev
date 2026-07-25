@@ -9,8 +9,6 @@
 brew "starship"
 # Replacement for ls - I use it only for custom `l` alias
 brew "eza"
-# View markdown files on terminal - want to replace this with neovim
-brew "glow"
 # Replacement for make - I use for hrmnjt/dev and other projects
 brew "just"
 # Fuzzy finder for custom tools and other
