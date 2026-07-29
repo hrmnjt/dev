@@ -81,7 +81,8 @@ git remote set-url origin git@github.com:hrmnjt/dev.git
 just macos-gruvbox
 
 # 13. Local models
-# 13.1. Deploy and start the llama.cpp router based on llama/README.md
+# 13.1. Deploy the llama.cpp package based on llama/README.md
+llm start
 # 13.2. On first use in Pi, run /login llama.cpp
 # 13.3. Use /llama to download or load a model, then select it with /model
 
@@ -137,7 +138,14 @@ just brewclean
 #### Local models
 
 Bootstrap the llama.cpp router when local inference is needed. It starts
-without loading a model. Inside Pi:
+without loading a model:
+
+```bash
+llm start
+llm status
+```
+
+Then, inside Pi:
 
 1. Run `/login llama.cpp` once and accept the local default URL.
 2. Run `/llama` to download, load, or unload models.

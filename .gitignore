@@ -7,5 +7,4 @@ zed/.config/zed/themes/**
 
 
 # pi
-pi/.pi/agent/settings.json
 pi/.pi/agent/usage-data/

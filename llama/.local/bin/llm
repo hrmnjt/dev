@@ -1,0 +1,194 @@
+#!/bin/sh
+
+set -eu
+
+label="com.hrmnjt.llama-server"
+domain="gui/$(id -u)"
+service="$domain/$label"
+plist="$HOME/.config/llama/$label.plist"
+router_url="${LLAMA_ROUTER_URL:-http://127.0.0.1:8080}"
+log="$HOME/Library/Logs/llama-server.log"
+
+usage() {
+    cat <<'EOF'
+usage: llm <command>
+
+Manage the host llama.cpp router service. Model downloads, loading, and
+unloading belong to Pi's /llama command; this controller intentionally does not
+duplicate that workflow.
+
+commands:
+  start         Bootstrap the LaunchAgent for this login session and wait for
+                http://127.0.0.1:8080/health. Safe to run when already started.
+  restart       Bootstrap when stopped, or use launchctl kickstart -k when the
+                service is registered. Loaded models are unloaded by a restart.
+  stop          Stop the router and unregister its LaunchAgent. This also
+                unloads every model worker and releases its model memory.
+  status        Show whether launchd registered the service, router health, and
+                the loaded/unloaded state of every discovered model.
+  models        Print the model ID, loaded/unloaded state, and model source.
+  logs [lines]  Follow the router log, initially showing 100 lines or the
+                supplied positive line count. Stop following with Ctrl+C.
+  help          Show this help.
+
+common workflow:
+  1. After login or a Mac restart:  llm start
+  2. Check the router:               llm status
+  3. In Pi, download/load models:    /llama
+  4. In Pi, select the loaded model: /model
+  5. Inspect timing or failures:     llm logs
+  6. When local inference is done:   unload the model with /llama
+
+notes:
+  - Closing Pi does not stop the router or unload a model.
+  - An idle router keeps only modest service state; model weights and KV caches
+    are allocated by workers only after a model is loaded through /llama.
+  - Prefer /llama over direct curl load/unload calls because Pi provides live
+    progress, cancellation, and protection when other models are loaded.
+  - If start reports that the router is unhealthy, run `llm restart`, then
+    inspect `llm logs` if health does not recover.
+EOF
+}
+
+is_bootstrapped() {
+    launchctl print "$service" >/dev/null 2>&1
+}
+
+is_healthy() {
+    /usr/bin/curl --fail --silent --max-time 1 "$router_url/health" >/dev/null 2>&1
+}
+
+wait_for_router() {
+    attempt=0
+    printf 'Waiting for llama.cpp router'
+    while [ "$attempt" -lt 30 ]; do
+        if is_healthy; then
+            printf '\nRouter ready at %s\n' "$router_url"
+            return 0
+        fi
+        printf '.'
+        sleep 1
+        attempt=$((attempt + 1))
+    done
+    printf '\nRouter did not become healthy; inspect %s\n' "$log" >&2
+    return 1
+}
+
+start_router() {
+    if is_bootstrapped; then
+        printf '%s is already bootstrapped\n' "$label"
+        if is_healthy; then
+            printf 'Router healthy at %s\n' "$router_url"
+            return 0
+        fi
+        printf 'Router is not healthy; restart it with: llm restart\n' >&2
+        return 1
+    fi
+
+    if [ ! -f "$plist" ]; then
+        printf 'llm: LaunchAgent plist not found at %s\n' "$plist" >&2
+        printf 'llm: deploy it from the repository with: just stowall\n' >&2
+        return 1
+    fi
+
+    launchctl bootstrap "$domain" "$plist"
+    printf 'Bootstrapped %s\n' "$label"
+    wait_for_router
+}
+
+restart_router() {
+    if is_bootstrapped; then
+        launchctl kickstart -k "$service"
+        printf 'Restarted %s\n' "$label"
+        wait_for_router
+    else
+        start_router
+    fi
+}
+
+stop_router() {
+    if ! is_bootstrapped; then
+        printf '%s is not bootstrapped\n' "$label"
+        return 0
+    fi
+    launchctl bootout "$service"
+    printf 'Stopped %s\n' "$label"
+}
+
+list_models() {
+    if ! is_healthy; then
+        printf 'llm: router is not healthy at %s; run: llm start\n' "$router_url" >&2
+        return 1
+    fi
+
+    /usr/bin/curl --fail --silent --show-error "$router_url/models" |
+        jq -r '
+            if (.data | length) == 0 then
+                "No models discovered"
+            else
+                (["STATUS", "MODEL", "SOURCE"] | @tsv),
+                (.data[] | [(.status.value // "unknown"), .id, (.source // "-")] | @tsv)
+            end
+        ' |
+        awk -F "$(printf '\t')" '{ printf "%-12s %-48s %s\n", $1, $2, $3 }'
+}
+
+show_status() {
+    if is_bootstrapped; then
+        printf 'launchd: bootstrapped (%s)\n' "$service"
+        launchctl print "$service" |
+            awk '/^[[:space:]]*(state|pid|last exit code) = / { sub(/^[[:space:]]*/, "  "); print }'
+    else
+        printf 'launchd: not bootstrapped\n'
+    fi
+
+    if is_healthy; then
+        printf 'router:  healthy (%s)\n' "$router_url"
+        printf '\nModels:\n'
+        list_models
+    else
+        printf 'router:  unavailable (%s)\n' "$router_url"
+    fi
+}
+
+follow_logs() {
+    lines="${1:-100}"
+    case "$lines" in
+        0|*[!0-9]*|'')
+            printf 'llm: log line count must be a positive integer\n' >&2
+            return 2
+            ;;
+    esac
+    mkdir -p "${log%/*}"
+    touch "$log"
+    exec tail -n "$lines" -f "$log"
+}
+
+command="${1:-}"
+case "$command" in
+    start)
+        start_router
+        ;;
+    restart|kickstart)
+        restart_router
+        ;;
+    stop)
+        stop_router
+        ;;
+    status)
+        show_status
+        ;;
+    models)
+        list_models
+        ;;
+    logs)
+        follow_logs "${2:-100}"
+        ;;
+    help|-h|--help)
+        usage
+        ;;
+    *)
+        usage >&2
+        exit 2
+        ;;
+esac

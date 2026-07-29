@@ -15,6 +15,8 @@ brew "just"
 brew "fzf"
 # Replacement for grep that I use for neovim
 brew "ripgrep"
+# JSON processor used by local llama.cpp and settings helpers
+brew "jq"
 # Replacement for find - still trying to find more use of it
 brew "fd"
 

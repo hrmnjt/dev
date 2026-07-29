@@ -16,7 +16,8 @@ llama/
 ├── .config/llama/
 │   └── com.hrmnjt.llama-server.plist # on-demand router LaunchAgent
 └── .local/bin/
-    └── llama-router                  # router command and HF token discovery
+    ├── llama-router                  # router command and HF token discovery
+    └── llm                           # host-side router service controller
 
 _models/                              # existing local GGUF weights, not Stowed
 ~/.cache/huggingface/token            # optional host-local Hugging Face token
@@ -35,23 +36,21 @@ The Homebrew package is tracked in `Brewfile`:
 just brewinst
 brew upgrade llama.cpp # when upgrading an existing machine
 just stowall
+loadshell
 ```
 
 The plist remains under `~/.config/llama` rather than
 `~/Library/LaunchAgents`. macOS does not discover it automatically, but this
-avoids requiring terminal permission to install login items. Bootstrap it once
-per login session when local inference is needed:
+avoids requiring terminal permission to install login items. Start it once per
+login session when local inference is needed:
 
 ```bash
-launchctl bootstrap "gui/$(id -u)" \
-  "$HOME/.config/llama/com.hrmnjt.llama-server.plist"
+llm start
 ```
 
-To reload an already bootstrapped service:
-
-```bash
-launchctl kickstart -k "gui/$(id -u)/com.hrmnjt.llama-server"
-```
+`llm start` bootstraps the LaunchAgent and waits for the router health endpoint.
+Use `llm restart` to run `launchctl kickstart -k` when the service is already
+registered.
 
 When migrating from the old `local-llm` controller, remove its obsolete Stow
 links and host-local active-model configuration once the old service is stopped:
@@ -66,8 +65,13 @@ rm -f \
 mkdir -p "$HOME/Library/Logs"
 : >"$HOME/Library/Logs/llama-server.log"
 just stowall
-launchctl bootstrap "gui/$(id -u)" \
-  "$HOME/.config/llama/com.hrmnjt.llama-server.plist"
+loadshell
+```
+
+Then start the router from the fresh login shell:
+
+```bash
+llm start
 ```
 
 ## Hugging Face authentication
@@ -125,26 +129,27 @@ _models/
 Restart the router after manually adding or moving files. Downloads made through
 Pi's `/llama` command are registered by the router automatically.
 
-## Service checks
+## Router service commands
+
+The host-side `llm` command owns router lifecycle and observability only. Model
+downloads, loading, and unloading remain in Pi's `/llama` UI so its progress,
+cancellation, and multi-model safeguards are preserved.
 
 ```bash
-# launchd state
-launchctl print "gui/$(id -u)/com.hrmnjt.llama-server"
-
-# bootstrap is asynchronous, so retry while the router starts
-curl --fail --retry 20 --retry-connrefused --retry-delay 1 \
-  http://127.0.0.1:8080/health
-curl --fail http://127.0.0.1:8080/models
-
-# logs
-tail -n 100 -f "$HOME/Library/Logs/llama-server.log"
-
-# restart
-launchctl kickstart -k "gui/$(id -u)/com.hrmnjt.llama-server"
-
-# stop until it is explicitly bootstrapped again
-launchctl bootout "gui/$(id -u)/com.hrmnjt.llama-server"
+llm start        # bootstrap for this login session and wait for health
+llm restart      # bootstrap if needed, otherwise launchctl kickstart -k
+llm stop         # stop and unregister the LaunchAgent
+llm status       # show launchd state, router health, and discovered models
+llm models       # list model IDs and loaded/unloaded state
+llm logs         # follow the last 100 log lines
+llm logs 300     # follow a different number of initial lines
+llm help         # explain commands, lifecycle, and common workflow
 ```
+
+The service is not automatically bootstrapped after a logout or macOS restart
+because its plist is outside `~/Library/LaunchAgents`; run `llm start` again.
+Once bootstrapped, launchd's `KeepAlive` setting restarts the router if it exits.
+The idle router does not load model weights or allocate their KV caches.
 
 See the [Pi package guide](../pi/README.md#local-llamacpp-models) for `/login`,
 `/llama`, and `/model` usage.
@@ -407,9 +412,8 @@ router, truncate the file, and bootstrap it again. This also clears the old
 single-model logs after this migration:
 
 ```bash
-launchctl bootout "gui/$(id -u)/com.hrmnjt.llama-server" 2>/dev/null || true
+llm stop
 mkdir -p "$HOME/Library/Logs"
 : >"$HOME/Library/Logs/llama-server.log"
-launchctl bootstrap "gui/$(id -u)" \
-  "$HOME/.config/llama/com.hrmnjt.llama-server.plist"
+llm start
 ```
