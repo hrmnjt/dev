@@ -81,11 +81,9 @@ git remote set-url origin git@github.com:hrmnjt/dev.git
 just macos-gruvbox
 
 # 13. Local models
-# 13.1. Download and configure local models based on llama/README.md
-# 13.2. Select and verify models
-llm switch
-llm check
-# 13.3. On the first use in Pi, open /model and select llama.cpp / local-model
+# 13.1. Deploy and start the llama.cpp router based on llama/README.md
+# 13.2. On first use in Pi, run /login llama.cpp
+# 13.3. Use /llama to download or load a model, then select it with /model
 
 # 14. Enable optional integrations
 # 14.1. Install Pi's generated Herdr integration when using Herdr workspaces:
@@ -138,20 +136,17 @@ just brewclean
 
 #### Local models
 
-Download or try another local model
+Bootstrap the llama.cpp router when local inference is needed. It starts
+without loading a model. Inside Pi:
 
-1. Follow the [llama.cpp guide](llama/README.md) and download the GGUF under
-   `_models/<model-name>/`.
-2. Verify the publisher's checksum when one is available.
-3. Select and test it:
+1. Run `/login llama.cpp` once and accept the local default URL.
+2. Run `/llama` to download, load, or unload models.
+3. After loading a model, run `/model` and select its actual llama.cpp model ID.
 
-```bash
-llm switch
-llm check
-```
-
-`llm switch` updates the host-local configuration and starts or restarts the
-service. Switching GGUFs does not require changing Pi's stable model ID.
+Existing manually downloaded GGUFs remain under `_models/<model-name>/`. New
+`/llama` downloads use llama.cpp's cache. See the
+[llama.cpp guide](llama/README.md) for router deployment, Hugging Face
+authentication, service checks, and the required local model layout.
 
 #### Add a top-level package or repository-local directory
 

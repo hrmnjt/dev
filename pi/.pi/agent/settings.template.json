@@ -1,4 +1,9 @@
 {
   "theme": "gruvbox-dark/gruvbox-dark",
-  "defaultThinkingLevel": "high"
+  "defaultThinkingLevel": "high",
+  "enabledModels": [
+    "llama.cpp/qwen3.5-9b",
+    "llama.cpp/qwen3-coder-next-q5-k-m",
+    "openai-codex/gpt-5.6-sol"
+  ]
 }

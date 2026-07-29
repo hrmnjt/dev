@@ -1,0 +1,51 @@
+#!/bin/sh
+
+set -eu
+
+binary="${LLAMA_SERVER_BINARY:-/opt/homebrew/bin/llama-server}"
+models_dir="${LLAMA_MODELS_DIR:-$HOME/code/github.com/hrmnjt/dev/_models}"
+log="$HOME/Library/Logs/llama-server.log"
+
+mkdir -p "${log%/*}"
+exec >>"$log" 2>&1
+
+if [ ! -x "$binary" ]; then
+    printf 'llama-router: llama-server not found at %s\n' "$binary" >&2
+    printf 'llama-router: install it with: brew install llama.cpp\n' >&2
+    exit 1
+fi
+
+if [ ! -d "$models_dir" ]; then
+    printf 'llama-router: model directory not found at %s\n' "$models_dir" >&2
+    exit 1
+fi
+
+# launchd does not inherit the interactive shell environment. Reuse the token
+# written by `hf auth login`, which is also one of the locations Pi searches.
+if [ -z "${HF_TOKEN:-}" ]; then
+    for token_file in \
+        "${HF_TOKEN_PATH:-}" \
+        "${HF_HOME:+$HF_HOME/token}" \
+        "${XDG_CACHE_HOME:+$XDG_CACHE_HOME/huggingface/token}" \
+        "$HOME/.cache/huggingface/token"
+    do
+        if [ -n "$token_file" ] && [ -r "$token_file" ]; then
+            HF_TOKEN=$(sed -n '1p' "$token_file")
+            if [ -n "$HF_TOKEN" ]; then
+                export HF_TOKEN
+                break
+            fi
+        fi
+    done
+fi
+
+exec "$binary" \
+    --models-dir "$models_dir" \
+    --no-models-autoload \
+    --jinja \
+    --host 127.0.0.1 \
+    --port 8080 \
+    --n-gpu-layers 999 \
+    --ctx-size 32768 \
+    --flash-attn on \
+    --no-webui
