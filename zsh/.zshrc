@@ -35,6 +35,10 @@ alias gbclean='git fetch --prune && git branch -vv --merged | awk '\''$1 != "*" 
 # git worktree helper
 [[ -f ~/.config/zsh/wt.zsh ]] && source ~/.config/zsh/wt.zsh
 
+# Router lifecycle and status command. Invoke through sh so the Stow link does
+# not depend on the source file's executable mode.
+alias llm='/bin/sh "$HOME/.local/bin/llm"'
+
 # fzf theme: Gruvbox Dark Hard, matching Ghostty and Starship.
 export FZF_DEFAULT_OPTS=" \
 --color=bg:#1d2021,bg+:#282828,fg:#ebdbb2,fg+:#fbf1c7 \

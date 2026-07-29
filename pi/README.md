@@ -354,7 +354,12 @@ router service and existing repository-local GGUF layout are documented in the
 [llama.cpp guide](../llama/README.md); no custom `models.json` provider is
 needed.
 
-Start with the router running, then configure its connection once inside Pi:
+Start the router from the host shell, then configure its connection once inside
+Pi:
+
+```bash
+llm start
+```
 
 ```text
 /login llama.cpp

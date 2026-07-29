@@ -72,3 +72,4 @@ Notable commands and aliases include:
 | `cdp` | Enter the personal repositories directory |
 | `cdw` | Enter the work repositories directory |
 | `gbclean` | Remove merged local branches whose upstream is gone |
+| `llm` | Manage and inspect the host llama.cpp router service |
