@@ -26,7 +26,7 @@ commands:
                 unloads every model worker and releases its model memory.
   status        Show whether launchd registered the service, router health, and
                 the loaded/unloaded state of every discovered model.
-  models        Print the model ID, loaded/unloaded state, and model source.
+  models        Print each model ID and its loaded/unloaded state.
   logs [lines]  Follow the router log, initially showing 100 lines or the
                 supplied positive line count. Stop following with Ctrl+C.
   help          Show this help.
@@ -126,11 +126,11 @@ list_models() {
             if (.data | length) == 0 then
                 "No models discovered"
             else
-                (["STATUS", "MODEL", "SOURCE"] | @tsv),
-                (.data[] | [(.status.value // "unknown"), .id, (.source // "-")] | @tsv)
+                (["STATUS", "MODEL"] | @tsv),
+                (.data[] | [(.status.value // "unknown"), .id] | @tsv)
             end
         ' |
-        awk -F "$(printf '\t')" '{ printf "%-12s %-48s %s\n", $1, $2, $3 }'
+        awk -F "$(printf '\t')" '{ printf "%-12s %s\n", $1, $2 }'
 }
 
 show_status() {
@@ -169,7 +169,7 @@ case "$command" in
     start)
         start_router
         ;;
-    restart|kickstart)
+    restart)
         restart_router
         ;;
     stop)

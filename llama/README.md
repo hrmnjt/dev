@@ -19,13 +19,14 @@ llama/
     ├── llama-router                  # router command and HF token discovery
     └── llm                           # host-side router service controller
 
-_models/                              # existing local GGUF weights, not Stowed
+_models/                              # complete router-managed llama.cpp cache
 ~/.cache/huggingface/token            # optional host-local Hugging Face token
 ~/.pi/agent/auth.json                 # Pi's host-local router connection
 ```
 
-Pi-initiated downloads use llama.cpp's cache. The `_models/` directory remains
-available through `--models-dir` for manually downloaded weights.
+`_models/` is the single model store. `llama-router` sets `LLAMA_CACHE` to this
+Git-ignored directory, and every model is downloaded and managed through Pi's
+`/llama` UI.
 
 ## Install and deploy
 
@@ -51,28 +52,6 @@ llm start
 `llm start` bootstraps the LaunchAgent and waits for the router health endpoint.
 Use `llm restart` to run `launchctl kickstart -k` when the service is already
 registered.
-
-When migrating from the old `local-llm` controller, remove its obsolete Stow
-links and host-local active-model configuration once the old service is stopped:
-
-```bash
-launchctl bootout "gui/$(id -u)/com.hrmnjt.llama-server" 2>/dev/null || true
-rm -f \
-  "$HOME/.local/bin/local-llm" \
-  "$HOME/.config/llama/server.env.example" \
-  "$HOME/.config/llama/server.env" \
-  "$HOME/.pi/agent/models.json"
-mkdir -p "$HOME/Library/Logs"
-: >"$HOME/Library/Logs/llama-server.log"
-just stowall
-loadshell
-```
-
-Then start the router from the fresh login shell:
-
-```bash
-llm start
-```
 
 ## Hugging Face authentication
 
@@ -106,6 +85,7 @@ mode. Its shared defaults are:
 - Jinja chat templates and tool calling
 - full Metal offload and Flash Attention
 - a 32,768-token context window
+- a single router-managed cache at `_models/` via `LLAMA_CACHE`
 - no web UI
 
 The model context reported to Pi comes from the loaded llama.cpp instance, so
@@ -113,21 +93,22 @@ there is no separate Pi metadata to synchronize. Use a
 [llama.cpp model preset](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md#model-presets)
 when a model needs a different context size or other per-model options.
 
-Local model groups must be directly below `_models/`:
+## Model storage
+
+`_models/` is the complete llama.cpp cache. Its GGUF files, download metadata,
+and partial downloads are ignored as a unit. Do not add another model directory
+or reorganize cache files manually.
+
+Use `/llama` → **Download model…** for every model. Current evaluation candidates
+can be entered by exact repository and quantization:
 
 ```text
-_models/
-├── qwen3.5-9b/
-│   └── Qwen3.5-9B-Q4_K_M.gguf
-└── qwen3-coder-next-q5-k-m/
-    ├── Qwen3-Coder-Next-Q5_K_M-00001-of-00004.gguf
-    ├── Qwen3-Coder-Next-Q5_K_M-00002-of-00004.gguf
-    ├── Qwen3-Coder-Next-Q5_K_M-00003-of-00004.gguf
-    └── Qwen3-Coder-Next-Q5_K_M-00004-of-00004.gguf
+unsloth/Qwen3.5-122B-A10B-GGUF:UD-Q5_K_XL
+unsloth/GLM-4.7-Flash-GGUF:Q8_0
 ```
 
-Restart the router after manually adding or moving files. Downloads made through
-Pi's `/llama` command are registered by the router automatically.
+Downloads are registered by the router automatically and remain unloaded until
+selected in `/llama`. Use the same UI to load and unload them.
 
 ## Router service commands
 
@@ -377,10 +358,11 @@ Metal uses unified memory. `memory_pressure` and swap growth are better signals
 that a model is too large. Activity Monitor can provide an easier visual check
 of Memory Pressure while loading and using a candidate.
 
-Check model file size and look for load or memory errors:
+Check total model-cache size and look for load or memory errors:
 
 ```bash
-du -sh _models/<model-directory>
+du -sh _models
+find _models -type f -name '*.gguf' -exec du -h {} +
 rg -i 'error|failed|out of memory|metal' "$log" | tail -n 30
 ```
 

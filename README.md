@@ -151,10 +151,10 @@ Then, inside Pi:
 2. Run `/llama` to download, load, or unload models.
 3. After loading a model, run `/model` and select its actual llama.cpp model ID.
 
-Existing manually downloaded GGUFs remain under `_models/<model-name>/`. New
-`/llama` downloads use llama.cpp's cache. See the
+`_models/` is the single Git-ignored llama.cpp cache. Download and manage every
+model through `/llama`; do not maintain a separate manual GGUF layout. See the
 [llama.cpp guide](llama/README.md) for router deployment, Hugging Face
-authentication, service checks, and the required local model layout.
+authentication, service checks, and model storage.
 
 #### Add a top-level package or repository-local directory
 

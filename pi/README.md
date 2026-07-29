@@ -317,8 +317,8 @@ to this repo.
   "theme": "gruvbox-dark/gruvbox-dark",
   "defaultThinkingLevel": "high",
   "enabledModels": [
-    "llama.cpp/qwen3.5-9b",
-    "llama.cpp/qwen3-coder-next-q5-k-m",
+    "llama.cpp/unsloth/Qwen3.5-122B-A10B-GGUF:UD-Q5_K_XL",
+    "llama.cpp/unsloth/GLM-4.7-Flash-GGUF:Q8_0",
     "openai-codex/gpt-5.6-sol"
   ]
 }
@@ -350,9 +350,8 @@ the tracked package source, while Pi should write to the real host directory.
 ## Local llama.cpp models
 
 Pi 0.81 and later include a dynamic provider for a llama.cpp router. The
-router service and existing repository-local GGUF layout are documented in the
-[llama.cpp guide](../llama/README.md); no custom `models.json` provider is
-needed.
+router service and single repository-local model cache are documented in the
+[llama.cpp guide](../llama/README.md).
 
 Start the router from the host shell, then configure its connection once inside
 Pi:
@@ -368,7 +367,7 @@ llm start
 Accept `http://127.0.0.1:8080` and leave the API key blank. Pi stores this
 host-local connection in `~/.pi/agent/auth.json`.
 
-Use the model manager for normal local-model operations:
+Use the model manager for local model operations:
 
 ```text
 /llama
@@ -391,44 +390,14 @@ After loading a model, select it for the current session:
 /model
 ```
 
-Only loaded llama.cpp models appear in `/model`. The router now exposes each
-model by its actual ID rather than the old stable `local-model` alias. Selecting
-it through `/model` also replaces any stale `local-model` default in Pi's
-runtime settings.
+Only loaded llama.cpp models appear in `/model`, using their Hugging Face IDs.
 
 ### Scoped model selection
 
 `enabledModels` controls the models shown in `/model`'s default **scoped** view
-and cycled by Ctrl+P. The tracked settings template starts with this scope:
-
-```json
-[
-  "llama.cpp/qwen3.5-9b",
-  "llama.cpp/qwen3-coder-next-q5-k-m",
-  "openai-codex/gpt-5.6-sol"
-]
-```
-
-The old `llama.cpp/local-model` scope entry and its custom provider should not
-remain after this migration. Remove the obsolete Stow link, then apply the
-template's scope to an existing host-local settings file while preserving its
-other runtime values:
-
-```bash
-rm -f "$HOME/.pi/agent/models.json"
-
-settings="$HOME/.pi/agent/settings.json"
-temporary=$(mktemp "${settings}.tmp.XXXXXX")
-jq --argjson models '[
-  "llama.cpp/qwen3.5-9b",
-  "llama.cpp/qwen3-coder-next-q5-k-m",
-  "openai-codex/gpt-5.6-sol"
-]' '.enabledModels = $models' "$settings" >"$temporary" &&
-  mv "$temporary" "$settings"
-```
-
-Restart Pi after editing the host-local settings. `/scoped-models` can then
-add, remove, and reorder entries interactively; press Ctrl+S in that selector
+and cycled by Ctrl+P. Apply the tracked template through the
+[first-time settings setup](#first-time-settings-setup), or use
+`/scoped-models` to add, remove, and reorder entries interactively. Press Ctrl+S
 to persist changes. In `/model`, press Tab to switch between the **scoped** and
 **all** views.
 
@@ -449,9 +418,9 @@ Reasoning metadata is currently conservative (`reasoning: false`). Use
 llama.cpp model presets for per-model server options such as context size.
 
 Pi never silently unloads models and never deletes downloaded model files.
-Unload through `/llama` when memory should be released; remove unwanted cache
-files manually. If the router is unavailable, `/llama` offers **Retry** after
-it has been restarted.
+Unload through `/llama` when memory should be released; router-managed downloads
+remain under `_models/` until removed manually. If the router is unavailable,
+`/llama` offers **Retry** after it has been restarted.
 
 Public Hugging Face search works without a token. Gated downloads require the
 host-side authentication setup in the
