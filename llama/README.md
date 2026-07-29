@@ -1,145 +1,313 @@
 # Local llama.cpp inference
 
-This Stow package runs local GGUF models through Homebrew `llama.cpp` and exposes
-them to Pi through an OpenAI-compatible API.
+This Stow package runs Homebrew `llama.cpp` in router mode for Pi's built-in
+llama.cpp provider. Pi discovers the router's GGUF models and provides the
+interactive model workflow; this package is only responsible for starting the
+host service.
 
-The tracked service configuration is model-agnostic. Model weights live in the
-repo-local, Git-ignored `_models/` directory, while the active model selection
-is host-local state.
+The router listens on `127.0.0.1:8080` and stays available after it is
+explicitly bootstrapped for the current login session. It starts without loading
+a model; models are loaded and unloaded through Pi's `/llama` command.
 
 ## Layout
 
 ```text
 llama/
 ├── .config/llama/
-│   ├── com.hrmnjt.llama-server.plist # on-demand LaunchAgent
-│   └── server.env.example            # runtime configuration template
+│   └── com.hrmnjt.llama-server.plist # on-demand router LaunchAgent
 └── .local/bin/
-    └── local-llm                     # service and model controller
+    └── llama-router                  # router command and HF token discovery
 
-_models/                              # repo-local GGUF weights, not Stowed
-~/.config/llama/server.env            # active host-local configuration
-pi/.pi/agent/models.json              # Pi provider metadata
+_models/                              # existing local GGUF weights, not Stowed
+~/.cache/huggingface/token            # optional host-local Hugging Face token
+~/.pi/agent/auth.json                 # Pi's host-local router connection
 ```
 
-The server binds to `127.0.0.1:8080` by default and exposes whichever GGUF is
-active through the stable `local-model` alias.
+Pi-initiated downloads use llama.cpp's cache. The `_models/` directory remains
+available through `--models-dir` for manually downloaded weights.
 
 ## Install and deploy
 
-The required packages are tracked in `Brewfile`:
+Pi 0.81 or later and a current llama.cpp build with router support are required.
+The Homebrew package is tracked in `Brewfile`:
 
 ```bash
 just brewinst
+brew upgrade llama.cpp # when upgrading an existing machine
 just stowall
-loadshell
 ```
 
-`llama.cpp` provides the Metal-accelerated server, and `fzf` powers the model
-switcher.
-
-## Models I am currently trying
-
-Run downloads from the repository root. `uvx` runs the Hugging Face CLI without
-installing `huggingface-hub` globally.
-
-### Qwen3.5 9B Q4_K_M
+The plist remains under `~/.config/llama` rather than
+`~/Library/LaunchAgents`. macOS does not discover it automatically, but this
+avoids requiring terminal permission to install login items. Bootstrap it once
+per login session when local inference is needed:
 
 ```bash
-uvx --from huggingface-hub hf download \
-    unsloth/Qwen3.5-9B-GGUF \
-    --include "Qwen3.5-9B-Q4_K_M.gguf" \
-    --local-dir _models/qwen3.5-9b
+launchctl bootstrap "gui/$(id -u)" \
+  "$HOME/.config/llama/com.hrmnjt.llama-server.plist"
 ```
 
-### Qwen3-Coder-Next Q5_K_M
+To reload an already bootstrapped service:
 
 ```bash
-uvx --from huggingface-hub hf download \
-    Qwen/Qwen3-Coder-Next-GGUF \
-    --include "Qwen3-Coder-Next-Q5_K_M/*" \
-    --local-dir _models/qwen3-coder-next-q5-k-m
+launchctl kickstart -k "gui/$(id -u)/com.hrmnjt.llama-server"
 ```
 
-The coder model is sharded. The switcher displays only its `00001-of-*` shard;
-llama.cpp discovers and loads the remaining shards automatically.
-
-These are current experiments rather than permanent defaults. Other models can
-be downloaded into their own `_models/<model-name>/` directory using the
-publisher's instructions. Verify publisher-provided checksums when available.
-
-## Select and start a model
+When migrating from the old `local-llm` controller, remove its obsolete Stow
+links and host-local active-model configuration once the old service is stopped:
 
 ```bash
-llm switch
-llm check
+launchctl bootout "gui/$(id -u)/com.hrmnjt.llama-server" 2>/dev/null || true
+rm -f \
+  "$HOME/.local/bin/local-llm" \
+  "$HOME/.config/llama/server.env.example" \
+  "$HOME/.config/llama/server.env" \
+  "$HOME/.pi/agent/models.json"
+just stowall
+launchctl bootstrap "gui/$(id -u)" \
+  "$HOME/.config/llama/com.hrmnjt.llama-server.plist"
 ```
 
-`llm switch` searches `_models/` recursively, excludes multimodal projector
-files, hides all but the first shard of sharded models, and opens an `fzf`
-selector. It then:
+## Hugging Face authentication
 
-1. Creates `~/.config/llama/server.env` from the tracked example when needed.
-2. Stores the selected GGUF path in that host-local file.
-3. Starts or restarts the LaunchAgent.
-4. Waits for the server health endpoint to become ready.
+Public model search and downloads work without authentication at lower rate
+limits. For gated repositories or authenticated downloads, use the Hugging Face
+CLI from a host terminal:
 
-`llm check` requires a healthy server and prints the models exposed by its
-OpenAI-compatible API.
+```bash
+uvx --from huggingface-hub hf auth login
+chmod 600 "$HOME/.cache/huggingface/token"
+test -s "$HOME/.cache/huggingface/token"
+```
 
-On first use in Pi, open `/model` and select:
+The login command prompts for the token instead of putting it in shell history
+and writes it outside this repository. Pi already searches this standard
+location, and `llama-router` reads the same file
+and exports `HF_TOKEN` to the launchd-managed server. This is necessary because
+launchd does not inherit the interactive shell's `HF_TOKEN`.
+
+The launcher also honors `HF_TOKEN`, `HF_TOKEN_PATH`, `HF_HOME`, and
+`XDG_CACHE_HOME` when it is run outside launchd or those values are supplied by
+another service configuration. Restart the service after changing the token.
+
+## Router behavior
+
+`llama-router` starts `llama-server` without `--model`, which enables router
+mode. Its shared defaults are:
+
+- local-only access on `127.0.0.1:8080`
+- explicit loading with `--no-models-autoload`
+- Jinja chat templates and tool calling
+- full Metal offload and Flash Attention
+- a 32,768-token context window
+- no web UI
+
+The model context reported to Pi comes from the loaded llama.cpp instance, so
+there is no separate Pi metadata to synchronize. Use a
+[llama.cpp model preset](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md#model-presets)
+when a model needs a different context size or other per-model options.
+
+Local model groups must be directly below `_models/`:
 
 ```text
-llama.cpp / local-model
+_models/
+├── qwen3.5-9b/
+│   └── Qwen3.5-9B-Q4_K_M.gguf
+└── qwen3-coder-next-q5-k-m/
+    ├── Qwen3-Coder-Next-Q5_K_M-00001-of-00004.gguf
+    ├── Qwen3-Coder-Next-Q5_K_M-00002-of-00004.gguf
+    ├── Qwen3-Coder-Next-Q5_K_M-00003-of-00004.gguf
+    └── Qwen3-Coder-Next-Q5_K_M-00004-of-00004.gguf
 ```
 
-Switching GGUFs does not require changing Pi's provider or model ID.
+Restart the router after manually adding or moving files. Downloads made through
+Pi's `/llama` command are registered by the router automatically.
 
-## Service commands
+## Service checks
 
 ```bash
-llm start    # start the configured model
-llm stop     # stop and unload the LaunchAgent
-llm restart  # restart the configured model
-llm switch   # select a GGUF and restart the service
-llm status   # show launchd state and server health
-llm check    # require a healthy server and list API models
-llm logs     # follow ~/Library/Logs/llama-server.log
-llm --help
+# launchd state
+launchctl print "gui/$(id -u)/com.hrmnjt.llama-server"
+
+# bootstrap is asynchronous, so retry while the router starts
+curl --fail --retry 20 --retry-connrefused --retry-delay 1 \
+  http://127.0.0.1:8080/health
+curl --fail http://127.0.0.1:8080/models
+
+# logs
+tail -n 100 -f "$HOME/Library/Logs/llama-server.log"
+
+# restart
+launchctl kickstart -k "gui/$(id -u)/com.hrmnjt.llama-server"
+
+# stop until it is explicitly bootstrapped again
+launchctl bootout "gui/$(id -u)/com.hrmnjt.llama-server"
 ```
 
-The LaunchAgent has `RunAtLoad` and `KeepAlive` disabled. It runs only after an
-explicit `llm start`, `llm restart`, or `llm switch` and remains stopped after
-`llm stop`.
+See the [Pi package guide](../pi/README.md#local-llamacpp-models) for `/login`,
+`/llama`, and `/model` usage.
 
-## Runtime configuration
+## Appendix: evaluate a new model
 
-Supported values in `~/.config/llama/server.env`:
+Use this short suite after downloading a new model to check inference, tool use,
+instruction following, and basic coding ability. Load the candidate with
+`/llama`, select it with `/model`, and start a fresh session with `/new` before
+testing.
 
-| Variable | Default | Purpose |
-|---|---:|---|
-| `LOCAL_LLM_MODEL` | selected by `llm switch` | Absolute path to the active GGUF |
-| `LOCAL_LLM_MODELS_DIR` | repo `_models/` | Directory searched by `llm switch` |
-| `LOCAL_LLM_ALIAS` | `local-model` | Model ID exposed by the API; keep aligned with Pi |
-| `LOCAL_LLM_CONTEXT_SIZE` | `32768` | Server context window; keep aligned with Pi |
-| `LOCAL_LLM_HOST` | `127.0.0.1` | Listen address |
-| `LOCAL_LLM_PORT` | `8080` | Listen port |
-| `LOCAL_LLM_PARALLEL` | `1` | Number of inference slots |
-| `LOCAL_LLM_START_TIMEOUT` | `300` | Startup timeout in seconds |
-| `LOCAL_LLM_BINARY` | `/opt/homebrew/bin/llama-server` | Server executable |
-| `LOCAL_LLM_MMPROJ` | unset | Optional multimodal projector |
-
-After manually editing the runtime configuration, apply it with:
+First confirm the router state from a host terminal:
 
 ```bash
-llm restart
+curl -s http://127.0.0.1:8080/models |
+  jq -r '.data[] | "\(.id): \(.status.value)"'
 ```
 
-The wrapper enables Metal offload, Flash Attention, Jinja chat templates, and
-localhost-only serving as generic defaults. Sampling remains controlled by the
-client or model defaults.
+The candidate must report `loaded`.
 
-Pi's tracked `local-model` entry uses conservative text-only, non-reasoning
-metadata. When a model needs a different context limit, image input, or a
-specific reasoning format, update both `pi/.pi/agent/models.json` and
-`~/.config/llama/server.env` as appropriate.
+### 1. Basic inference
+
+```text
+Reply with exactly this text and nothing else: LOCAL_MODEL_OK
+```
+
+Pass when the response is exactly `LOCAL_MODEL_OK`, without commentary or
+formatting.
+
+### 2. File reading and grounded answers
+
+Run from this repository:
+
+```text
+Do not modify files. Read README.md and report its top-level heading. Quote the
+exact heading and include its file path.
+```
+
+Pass when the model uses the read tool and reports the exact heading from
+`README.md` without editing anything.
+
+### 3. Search and uncertainty
+
+```text
+Do not modify files. Determine whether this repository configures llama.cpp's
+sleep-idle-seconds option. Search the repository and answer only from evidence.
+If it is absent, say that it is not configured.
+```
+
+Pass when the model searches before answering, reports that the option is not
+configured, and does not invent a setting.
+
+### 4. Gondolin awareness
+
+```text
+Check whether the host llama.cpp router is healthy and list its loaded models.
+Remember that your bash tool runs inside Gondolin.
+```
+
+Pass when the model recognizes that its sandbox cannot query the host's
+`127.0.0.1:8080`, explains the limitation, and asks for a host-side check. It
+must not claim to have observed router state that it cannot access.
+
+### 5. Disposable coding test
+
+Create a small failing project from a host terminal:
+
+```bash
+work=$(mktemp -d)
+cd "$work"
+mkdir -p src test
+
+cat > package.json <<'EOF'
+{
+  "type": "module",
+  "scripts": { "test": "node --test" }
+}
+EOF
+
+cat > README.md <<'EOF'
+# Shopping cart
+
+`total(items)` calculates the final cart price.
+
+- Apply a 10% discount when the subtotal is at least $100.
+- Apply 8% tax after the discount.
+- Round the result to cents.
+- Do not mutate the input array.
+EOF
+
+cat > src/cart.js <<'EOF'
+export function total(items) {
+  items.sort((a, b) => b.price - a.price);
+  const subtotal = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
+  const discounted = subtotal > 100 ? subtotal * 0.9 : subtotal;
+  return Math.round(discounted * 1.08 * 100) / 100;
+}
+EOF
+
+cat > test/cart.test.js <<'EOF'
+import assert from "node:assert/strict";
+import test from "node:test";
+import { total } from "../src/cart.js";
+
+test("discount applies at exactly $100", () => {
+  assert.equal(total([{ price: 50, quantity: 2 }]), 97.2);
+});
+
+test("does not mutate its input", () => {
+  const items = [
+    { price: 10, quantity: 1 },
+    { price: 20, quantity: 2 },
+  ];
+  const original = structuredClone(items);
+  total(items);
+  assert.deepEqual(items, original);
+});
+EOF
+
+git init -q
+git add .
+pi
+```
+
+Then prompt the candidate:
+
+```text
+Fix all test failures. Only edit src/cart.js, do not weaken or modify the tests,
+run the complete test suite, and summarize the changes.
+```
+
+Pass when the model:
+
+- runs the tests and observes the failures
+- changes the discount condition from `>` to `>=`
+- avoids mutating `items`, normally by removing the unnecessary sort
+- edits only `src/cart.js`
+- reruns the complete test suite successfully
+
+Verify independently from the host terminal:
+
+```bash
+npm test
+git diff -- src/cart.js
+git diff -- test
+```
+
+The final command should produce no test-file diff. Remove the disposable project
+when finished:
+
+```bash
+cd ~
+test -n "$work" && rm -rf -- "$work"
+```
+
+### Compare results
+
+Run the same prompts in fresh sessions for each candidate. Record pass/fail,
+approximate response time, unnecessary tool calls, unsupported claims, and
+unrelated edits. Timing details from llama.cpp are available with:
+
+```bash
+tail -n 300 "$HOME/Library/Logs/llama-server.log" |
+  rg 'prompt eval|eval time|tokens per second'
+```
