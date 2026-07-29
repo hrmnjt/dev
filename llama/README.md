@@ -63,6 +63,8 @@ rm -f \
   "$HOME/.config/llama/server.env.example" \
   "$HOME/.config/llama/server.env" \
   "$HOME/.pi/agent/models.json"
+mkdir -p "$HOME/Library/Logs"
+: >"$HOME/Library/Logs/llama-server.log"
 just stowall
 launchctl bootstrap "gui/$(id -u)" \
   "$HOME/.config/llama/com.hrmnjt.llama-server.plist"
@@ -305,9 +307,109 @@ test -n "$work" && rm -rf -- "$work"
 
 Run the same prompts in fresh sessions for each candidate. Record pass/fail,
 approximate response time, unnecessary tool calls, unsupported claims, and
-unrelated edits. Timing details from llama.cpp are available with:
+unrelated edits. Quality and instruction-following matter more than raw speed;
+a larger or less-quantized model is useful only if its improvement justifies
+its memory use and latency.
+
+### Monitor performance and capacity
+
+llama.cpp writes router and model-worker output to one append-only log:
 
 ```bash
-tail -n 300 "$HOME/Library/Logs/llama-server.log" |
-  rg 'prompt eval|eval time|tokens per second'
+log="$HOME/Library/Logs/llama-server.log"
+```
+
+Router-mode worker lines start with an internal port such as `[57013]`. The
+following timestamp is elapsed worker time, not wall-clock time. `slot id` is an
+inference slot and `task` identifies one request. A single Pi turn can create
+multiple tasks when the model calls tools.
+
+Watch completed prompt-processing and generation timings live:
+
+```bash
+tail -F "$log" |
+  rg --line-buffered 'prompt processing|prompt eval time|\| +eval time|total time'
+```
+
+Show the most recent completed requests:
+
+```bash
+rg 'prompt eval time|\| +eval time|total time' "$log" | tail -n 30
+```
+
+The two important measurements are:
+
+- `prompt eval time`: input processing. Large prompts on the current models are
+  expected to process much faster than output is generated.
+- `eval time`: output generation. The final `tokens per second` value is the
+  most useful speed comparison between models.
+
+Average generation speed over the last 20 completed requests:
+
+```bash
+rg '\| +eval time =' "$log" |
+  tail -n 20 |
+  sed -E 's/.*,[[:space:]]*([0-9.]+) tokens per second.*/\1/' |
+  awk '{ total += $1 } END {
+    if (NR) printf "generation: %.2f tokens/s (%d requests)\n", total / NR, NR
+  }'
+```
+
+Prompt-processing rates vary more for small requests because fixed overhead
+dominates. Later agent requests may evaluate only a small suffix because
+llama.cpp reuses the conversation's KV-cache.
+
+Monitor the router and model-worker processes from another host terminal:
+
+```bash
+ps -axo pid,rss,%cpu,etime,command | rg '[l]lama-server'
+memory_pressure -Q
+sysctl vm.swapusage
+```
+
+`rss` is in KiB and is only a rough process-memory measure on Apple Silicon;
+Metal uses unified memory. `memory_pressure` and swap growth are better signals
+that a model is too large. Activity Monitor can provide an easier visual check
+of Memory Pressure while loading and using a candidate.
+
+Check model file size and look for load or memory errors:
+
+```bash
+du -sh _models/<model-directory>
+rg -i 'error|failed|out of memory|metal' "$log" | tail -n 30
+```
+
+For a fair comparison:
+
+1. Use `/llama` to unload other models so they do not consume memory.
+2. Load one candidate and select it with `/model`.
+3. Start a fresh Pi session with `/new`.
+4. Mark the log, then run the same evaluation prompts:
+
+   ```bash
+   printf '\n===== %s · %s =====\n' \
+     "$(date '+%Y-%m-%dT%H:%M:%S%z')" '<model-id>' >>"$log"
+   ```
+
+5. Record test pass/fail, generation tokens/second, memory pressure, and swap.
+6. Unload the candidate before loading the next one. Unloading and reloading
+   also resets that worker's KV-cache.
+
+A bigger model is practical when it loads without Metal or allocation errors,
+does not push sustained memory pressure into the warning/critical range, avoids
+significant swap growth, and remains fast enough for interactive use. GGUF file
+size is only the baseline: the model also needs context/KV-cache and runtime
+working memory. The shared 32K context can therefore make actual memory use
+several GiB larger than the weights alone.
+
+The log has no automatic rotation. To discard old entries safely, stop the
+router, truncate the file, and bootstrap it again. This also clears the old
+single-model logs after this migration:
+
+```bash
+launchctl bootout "gui/$(id -u)/com.hrmnjt.llama-server" 2>/dev/null || true
+mkdir -p "$HOME/Library/Logs"
+: >"$HOME/Library/Logs/llama-server.log"
+launchctl bootstrap "gui/$(id -u)" \
+  "$HOME/.config/llama/com.hrmnjt.llama-server.plist"
 ```
