@@ -3,7 +3,7 @@
 set -eu
 
 binary="${LLAMA_SERVER_BINARY:-/opt/homebrew/bin/llama-server}"
-models_dir="${LLAMA_MODELS_DIR:-$HOME/code/github.com/hrmnjt/dev/_models}"
+model_store="$HOME/code/github.com/hrmnjt/dev/_models"
 log="$HOME/Library/Logs/llama-server.log"
 
 mkdir -p "${log%/*}"
@@ -15,10 +15,8 @@ if [ ! -x "$binary" ]; then
     exit 1
 fi
 
-if [ ! -d "$models_dir" ]; then
-    printf 'llama-router: model directory not found at %s\n' "$models_dir" >&2
-    exit 1
-fi
+mkdir -p "$model_store"
+export LLAMA_CACHE="$model_store"
 
 # launchd does not inherit the interactive shell environment. Reuse the token
 # written by `hf auth login`, which is also one of the locations Pi searches.
@@ -40,7 +38,6 @@ if [ -z "${HF_TOKEN:-}" ]; then
 fi
 
 exec "$binary" \
-    --models-dir "$models_dir" \
     --no-models-autoload \
     --jinja \
     --host 127.0.0.1 \
