@@ -392,41 +392,6 @@ After loading a model, select it for the current session:
 
 Only loaded llama.cpp models appear in `/model`, using their Hugging Face IDs.
 
-### Scoped model selection
-
-`enabledModels` controls the models shown in `/model`'s default **scoped** view
-and cycled by Ctrl+P. Apply the tracked template through the
-[first-time settings setup](#first-time-settings-setup), or use
-`/scoped-models` to add, remove, and reorder entries interactively. Press Ctrl+S
-to persist changes. In `/model`, press Tab to switch between the **scoped** and
-**all** views.
-
-A scoped local model still appears only while it is loaded in the router. After
-a cold router start, use `/llama` to load the desired model and `/model` to
-select it. That selection becomes Pi's default while the model remains
-available. Pi falls back to an available cloud model when the configured local
-default is unloaded.
-
-To temporarily remove OpenRouter's large catalog from the **all** model view,
-run `/logout openrouter`. If `OPENROUTER_API_KEY` is set in the shell, unset it
-before starting Pi as well. Logging out does not affect saved sessions and the
-provider can be restored later with `/login openrouter`.
-
-Pi reads the active context window and input modalities from llama.cpp. Model
-cost is zero and output is capped at 16,384 tokens by the built-in provider.
-Reasoning metadata is currently conservative (`reasoning: false`). Use
-llama.cpp model presets for per-model server options such as context size.
-
-Pi never silently unloads models and never deletes downloaded model files.
-Unload through `/llama` when memory should be released; router-managed downloads
-remain under `_models/` until removed manually. If the router is unavailable,
-`/llama` offers **Retry** after it has been restarted.
-
-Public Hugging Face search works without a token. Gated downloads require the
-host-side authentication setup in the
-[llama.cpp guide](../llama/README.md#hugging-face-authentication); both Pi and
-the launchd-managed router reuse the same token file.
-
 ## Custom Gondolin image
 
 The custom VM image adds the tools I expect to have available during agent work:
