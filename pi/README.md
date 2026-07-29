@@ -18,7 +18,6 @@ pi/
 │       │   ├── answer.ts          # Interactive answers to assistant questions
 │       │   ├── exit.ts            # Graceful /exit command
 │       │   ├── gondolin.ts        # VM sandbox for assistant tools
-│       │   ├── notify.ts          # OSC 777 desktop notifications
 │       │   ├── review.ts          # Terminal-native diff review UI
 │       │   ├── review-summary.ts  # Model-driven PR review summary
 │       │   ├── usage.ts           # Token/cost usage tracking
@@ -180,30 +179,6 @@ Commands:
 It compares the current branch against `main` by default, tracks the last
 reviewed HEAD SHA within the pi process, and on repeated runs asks the model to
 verify whether previous comments were addressed before reviewing new commits.
-
-### Notifications — `extensions/notify.ts`
-
-This sends an OSC 777 desktop notification when an agent run completes and pi is
-waiting for input. The notification title includes a repo/branch/tty label, and
-the body contains a short Markdown-stripped summary of the last assistant
-message.
-
-Commands:
-
-```text
-/notify status
-/notify test
-/notify on
-/notify off
-```
-
-Environment knobs:
-
-```text
-PI_NOTIFY=0|false|off      disable at startup
-PI_NOTIFY_MAX_BODY=220     notification body length
-PI_NOTIFY_LABEL=...        override the displayed session label
-```
 
 ### Usage tracker — `extensions/usage.ts`
 
