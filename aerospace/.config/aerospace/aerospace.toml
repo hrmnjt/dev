@@ -17,6 +17,13 @@
 # - Prefer direct navigation: "go to browser workspace" rather than "cycle apps".
 # - Keep monitor placement flexible; move workspaces to another display on demand.
 
+# Use the latest config behavior and explicitly preserve the numbered workspaces.
+config-version = 2
+persistent-workspaces = [
+    '1', '2', '3', '4', '5',
+    '6', '7', '8', '9', '10',
+]
+
 # Start AeroSpace automatically after logging in.
 # If you want a softer trial, change this to false and launch it manually.
 start-at-login = true
