@@ -16,6 +16,7 @@ pi/
 │   └── agent/
 │       ├── extensions/
 │       │   ├── answer.ts          # Interactive answers to assistant questions
+│       │   ├── clipboard-image.ts # Attach host clipboard images before Gondolin
 │       │   ├── exit.ts            # Graceful /exit command
 │       │   ├── gondolin.ts        # VM sandbox for assistant tools
 │       │   ├── review.ts          # Terminal-native diff review UI
@@ -79,6 +80,29 @@ Command:
 ```
 
 Shows VM id, host workspace, guest workspace, shell, and mounted docs/examples.
+
+### Clipboard image attachment — `extensions/clipboard-image.ts`
+
+Pi's `Ctrl+V` image handling stores clipboard bytes in a host temporary file
+and inserts that path into the editor. Gondolin-routed tools cannot read the
+host temporary directory. This extension intercepts interactive input containing
+Pi-generated `pi-clipboard-<uuid>.*` paths, converts those files into image
+attachments, removes the host paths from the prompt, and deletes the temporary
+files after loading them.
+
+The host-side read is intentionally restricted to regular PNG, JPEG, GIF, and
+WebP files with Pi's generated filename pattern directly under the host temp
+directory. It is triggered only by interactive user input and does not expose a
+host filesystem tool to the model.
+
+On macOS, copy a screenshot to the clipboard and paste it into Pi:
+
+```text
+Cmd+Shift+5 → copy screenshot → Ctrl+V
+```
+
+Use a model that advertises image input. No Gondolin mount or project-local
+screenshot copy is required.
 
 ### Herdr integration
 
