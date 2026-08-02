@@ -22,7 +22,6 @@ pi/
 │       │   ├── gondolin.ts        # VM sandbox for assistant tools
 │       │   ├── review.ts          # Terminal-native diff review UI
 │       │   ├── review-summary.ts  # Model-driven PR review summary
-│       │   ├── usage.ts           # Token/cost usage tracking
 │       │   ├── uv.ts              # Prefer uv over pip/poetry/venv
 │       │   └── wal-writer.ts      # Append host Obsidian WAL notes
 │       ├── gondolin-image.json    # Custom Alpine VM image definition
@@ -37,7 +36,6 @@ Runtime files live under the real host directory `~/.pi/agent` and are
 intentionally not tracked:
 
 - `~/.pi/agent/settings.json` — written by pi at runtime
-- `~/.pi/agent/usage-data/` — local token/cost history
 - other host-local files such as `auth.json`, `sessions/`, and `node_modules/`
 
 
@@ -216,29 +214,6 @@ Commands:
 It compares the current branch against `main` by default, tracks the last
 reviewed HEAD SHA within the pi process, and on repeated runs asks the model to
 verify whether previous comments were addressed before reviewing new commits.
-
-### Usage tracker — `extensions/usage.ts`
-
-This records per-turn token usage and estimated cost from assistant responses to
-local JSONL data:
-
-```text
-~/.pi/agent/usage-data/usage.jsonl
-```
-
-It also reads the old aggregate `usage.json` format for continuity.
-
-Commands:
-
-```text
-/usage
-/usage today
-/usage month
-/usage all
-```
-
-The summary groups usage by provider and model, including input, output,
-cache-read, cache-write, approximate reasoning tokens, turns, and cost.
 
 ### uv guard — `extensions/uv.ts`
 
