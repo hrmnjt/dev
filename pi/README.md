@@ -16,6 +16,7 @@ pi/
 │   └── agent/
 │       ├── extensions/
 │       │   ├── answer.ts          # Interactive answers to assistant questions
+│       │   ├── caffeinate.ts      # Keep macOS awake while the agent is working
 │       │   ├── clipboard-image.ts # Attach host clipboard images before Gondolin
 │       │   ├── exit.ts            # Graceful /exit command
 │       │   ├── gondolin.ts        # VM sandbox for assistant tools
@@ -80,6 +81,18 @@ Command:
 ```
 
 Shows VM id, host workspace, guest workspace, shell, and mounted docs/examples.
+
+### Caffeinate — `extensions/caffeinate.ts`
+
+This starts macOS `caffeinate` while the agent is working, preventing idle
+system sleep while still allowing the display to turn off normally. It stops
+when the agent has fully settled and also cleans up during session shutdown.
+The assertion is tied to the Pi process so it cannot remain active after a
+crash.
+
+The extension runs in the host Pi process rather than through a model-facing
+Gondolin tool. It is inactive on non-macOS systems and reports only unexpected
+`caffeinate` failures.
 
 ### Clipboard image attachment — `extensions/clipboard-image.ts`
 
