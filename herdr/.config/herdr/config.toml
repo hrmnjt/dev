@@ -5,7 +5,7 @@ name = "gruvbox"
 
 [keys]
 open_worktree = "prefix+shift+o"
-remove_worktree = "prefix+alt+d"
+remove_worktree = "prefix+shift+d"
 
 [ui]
 prompt_new_tab_name = true
