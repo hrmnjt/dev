@@ -12,6 +12,7 @@
  *   - krun auto-selection on Apple Silicon
  *   - Git over SSH via Gondolin's SSH bridge
  *   - primary-repository-based git identity selection
+ *   - repository-local model cache excluded from the workspace mount
  *   - pi docs/examples mounted at /pi/docs and /pi/examples
  *   - user-entered !/!! commands intentionally remain host-side
  *
@@ -53,13 +54,20 @@ import {
   type WriteOperations,
 } from "@earendil-works/pi-coding-agent";
 
-import { RealFSProvider, VM } from "@earendil-works/gondolin";
+import {
+  createShadowPathPredicate,
+  RealFSProvider,
+  ShadowProvider,
+  type VirtualProvider,
+  VM,
+} from "@earendil-works/gondolin";
 
 import { getBlockedCommandMessage } from "./uv.js";
 
 const GUEST_WORKSPACE = "/workspace";
 const GUEST_PI_DOCS = "/pi/docs";
 const GUEST_PI_EXAMPLES = "/pi/examples";
+const WORKSPACE_SHADOW_PATHS = ["/_models"];
 const DEFAULT_GREP_LIMIT = 100;
 
 interface PiResources {
@@ -746,8 +754,17 @@ export default function (pi: ExtensionAPI) {
     // Detect pi docs/examples from the host installation.
     piResources = resolvePiDocs();
 
-    const mounts: Record<string, InstanceType<typeof RealFSProvider>> = {
-      [GUEST_WORKSPACE]: new RealFSProvider(localCwd),
+    // Keep the repository-local model cache outside the guest. ShadowProvider
+    // removes it from directory listings, returns ENOENT for reads, and denies
+    // writes without exposing the host files through the workspace provider.
+    const workspaceProvider = new ShadowProvider(
+      new RealFSProvider(localCwd),
+      {
+        shouldShadow: createShadowPathPredicate(WORKSPACE_SHADOW_PATHS),
+      },
+    );
+    const mounts: Record<string, VirtualProvider> = {
+      [GUEST_WORKSPACE]: workspaceProvider,
     };
 
     // A linked worktree's .git file points to an absolute path under the
@@ -830,7 +847,7 @@ export default function (pi: ExtensionAPI) {
           ),
         );
         ctx.ui.notify(
-          `Gondolin VM ready. Host ${localCwd} mounted at ${GUEST_WORKSPACE} (git: ${identityLabel})`,
+          `Gondolin VM ready. Host ${localCwd} mounted at ${GUEST_WORKSPACE}, excluding ${GUEST_WORKSPACE}/_models (git: ${identityLabel})`,
           "info",
         );
       }
@@ -885,6 +902,7 @@ export default function (pi: ExtensionAPI) {
           `Gondolin VM: ${activeVm.id}`,
           `Host workspace: ${localCwd}`,
           `Guest workspace: ${GUEST_WORKSPACE}`,
+          `Workspace exclusions: ${GUEST_WORKSPACE}/_models`,
           `Shell: ${shellPath}`,
           `Pi docs: ${piResources ? GUEST_PI_DOCS : "not mounted"}`,
           `Pi examples: ${piResources ? GUEST_PI_EXAMPLES : "not mounted"}`,
