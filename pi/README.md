@@ -306,6 +306,7 @@ to this repo.
 ```json
 {
   "theme": "gruvbox-dark/gruvbox-dark",
+  "tuiMode": "fullscreen",
   "defaultThinkingLevel": "high",
   "enabledModels": [
     "llama.cpp/unsloth/Qwen3.5-122B-A10B-GGUF:UD-Q5_K_XL",
