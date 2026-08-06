@@ -301,23 +301,9 @@ to this repo.
 
 ## First-time settings setup
 
-`settings.template.json` tracks intentional defaults:
-
-```json
-{
-  "theme": "gruvbox-dark/gruvbox-dark",
-  "tuiMode": "fullscreen",
-  "defaultThinkingLevel": "high",
-  "enabledModels": [
-    "llama.cpp/unsloth/Qwen3.5-122B-A10B-GGUF:UD-Q5_K_XL",
-    "llama.cpp/unsloth/GLM-4.7-Flash-GGUF:Q8_0",
-    "openai-codex/gpt-5.6-sol"
-  ]
-}
-```
-
-Pi owns `settings.json` and may update volatile keys such as `defaultModel`,
-`defaultProvider`, and `lastChangelogVersion`.
+`settings.template.json` tracks intentional defaults. Pi owns `settings.json`
+and may update volatile keys such as `defaultModel`, `defaultProvider`, and
+`lastChangelogVersion`.
 
 If the host-local `settings.json` does not exist yet:
 
