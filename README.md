@@ -44,6 +44,9 @@ mkdir -p ~/code/github.com/hrmnjt
 git clone https://github.com/hrmnjt/dev.git ~/code/github.com/hrmnjt/dev
 cd ~/code/github.com/hrmnjt/dev
 
+# Create the repository-local, Git-ignored model cache
+mkdir -p _models
+
 # 7. Install everything tracked in Brewfile
 just brewinst
 
