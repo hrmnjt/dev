@@ -4,6 +4,9 @@
 [core]
     excludesFile = ~/.config/git/ignore
 
+[fetch]
+    prune = true
+
 # Automatically use personal config in personal repos
 [includeIf "gitdir:~/code/github.com/hrmnjt/"]
     path = ~/.config/git/config.personal
