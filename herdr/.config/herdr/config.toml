@@ -9,6 +9,8 @@ remove_worktree = "prefix+shift+d"
 
 [ui]
 prompt_new_tab_name = true
+pane_scrollbars = false
+tab_bar_position = "bottom"
 
 [ui.toast]
 delivery = "herdr"
