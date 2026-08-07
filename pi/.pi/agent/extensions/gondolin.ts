@@ -12,7 +12,7 @@
  *   - krun auto-selection on Apple Silicon
  *   - Git over SSH via Gondolin's SSH bridge
  *   - primary-repository-based git identity selection
- *   - repository-local model cache excluded from the workspace mount
+ *   - dev repository model cache excluded from the workspace mount
  *   - pi docs/examples mounted at /pi/docs and /pi/examples
  *   - user-entered !/!! commands intentionally remain host-side
  *
@@ -67,7 +67,14 @@ import { getBlockedCommandMessage } from "./uv.js";
 const GUEST_WORKSPACE = "/workspace";
 const GUEST_PI_DOCS = "/pi/docs";
 const GUEST_PI_EXAMPLES = "/pi/examples";
-const WORKSPACE_SHADOW_PATHS = ["/_models"];
+const HOST_MODEL_CACHE = path.join(
+  os.homedir(),
+  "code",
+  "github.com",
+  "hrmnjt",
+  "dev",
+  "_models",
+);
 const DEFAULT_GREP_LIMIT = 100;
 
 interface PiResources {
@@ -171,6 +178,14 @@ function isInsideHostPath(root: string, value: string): boolean {
     relativePath === "" ||
     (!relativePath.startsWith("..") && !path.isAbsolute(relativePath))
   );
+}
+
+function resolveWorkspaceShadowPaths(localCwd: string): string[] {
+  if (!isInsideHostPath(localCwd, HOST_MODEL_CACHE)) return [];
+
+  const relativePath = path.relative(localCwd, HOST_MODEL_CACHE);
+  if (!relativePath) return [];
+  return [`/${toPosix(relativePath)}`];
 }
 
 function hostPathToGuest(localCwd: string, hostPath: string): string {
@@ -711,6 +726,10 @@ function createGondolinBashOps(
 export default function (pi: ExtensionAPI) {
   const localCwd = process.cwd();
   const gitCommonDir = resolveGitCommonDir(localCwd);
+  const workspaceShadowPaths = resolveWorkspaceShadowPaths(localCwd);
+  const guestWorkspaceExclusions = workspaceShadowPaths.map((shadowPath) =>
+    path.posix.join(GUEST_WORKSPACE, shadowPath),
+  );
 
   const localRead = createReadTool(localCwd);
   const localWrite = createWriteTool(localCwd);
@@ -754,15 +773,17 @@ export default function (pi: ExtensionAPI) {
     // Detect pi docs/examples from the host installation.
     piResources = resolvePiDocs();
 
-    // Keep the repository-local model cache outside the guest. ShadowProvider
-    // removes it from directory listings, returns ENOENT for reads, and denies
-    // writes without exposing the host files through the workspace provider.
-    const workspaceProvider = new ShadowProvider(
-      new RealFSProvider(localCwd),
-      {
-        shouldShadow: createShadowPathPredicate(WORKSPACE_SHADOW_PATHS),
-      },
-    );
+    // Keep the dev repository's model cache outside the guest without applying
+    // the same _models convention to unrelated workspaces. ShadowProvider omits
+    // it from listings, returns ENOENT for reads, and denies writes.
+    const realWorkspaceProvider = new RealFSProvider(localCwd);
+    const workspaceProvider: VirtualProvider =
+      workspaceShadowPaths.length > 0
+        ? new ShadowProvider(realWorkspaceProvider, {
+            shouldShadow: createShadowPathPredicate(workspaceShadowPaths),
+            writeMode: "deny",
+          })
+        : realWorkspaceProvider;
     const mounts: Record<string, VirtualProvider> = {
       [GUEST_WORKSPACE]: workspaceProvider,
     };
@@ -846,8 +867,12 @@ export default function (pi: ExtensionAPI) {
             `Gondolin: ${created.id.slice(0, 8)} (${GUEST_WORKSPACE})`,
           ),
         );
+        const exclusionsLabel =
+          guestWorkspaceExclusions.length > 0
+            ? guestWorkspaceExclusions.join(", ")
+            : "none";
         ctx.ui.notify(
-          `Gondolin VM ready. Host ${localCwd} mounted at ${GUEST_WORKSPACE}, excluding ${GUEST_WORKSPACE}/_models (git: ${identityLabel})`,
+          `Gondolin VM ready. Host ${localCwd} mounted at ${GUEST_WORKSPACE} (exclusions: ${exclusionsLabel}; git: ${identityLabel})`,
           "info",
         );
       }
@@ -902,7 +927,7 @@ export default function (pi: ExtensionAPI) {
           `Gondolin VM: ${activeVm.id}`,
           `Host workspace: ${localCwd}`,
           `Guest workspace: ${GUEST_WORKSPACE}`,
-          `Workspace exclusions: ${GUEST_WORKSPACE}/_models`,
+          `Workspace exclusions: ${guestWorkspaceExclusions.join(", ") || "none"}`,
           `Shell: ${shellPath}`,
           `Pi docs: ${piResources ? GUEST_PI_DOCS : "not mounted"}`,
           `Pi examples: ${piResources ? GUEST_PI_EXAMPLES : "not mounted"}`,

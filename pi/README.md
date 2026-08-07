@@ -56,19 +56,20 @@ Model-facing tools routed through Gondolin:
 - `find`
 - `grep`
 
-The current host project is mounted read/write at `/workspace` inside the VM,
-except for the repository-local `_models/` cache. That directory is shadowed by
-the workspace provider, so it is absent from guest listings and inaccessible to
-guest reads and writes. Pi's documentation and examples are mounted read-only at
-`/pi/docs` and `/pi/examples`, so the assistant can inspect pi APIs while
-building extensions.
+The current host project is mounted read/write at `/workspace` inside the VM.
+When that workspace contains this repository's host `_models/` cache, only the
+cache is shadowed, so it is absent from guest listings and inaccessible to guest
+reads and writes. Unrelated repositories do not inherit an `_models/` exclusion.
+Pi's documentation and examples are mounted read-only at `/pi/docs` and
+`/pi/examples`, so the assistant can inspect pi APIs while building extensions.
 
 Local customizations:
 
 - uses `krun` automatically on Apple Silicon when available, with QEMU as the
   fallback backend
 - supports a custom Alpine image through `GONDOLIN_GUEST_DIR`
-- excludes `_models/` from the guest workspace mount
+- excludes this repository's host `_models/` cache without hiding similarly
+  named directories in other repositories
 - bridges the host SSH agent for GitHub git operations
 - generates a VM git config with a fail-closed personal/work identity selected
   from the primary repository path, including linked worktrees stored elsewhere
