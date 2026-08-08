@@ -87,6 +87,8 @@ cask "nikitabobko/tap/aerospace"
 cask "itsycal"
 cask "monodraw"
 cask "obsidian"
+# Infinite canvas whiteboard
+cask "tldraw"
 # Image editor
 cask "gimp"
 
