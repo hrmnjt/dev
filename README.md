@@ -93,7 +93,10 @@ llm start
 # 14.1. Install Pi's generated Herdr integration when using Herdr workspaces:
 herdr integration install pi
 herdr integration status
-# 14.2. Brave configuration
+# 14.2. Activate the Stow-deployed Herdr default-tabs plugin:
+herdr plugin link ~/.config/herdr/local-plugins/default-tabs
+herdr plugin list --plugin hrmnjt.default-tabs
+# 14.3. Brave configuration
 # - Brave extensions: Bitwarden, Readwise Highlighter, and Dark Reader.
 # - Install the Gruvbox Slate Brave theme.
 ```

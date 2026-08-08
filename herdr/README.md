@@ -10,6 +10,96 @@ just stowall
 herdr server reload-config
 ```
 
+## Default worktree tabs plugin
+
+The local `hrmnjt.default-tabs` plugin creates the standard layout whenever
+Herdr creates a managed worktree or opens a closed existing worktree:
+
+1. Rename the initial tab to `shell` and leave its Zsh prompt available.
+2. Create and focus a full-tab `pi` terminal in the worktree directory.
+3. Start `pi` in that tab.
+
+Opening a worktree whose Herdr workspace is already open only focuses it and
+does not create duplicate tabs.
+
+The tracked plugin source is deployed by Stow:
+
+```text
+herdr/.config/herdr/local-plugins/default-tabs/
+  herdr-plugin.toml
+  default_tabs.sh
+
+~/.config/herdr/local-plugins/default-tabs/
+  herdr-plugin.toml
+  default_tabs.sh
+```
+
+Herdr keeps its generated plugin registry, plugin-owned configuration, and
+runtime state separately under `~/.config/herdr/plugins.json`,
+`~/.config/herdr/plugins/`, and `~/.local/state/herdr/plugins/`. Do not track
+those mutable files.
+
+After `just stowall`, activate the plugin once on each Mac:
+
+```bash
+herdr plugin link ~/.config/herdr/local-plugins/default-tabs
+herdr plugin list --plugin hrmnjt.default-tabs
+```
+
+Relinking the same path refreshes its registration. Manage or troubleshoot it
+with:
+
+```bash
+herdr plugin log list --plugin hrmnjt.default-tabs
+herdr plugin disable hrmnjt.default-tabs
+herdr plugin enable hrmnjt.default-tabs
+herdr plugin unlink hrmnjt.default-tabs
+```
+
+### Test the default tabs
+
+From a clean primary checkout, create a disposable worktree through the normal
+shortcut: press `ctrl+b`, then `Shift+G`, replace the generated branch with
+`chore/herdr/test-default-tabs`, and press Enter.
+
+The new workspace should open with exactly two full-screen tabs:
+
+- `shell`, at a Zsh prompt in the test worktree on the test branch.
+- `pi`, focused with Pi running in the same worktree.
+
+Select `shell` and verify its Git context:
+
+```bash
+pwd
+git branch --show-current
+git status --short
+```
+
+The branch should be `chore/herdr/test-default-tabs`. Check the event hook when
+the tabs do not appear:
+
+```bash
+herdr plugin log list --plugin hrmnjt.default-tabs
+```
+
+To also test reopening an existing checkout, exit Pi and close only its Herdr
+workspace from the `shell` tab:
+
+```bash
+herdr workspace close "$HERDR_WORKSPACE_ID"
+```
+
+The Git worktree remains on disk. From the parent workspace, press `ctrl+b`, then
+`Shift+O`, and select the test worktree. It should again open with `shell` and
+focused `pi` tabs, this time through the `worktree.opened` hook.
+
+To clean up, exit Pi, remove the active test worktree with `ctrl+b`, then
+`Shift+D`, and delete the retained branch from the primary checkout:
+
+```bash
+git branch -d chore/herdr/test-default-tabs
+```
+
 ## Worktree workflow
 
 Herdr's **New worktree** shortcut creates a branch from the parent workspace's

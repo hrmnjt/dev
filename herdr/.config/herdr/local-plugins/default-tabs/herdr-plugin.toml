@@ -1,0 +1,14 @@
+id = "hrmnjt.default-tabs"
+name = "Default Tabs"
+version = "0.1.0"
+min_herdr_version = "0.7.0"
+description = "Create shell and Pi tabs when a worktree workspace opens."
+platforms = ["macos"]
+
+[[events]]
+on = "worktree.created"
+command = ["sh", "default_tabs.sh"]
+
+[[events]]
+on = "worktree.opened"
+command = ["sh", "default_tabs.sh"]
