@@ -1,7 +1,2 @@
-vim.g.lazyvim_picker = "telescope"
-
--- load options, keymaps, autocmds, lazy
-require("config.options")
-require("config.keymaps")
-require("config.autocmds")
+-- Bootstrap lazy.nvim, LazyVim, and local plugin specifications.
 require("config.lazy")
