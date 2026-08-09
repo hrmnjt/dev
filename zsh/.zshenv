@@ -2,6 +2,10 @@
 
 export XDG_CONFIG_HOME="$HOME/.config"
 
+# Use Neovim for programs that open a terminal editor.
+export EDITOR="nvim"
+export VISUAL="nvim"
+
 case ":$PATH:" in
   *":$HOME/.local/bin:"*) ;;
   *) export PATH="$HOME/.local/bin:$PATH" ;;

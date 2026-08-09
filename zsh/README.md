@@ -1,7 +1,8 @@
 # Zsh configuration
 
-This package sets the XDG environment, Homebrew shell environment, prompt,
-aliases, local-tool paths, and the `wt` Git worktree helper.
+This package sets the XDG environment, Neovim as the default terminal editor,
+Homebrew shell environment, prompt, aliases, local-tool paths, and the `wt` Git
+worktree helper.
 
 Deploy and reload it from the repository root:
 
