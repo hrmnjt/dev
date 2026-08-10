@@ -53,7 +53,7 @@ So `alt-1` in the config means `option-1` on the keyboard.
 | 7 | `option-7` | ad hoc personal project | manual |
 | 8 | `option-8` | ad hoc personal project | manual |
 | 9 | `option-9` | spare / temporary | manual |
-| 10 | `option-0` | Codex | Codex |
+| 10 | `option-0` | spare / temporary | manual |
 
 ## Main shortcuts
 
@@ -133,7 +133,6 @@ Current important rules:
 - Outlook Brave PWA -> workspace 4
 - Obsidian -> workspace 5
 - Thunderbird -> workspace 6
-- Codex -> workspace 10
 
 Thunderbird compose/send windows have a best-effort floating rule based on window
 title. If a Thunderbird dialog still tiles, inspect it with:

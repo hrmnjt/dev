@@ -61,17 +61,13 @@ brew "container"
 
 # Agent-aware terminal workspace manager
 brew "herdr"
+# OpenAI coding agent CLI
+cask "codex"
 # Terminal
 cask "ghostty"
 
 # Editor that I use to read code today.
 cask "zed"
-# Editor that I use to open jupyter notebooks. Sadly, nothing else local has
-# good workflow like this. I need to experiment with jupyterlab or similar to
-# replace this one though
-cask "visual-studio-code"
-# AI coding assistant app
-cask "codex-app"
 
 # Browser - trying out brave, waiting for ladybird
 cask "brave-browser"
