@@ -7,3 +7,7 @@ local opt = vim.opt
 opt.mouse = "a"
 opt.clipboard = "unnamedplus"
 opt.colorcolumn = "80,120"
+
+-- LazyVim defaults to conceallevel=2, which hides Markdown code fences and
+-- other source text until the cursor reaches it.
+opt.conceallevel = 0

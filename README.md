@@ -108,6 +108,7 @@ herdr plugin list --plugin hrmnjt.default-tabs
 - [Git](git/README.md)
 - [Herdr](herdr/README.md)
 - [Ivanti VPN](ivanti/README.md)
+- [Lazygit](lazygit/README.md)
 - [Local llama.cpp inference](llama/README.md)
 - [Neovim](nvim/README.md)
 - [Pi agent package](pi/README.md)

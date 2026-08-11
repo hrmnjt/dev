@@ -19,6 +19,8 @@ brew "ripgrep"
 brew "jq"
 # Replacement for find - still trying to find more use of it
 brew "fd"
+# Terminal Git interface used standalone and through LazyVim
+brew "lazygit"
 
 # Editor
 brew "neovim"
