@@ -1,0 +1,34 @@
+gui:
+  # Lazygit otherwise derives a random true color from each author name, which
+  # can produce low-contrast blues on the Gruvbox background. The commit graph
+  # uses the same author color.
+  authorColors:
+    "*": "#8ec07c"
+
+  theme:
+    activeBorderColor:
+      - "#fabd2f"
+      - bold
+    inactiveBorderColor:
+      - "#665c54"
+    searchingActiveBorderColor:
+      - "#8ec07c"
+      - bold
+    optionsTextColor:
+      - "#83a598"
+    selectedLineBgColor:
+      - "#3c3836"
+    inactiveViewSelectedLineBgColor:
+      - "#32302f"
+    cherryPickedCommitFgColor:
+      - "#83a598"
+    cherryPickedCommitBgColor:
+      - "#504945"
+    markedBaseCommitFgColor:
+      - "#282828"
+    markedBaseCommitBgColor:
+      - "#fabd2f"
+    unstagedChangesColor:
+      - "#fb4934"
+    defaultFgColor:
+      - "#ebdbb2"
