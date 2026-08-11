@@ -16,8 +16,10 @@ The local `hrmnjt.default-tabs` plugin creates the standard layout whenever
 Herdr creates a managed worktree or opens a closed existing worktree:
 
 1. Rename the initial tab to `shell` and leave its Zsh prompt available.
-2. Create and focus a full-tab `pi` terminal in the worktree directory.
-3. Start `pi` in that tab.
+2. Create and focus a full-tab `pi` terminal in the worktree directory, then
+   start `pi` in it.
+3. Create a full-tab `nvim` terminal in the worktree directory and start
+   Neovim in it, while leaving the `pi` tab focused.
 
 Opening a worktree whose Herdr workspace is already open only focuses it and
 does not create duplicate tabs.
@@ -62,10 +64,11 @@ From a clean primary checkout, create a disposable worktree through the normal
 shortcut: press `ctrl+b`, then `Shift+G`, replace the generated branch with
 `chore/herdr/test-default-tabs`, and press Enter.
 
-The new workspace should open with exactly two full-screen tabs:
+The new workspace should open with exactly three full-screen tabs:
 
 - `shell`, at a Zsh prompt in the test worktree on the test branch.
 - `pi`, focused with Pi running in the same worktree.
+- `nvim`, with Neovim running from the same worktree root.
 
 Select `shell` and verify its Git context:
 
@@ -90,8 +93,8 @@ herdr workspace close "$HERDR_WORKSPACE_ID"
 ```
 
 The Git worktree remains on disk. From the parent workspace, press `ctrl+b`, then
-`Shift+O`, and select the test worktree. It should again open with `shell` and
-focused `pi` tabs, this time through the `worktree.opened` hook.
+`Shift+O`, and select the test worktree. It should again open with `shell`,
+focused `pi`, and `nvim` tabs, this time through the `worktree.opened` hook.
 
 To clean up, exit Pi, remove the active test worktree with `ctrl+b`, then
 `Shift+D`, and delete the retained branch from the primary checkout:
