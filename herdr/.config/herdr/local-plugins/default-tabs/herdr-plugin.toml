@@ -1,8 +1,8 @@
 id = "hrmnjt.default-tabs"
 name = "Default Tabs"
-version = "0.1.0"
+version = "0.2.0"
 min_herdr_version = "0.7.0"
-description = "Create shell and Pi tabs when a worktree workspace opens."
+description = "Create shell, Pi, and Neovim tabs when a worktree workspace opens."
 platforms = ["macos"]
 
 [[events]]

@@ -36,4 +36,14 @@ created_tab=$(
 pi_pane=$(printf '%s\n' "$created_tab" | jq -er '.result.root_pane.pane_id')
 
 "$HERDR_BIN_PATH" pane run "$pi_pane" pi >/dev/null
-printf 'created shell and pi tabs in workspace %s\n' "$HERDR_WORKSPACE_ID"
+
+created_tab=$(
+  "$HERDR_BIN_PATH" tab create \
+    --workspace "$HERDR_WORKSPACE_ID" \
+    --cwd "$worktree_path" \
+    --label nvim
+)
+nvim_pane=$(printf '%s\n' "$created_tab" | jq -er '.result.root_pane.pane_id')
+
+"$HERDR_BIN_PATH" pane run "$nvim_pane" nvim >/dev/null
+printf 'created shell, pi, and nvim tabs in workspace %s\n' "$HERDR_WORKSPACE_ID"
