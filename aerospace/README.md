@@ -46,7 +46,7 @@ So `alt-1` in the config means `option-1` on the keyboard.
 | --- | --- | --- | --- |
 | 1 | `option-1` | Ghostty / shell | Ghostty |
 | 2 | `option-2` | notes / docs | Obsidian |
-| 3 | `option-3` | browser | Brave |
+| 3 | `option-3` | browser | Brave, Safari |
 | 4 | `option-4` | work comms | Microsoft Teams, Outlook PWA |
 | 5 | `option-5` | spare / temporary | manual |
 | 6 | `option-6` | email | Thunderbird |
@@ -129,6 +129,7 @@ Current important rules:
 - Ghostty -> workspace 1
 - Obsidian -> workspace 2
 - Brave -> workspace 3
+- Safari -> workspace 3
 - Microsoft Teams -> workspace 4
 - Outlook Brave PWA -> workspace 4
 - Thunderbird -> workspace 6
@@ -154,6 +155,7 @@ Current floating rules include:
 - WhatsApp
 - System Settings
 - Pulse Secure / Ivanti-style VPN window
+- Windows App remote desktops
 - Thunderbird compose/send windows, when title matching catches them
 
 Use `option-shift-space` for one-off floating/tiling toggles.
