@@ -240,6 +240,11 @@ run = 'move-node-to-workspace 2'
 if.app-id = 'com.brave.Browser'
 run = 'move-node-to-workspace 3'
 
+# Safari -> workspace 3.
+[[on-window-detected]]
+if.app-id = 'com.apple.Safari'
+run = 'move-node-to-workspace 3'
+
 # Work comms -> workspace 4.
 [[on-window-detected]]
 if.app-id = 'com.brave.Browser.app.ompifgpmddkgmclendfeacglnodjjndh'
@@ -283,6 +288,12 @@ run = 'layout floating'
 if.app-id = 'com.apple.systempreferences'
 run = 'layout floating'
 
+# Pulse Secure / Ivanti VPN windows are temporary utilities.
 [[on-window-detected]]
 if.app-id = 'net.pulsesecure.Pulse-Secure'
+run = 'layout floating'
+
+# Windows App remote desktops should not be constrained to a tile.
+[[on-window-detected]]
+if.app-id = 'com.microsoft.rdc.macos'
 run = 'layout floating'
