@@ -45,10 +45,10 @@ So `alt-1` in the config means `option-1` on the keyboard.
 | Workspace | Shortcut | Intended home | Auto-moved apps |
 | --- | --- | --- | --- |
 | 1 | `option-1` | Ghostty / shell | Ghostty |
-| 2 | `option-2` | editor | Zed |
+| 2 | `option-2` | notes / docs | Obsidian |
 | 3 | `option-3` | browser | Brave |
 | 4 | `option-4` | work comms | Microsoft Teams, Outlook PWA |
-| 5 | `option-5` | notes / docs | Obsidian |
+| 5 | `option-5` | spare / temporary | manual |
 | 6 | `option-6` | email | Thunderbird |
 | 7 | `option-7` | ad hoc personal project | manual |
 | 8 | `option-8` | ad hoc personal project | manual |
@@ -127,11 +127,10 @@ The pattern for routing an app is:
 Current important rules:
 
 - Ghostty -> workspace 1
-- Zed -> workspace 2
+- Obsidian -> workspace 2
 - Brave -> workspace 3
 - Microsoft Teams -> workspace 4
 - Outlook Brave PWA -> workspace 4
-- Obsidian -> workspace 5
 - Thunderbird -> workspace 6
 
 Thunderbird compose/send windows have a best-effort floating rule based on window

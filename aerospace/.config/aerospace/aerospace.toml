@@ -88,10 +88,10 @@ outer.right = 8
 #
 # Workspace map used by this config:
 #   1 = Ghostty / shell
-#   2 = Zed
+#   2 = Obsidian
 #   3 = Brave
 #   4 = Microsoft Teams / Outlook PWA
-#   5 = Obsidian
+#   5 = spare / temporary
 #   6 = Thunderbird
 #   7-8 = ad hoc personal projects
 #   9-10 = spare / temporary
@@ -230,9 +230,9 @@ backspace = ['close-all-windows-but-current', 'mode main']
 if.app-id = 'com.mitchellh.ghostty'
 run = 'move-node-to-workspace 1'
 
-# Zed -> workspace 2.
+# Obsidian -> workspace 2.
 [[on-window-detected]]
-if.app-id = 'dev.zed.Zed'
+if.app-id = 'md.obsidian'
 run = 'move-node-to-workspace 2'
 
 # Brave -> workspace 3.
@@ -249,11 +249,6 @@ run = 'move-node-to-workspace 4'
 [[on-window-detected]]
 if.app-id = 'com.brave.Browser.app.eoficlgicibekocmfdomjbfnjmehnhcd'
 run = 'move-node-to-workspace 4'
-
-# Obsidian -> workspace 5.
-[[on-window-detected]]
-if.app-id = 'md.obsidian'
-run = 'move-node-to-workspace 5'
 
 # Thunderbird compose/send windows should float, but still live with mail on 6.
 # If this title matcher misses a Thunderbird dialog, inspect it with:
