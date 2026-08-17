@@ -80,6 +80,18 @@ Install the updated Brewfile and restart Neovim if the mappings are not present:
 just brewinst
 ```
 
+## hledger journals
+
+[`vim-ledger`](https://github.com/ledger/vim-ledger) provides syntax
+highlighting, completion, and posting alignment for `*.journal`, `*.ledger`,
+and `*.hledger` files. It is configured to use the `hledger` executable already
+tracked in the Brewfile.
+
+Run `:LedgerAlign` on the current line or visual range, or
+`:LedgerAlignBuffer` to align every posting in the buffer. Whole-file external
+formatting through `hledger print` remains explicitly disabled because it is
+not a lossless transformation of directives, includes, and comments.
+
 ## Configuration
 
 ### Changes on top of LazyVim
@@ -88,6 +100,7 @@ just brewinst
 - Show 80/120-column guides.
 - Include hidden and Git-ignored files in pickers by default.
 - Install and theme Lazygit for LazyVim's built-in Git interface.
+- Add hledger journal highlighting, completion, and safe posting alignment.
 - Disable `render-markdown.nvim` and Neovim text conceal so Markdown remains
   visible as plain source, including code fences when the cursor moves away.
 - Disable spell checking in every buffer.
@@ -102,6 +115,7 @@ nvim/.config/nvim/
     │   ├── keymaps.lua    # intentionally empty
     │   └── autocmds.lua   # disable spell checking
     └── plugins/
+        ├── ledger.lua     # hledger journal support and safe alignment
         ├── markdown.lua   # disable rendered Markdown
         ├── picker.lua     # show hidden and ignored files
         └── theme.lua      # Gruvbox
