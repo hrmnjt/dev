@@ -71,6 +71,9 @@ cask "ghostty"
 # Editor that I use to read code today.
 cask "zed"
 
+# API client
+cask "postman"
+
 # Browser - trying out brave, waiting for ladybird
 cask "brave-browser"
 
