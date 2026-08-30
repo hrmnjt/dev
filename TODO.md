@@ -64,9 +64,6 @@ utility.
   landscape and portrait compositions. Add `just wallpaper-next` to cycle only
   through that collection. Coordinate the lock screen where macOS permits it.
 
-  The existing `pink-floyd-gruvbox-dark.jpg` contains PNG data; rename it to
-  `.png` or convert it to a real JPEG.
-
 - [ ] **Finish the minimal SketchyBar.**
 
   The initial bar shows AeroSpace workspaces, the focused app, date/time, and
