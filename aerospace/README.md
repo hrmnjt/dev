@@ -17,7 +17,7 @@ repo: aerospace/.config/aerospace/aerospace.toml
 home: ~/.config/aerospace/aerospace.toml
 ```
 
-Install the window-border helper and deploy from the repo root with:
+Install the visual helpers and deploy from the repo root with:
 
 ```bash
 cd ~/code/github.com/hrmnjt/dev
@@ -31,8 +31,8 @@ Reload AeroSpace after ordinary configuration edits:
 option-shift-r
 ```
 
-After installing JankyBorders for the first time, fully restart AeroSpace so its
-startup command launches `borders`.
+After installing JankyBorders or SketchyBar for the first time, fully restart
+AeroSpace so its startup commands launch both visual helpers.
 
 ## Focused-window border
 
@@ -48,6 +48,14 @@ The border process is launched by `after-startup-command` rather than as a
 separate Homebrew service, keeping its lifecycle tied to AeroSpace. Running
 `borders` again with different arguments updates the active process, which is
 useful when tuning colors or width interactively.
+
+## Status bar
+
+AeroSpace also starts the tracked [SketchyBar configuration](../sketchybar/README.md)
+and notifies it whenever the focused workspace changes. A 48-point top gap keeps
+tiled windows clear of the custom bar while the native macOS menu bar is hidden.
+Use `option-shift-b` to toggle SketchyBar before accessing native application
+menus.
 
 ## Shortcut notation
 
@@ -89,6 +97,7 @@ So `alt-1` in the config means `option-1` on the keyboard.
 | `option-slash` | cycle tiled layout orientation |
 | `option-comma` | cycle accordion layout orientation |
 | `option-shift-r` | reload config |
+| `option-shift-b` | toggle SketchyBar for native menu-bar access |
 
 Prefer `option-f` over the green macOS fullscreen button.
 

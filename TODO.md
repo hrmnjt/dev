@@ -67,17 +67,16 @@ utility.
   The existing `pink-floyd-gruvbox-dark.jpg` contains PNG data; rename it to
   `.png` or convert it to a real JPEG.
 
-- [ ] **Choose one menu-bar direction.**
+- [ ] **Finish the minimal SketchyBar.**
 
-  The low-maintenance option is [Ice](https://github.com/jordanbaird/Ice), with
-  Itsycal and native controls left visible. The full visual option is a minimal
-  [SketchyBar](https://github.com/FelixKratz/SketchyBar) showing AeroSpace
-  workspaces, focused app, date/time, battery, VPN, Focus, microphone, and
-  screen-recording state.
+  The initial bar shows AeroSpace workspaces, the focused app, date/time, and
+  battery. Add only useful remaining state: VPN, Focus, microphone, and screen
+  recording. Distinguish urgent workspaces when AeroSpace exposes a reliable
+  signal, and hide secondary metrics behind clicks or popovers.
 
-  A custom bar should distinguish focused, occupied, and urgent workspaces,
-  support the notch and portrait display, and hide secondary metrics behind
-  clicks or popovers. Do not maintain both approaches.
+  Validate the notch, portrait display, native menu-bar toggle, and top gap.
+  Replace Itsycal only after a compact calendar popup proves sufficient. Do not
+  add Ice or Thaw alongside the custom bar.
 
 ## Cohesive visual projects
 
