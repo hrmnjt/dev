@@ -13,17 +13,18 @@ if [[ -z "$ssid" ]]; then
   sketchybar --set "$NAME" \
     icon="󰤭" \
     icon.color="$MUTED_COLOR" \
+    icon.font="JetBrainsMono Nerd Font Mono:Regular:20.0" \
     label.drawing=off
 elif [[ "$ssid" =~ $HOTSPOT_PATTERN ]]; then
   sketchybar --set "$NAME" \
     icon="󰄌" \
     icon.color="$YELLOW_COLOR" \
-    label="Hotspot" \
-    label.color="$YELLOW_COLOR" \
-    label.drawing=on
+    icon.font="JetBrainsMono Nerd Font Mono:Regular:20.0" \
+    label.drawing=off
 else
   sketchybar --set "$NAME" \
     icon="󰤨" \
     icon.color="$TEXT_COLOR" \
+    icon.font="JetBrainsMono Nerd Font Mono:Regular:20.0" \
     label.drawing=off
 fi

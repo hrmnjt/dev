@@ -22,12 +22,12 @@ if $connected; then
   sketchybar --set "$NAME" \
     icon="󰌋" \
     icon.color="$AQUA_COLOR" \
-    label="VPN" \
-    label.color="$AQUA_COLOR" \
-    label.drawing=on
+    icon.font="JetBrainsMono Nerd Font Mono:Regular:20.0" \
+    label.drawing=off
 else
   sketchybar --set "$NAME" \
     icon="󰌎" \
     icon.color="$MUTED_COLOR" \
+    icon.font="JetBrainsMono Nerd Font Mono:Regular:20.0" \
     label.drawing=off
 fi

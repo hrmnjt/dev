@@ -49,61 +49,61 @@ sketchybar --add event aerospace_workspace_change
 
 sketchybar --add item apple left \
   --set apple \
-    icon="" \
-    icon.font="$FONT:Regular:20.0" \
-    icon.color="$TEXT_COLOR" \
-    icon.padding_left=5 \
-    icon.padding_right=5 \
-    label.drawing=off \
-    background.drawing=off \
-    padding_right=8
+  icon="" \
+  icon.font="$FONT:Regular:20.0" \
+  icon.color="$TEXT_COLOR" \
+  icon.padding_left=5 \
+  icon.padding_right=5 \
+  label.drawing=off \
+  background.drawing=off \
+  padding_right=8
 
 for workspace in {1..10}; do
   sketchybar --add item "workspace.$workspace" left \
     --set "workspace.$workspace" \
-      icon="$workspace" \
-      icon.padding_left=8 \
-      icon.padding_right=8 \
-      padding_left=3 \
-      padding_right=3 \
-      background.corner_radius=5 \
-      background.height=26 \
-      label.drawing=off \
-      click_script="aerospace workspace $workspace" \
-      script="$PLUGIN_DIR/aerospace.sh $workspace" \
+    icon="$workspace" \
+    icon.padding_left=8 \
+    icon.padding_right=8 \
+    padding_left=3 \
+    padding_right=3 \
+    background.corner_radius=5 \
+    background.height=26 \
+    label.drawing=off \
+    click_script="aerospace workspace $workspace" \
+    script="$PLUGIN_DIR/aerospace.sh $workspace" \
     --subscribe "workspace.$workspace" \
-      aerospace_workspace_change \
-      front_app_switched \
-      space_windows_change
+    aerospace_workspace_change \
+    front_app_switched \
+    space_windows_change
 done
 
 sketchybar --add item front_app left \
   --set front_app \
-    icon.drawing=off \
-    label.max_chars=28 \
-    background.drawing=off \
-    script="$PLUGIN_DIR/front_app.sh" \
+  icon.drawing=off \
+  label.max_chars=28 \
+  background.drawing=off \
+  script="$PLUGIN_DIR/front_app.sh" \
   --subscribe front_app front_app_switched
 
 sketchybar --add item clock right \
   --set clock \
-    icon.drawing=off \
-    background.drawing=off \
-    padding_left=5 \
-    padding_right=5 \
-    update_freq=10 \
-    click_script="open -a Calendar" \
-    script="$PLUGIN_DIR/clock.sh"
+  icon.drawing=off \
+  background.drawing=off \
+  padding_left=5 \
+  padding_right=5 \
+  update_freq=10 \
+  click_script="open -a Calendar" \
+  script="$PLUGIN_DIR/clock.sh"
 
 sketchybar --add item battery right \
   --set battery \
-    icon.padding_right=2 \
-    label.padding_left=2 \
-    background.drawing=off \
-    padding_left=5 \
-    padding_right=5 \
-    update_freq=120 \
-    script="$PLUGIN_DIR/battery.sh" \
+  icon.padding_right=2 \
+  label.padding_left=2 \
+  background.drawing=off \
+  padding_left=5 \
+  padding_right=5 \
+  update_freq=120 \
+  script="$PLUGIN_DIR/battery.sh" \
   --subscribe battery power_source_change system_woke
 
 # Wi-Fi / Personal Hotspot and Ivanti VPN state. Scripted indicators avoid
@@ -111,20 +111,20 @@ sketchybar --add item battery right \
 # and need no Screen Recording permission.
 sketchybar --add item vpn right \
   --set vpn \
-    background.drawing=off \
-    padding_left=5 \
-    padding_right=5 \
-    update_freq=30 \
-    script="$PLUGIN_DIR/vpn.sh"
+  background.drawing=off \
+  padding_left=5 \
+  padding_right=5 \
+  update_freq=15 \
+  script="$PLUGIN_DIR/vpn.sh"
 
 sketchybar --add item wifi right \
   --set wifi \
-    background.drawing=off \
-    padding_left=5 \
-    padding_right=5 \
-    update_freq=15 \
-    click_script='open "x-apple.systempreferences:com.apple.wifi-settings-extension"' \
-    script="$PLUGIN_DIR/wifi.sh" \
+  background.drawing=off \
+  padding_left=5 \
+  padding_right=5 \
+  update_freq=15 \
+  click_script='open "x-apple.systempreferences:com.apple.wifi-settings-extension"' \
+  script="$PLUGIN_DIR/wifi.sh" \
   --subscribe wifi system_woke
 
 sketchybar --update
