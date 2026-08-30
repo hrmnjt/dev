@@ -17,18 +17,37 @@ repo: aerospace/.config/aerospace/aerospace.toml
 home: ~/.config/aerospace/aerospace.toml
 ```
 
-Deploy from the repo root with:
+Install the window-border helper and deploy from the repo root with:
 
 ```bash
 cd ~/code/github.com/hrmnjt/dev
+just brewinst
 just stowall
 ```
 
-Reload AeroSpace after editing:
+Reload AeroSpace after ordinary configuration edits:
 
 ```text
 option-shift-r
 ```
+
+After installing JankyBorders for the first time, fully restart AeroSpace so its
+startup command launches `borders`.
+
+## Focused-window border
+
+[JankyBorders](https://github.com/FelixKratz/JankyBorders) starts with AeroSpace
+and makes the focused window visible at a glance. The tracked baseline uses:
+
+- a 3-point rounded border
+- Gruvbox bright yellow (`#fabd2f`) for the focused window
+- translucent Gruvbox gray (`#665c54`) for inactive windows
+- 10-point inner and outer AeroSpace gaps
+
+The border process is launched by `after-startup-command` rather than as a
+separate Homebrew service, keeping its lifecycle tied to AeroSpace. Running
+`borders` again with different arguments updates the active process, which is
+useful when tuning colors or width interactively.
 
 ## Shortcut notation
 
@@ -160,13 +179,16 @@ Current floating rules include:
 
 Use `option-shift-space` for one-off floating/tiling toggles.
 
-## Aesthetic improvements to consider later
+## Visual tuning to consider later
 
-The current gaps and layout are intentionally practical. Possible future tweaks:
+The 3-point border and 10-point gaps are the initial visual baseline. After using
+them on both displays, possible refinements are:
 
-- Increase gaps from `8` to `10` or `12` if the layout feels cramped.
-- Use per-monitor gaps if the portrait display needs different spacing.
+- Try 12-point gaps, or per-monitor gaps if the portrait display needs a
+  different density.
+- Switch the active border from bright yellow to Gruvbox aqua if yellow feels
+  too prominent.
+- Adjust inactive-border opacity if it is distracting or too difficult to see.
 - Increase `accordion-padding` if accordion mode needs more visible context.
-- Add a small shell/notes cheatsheet if any shortcuts still need reinforcement.
 
-Do these only after the two-display workflow feels natural.
+Change one variable at a time after the two-display workflow feels natural.

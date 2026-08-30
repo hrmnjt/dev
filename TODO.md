@@ -27,16 +27,11 @@ utility.
   `tealdeer`. Delta should become Git's pager and work inside Lazygit. Avoid a
   large Zsh framework.
 
-- [ ] **Give AeroSpace a clear focused-window treatment.**
+- [ ] **Add focused AeroSpace movement and layout actions.**
 
-  Add [JankyBorders](https://github.com/FelixKratz/JankyBorders) with a thin
-  Gruvbox yellow or aqua active border and a subtle inactive border. Test gaps
-  of `10` or `12`, including different densities for the MacBook and portrait
-  BenQ.
-
-  Add focused actions for moving a window and following it, moving it to the
-  other display, balancing a workspace, and toggling a distraction-free
-  single-window layout. Native macOS fullscreen should remain the exception.
+  Add actions for moving a window and following it, moving it to the other
+  display, balancing a workspace, and toggling a distraction-free single-window
+  layout. Native macOS fullscreen should remain the exception.
 
 - [ ] **Add clipboard history without replacing Spotlight.**
 
