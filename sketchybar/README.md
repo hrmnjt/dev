@@ -8,18 +8,24 @@ collection of third-party plugins.
 
 Left side:
 
-- AeroSpace workspaces 1–10
-  - yellow: focused
-  - gray: occupied
+- Apple logo, matching the visual anchor of the native menu bar
+- AeroSpace workspaces 1–10 in an Omarchy-inspired treatment
+  - yellow block: focused
+  - gray block: occupied
   - muted number: empty
 - focused application name
 
 Right side:
 
+- Ivanti VPN state; aqua lock while connected, muted when down
+- Wi-Fi state; yellow phone icon and "Hotspot" label while on Personal Hotspot;
+  click it to open Wi-Fi settings
 - battery state and percentage
 - date and time; click it to open Calendar
 
-The bar appears on every display and reserves the notch region on the built-in
+The bar itself is borderless and transparent; only the workspace blocks carry
+backgrounds, and the right-side indicators render as flat text and icons. It
+appears on every display and reserves the notch region on the built-in
 display. The configuration uses the tracked JetBrains Mono Nerd Font and classic
 Gruvbox colors.
 
@@ -54,12 +60,19 @@ bar** to **Always**. The native menu bar still exists for application menus and
 can be revealed at the top edge.
 
 Use `Option-Shift-B` to hide or show SketchyBar before accessing the native menu
-bar without overlap. SketchyBar does not replace application menus such as File,
-Edit, and View.
+bar without overlap. The tracked Apple logo is decorative; SketchyBar does not
+replace the native Apple menu or application menus such as File, Edit, and View.
 
-No Ice or Thaw installation is needed. Native status-item aliases are omitted
-from this baseline; adding aliases later would require Screen Recording
-permission.
+No Ice or Thaw installation is needed. The Wi-Fi and VPN indicators are shell
+scripts rather than SketchyBar aliases: macOS 26+ moved native status-item
+ownership to Control Centre and `CGWindowListCreateImage` returns blank for
+third-party items, so aliases cannot capture them. The scripts need no Screen
+Recording permission. Two tunables live in the plugin scripts:
+
+- `HOTSPOT_PATTERN` in `plugins/wifi.sh` — matches the iPhone's name as SSID
+  (default: `iPhone`)
+- `IVANTI_ROUTE_MARKER` in `plugins/vpn.sh` — optional; by default the check
+  treats a default route over a `utun` interface as connected
 
 ## AeroSpace integration
 
@@ -71,6 +84,6 @@ normal 10-point AeroSpace top gap separates tiled windows from the bar.
 ## Next evaluation
 
 Use this baseline on both the MacBook and portrait display before adding more
-items. Useful candidates are VPN, Focus, microphone, and screen-recording state.
-A compact calendar popup can replace Itsycal only after it proves reliable; do
-not remove Itsycal merely because a clock is present.
+items. Useful remaining candidates are Focus, microphone, and screen-recording
+state. A compact calendar popup can replace Itsycal only after it proves
+reliable; do not remove Itsycal merely because a clock is present.

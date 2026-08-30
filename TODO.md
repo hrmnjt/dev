@@ -66,10 +66,11 @@ utility.
 
 - [ ] **Finish the minimal SketchyBar.**
 
-  The initial bar shows AeroSpace workspaces, the focused app, date/time, and
-  battery. Add only useful remaining state: VPN, Focus, microphone, and screen
-  recording. Distinguish urgent workspaces when AeroSpace exposes a reliable
-  signal, and hide secondary metrics behind clicks or popovers.
+  The initial bar shows AeroSpace workspaces, the focused app, date/time,
+  battery, Wi-Fi/Personal Hotspot, and Ivanti VPN. Add only useful remaining
+  state: Focus, microphone, and screen recording. Distinguish urgent workspaces
+  when AeroSpace exposes a reliable signal, and hide secondary metrics behind
+  clicks or popovers.
 
   Validate the notch, portrait display, native menu-bar toggle, and top gap.
   Replace Itsycal only after a compact calendar popup proves sufficient. Do not

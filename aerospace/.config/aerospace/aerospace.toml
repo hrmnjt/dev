@@ -294,6 +294,11 @@ run = 'layout floating'
 if.app-id = 'com.apple.AppStore'
 run = 'layout floating'
 
+# Calendar is opened as a quick utility from the SketchyBar clock.
+[[on-window-detected]]
+if.app-id = 'com.apple.iCal'
+run = 'layout floating'
+
 # WhatsApp works better as a floating utility window.
 [[on-window-detected]]
 if.app-id = 'net.whatsapp.WhatsApp'

@@ -180,6 +180,7 @@ Current floating rules include:
 
 - Finder
 - App Store
+- Calendar, when opened from SketchyBar
 - WhatsApp
 - System Settings
 - Pulse Secure / Ivanti-style VPN window

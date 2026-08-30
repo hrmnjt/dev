@@ -2,6 +2,9 @@
 
 source "$CONFIG_DIR/colors.sh"
 
+# Font family used for battery icons (JetBrains Mono Nerd Font is already the bar default)
+FONT="JetBrainsMono Nerd Font Mono"
+
 battery_status="$(pmset -g batt)"
 percentage="$(printf '%s\n' "$battery_status" | grep -Eo '[0-9]+%' | head -n 1 | tr -d '%')"
 
@@ -19,8 +22,10 @@ case "$percentage" in
 esac
 
 color="$TEXT_COLOR"
+icon_font_size=19  # larger for narrow unplugged glyphs
 if [[ "$battery_status" == *"AC Power"* ]]; then
   icon=""
+  icon_font_size=16  # charging bolt is already large enough
 elif (( percentage <= 15 )); then
   color="$RED_COLOR"
 elif (( percentage <= 30 )); then
@@ -30,6 +35,7 @@ fi
 sketchybar --set "$NAME" \
   drawing=on \
   icon="$icon" \
+  icon.font="JetBrainsMono Nerd Font Mono:Regular:$icon_font_size" \
   icon.color="$color" \
   label="${percentage}%" \
   label.color="$color"

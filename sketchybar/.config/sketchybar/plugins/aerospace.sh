@@ -8,7 +8,7 @@ window_count="$(aerospace list-windows --workspace "$workspace" --count)"
 
 if [[ "$workspace" == "$focused_workspace" ]]; then
   sketchybar --set "$NAME" \
-    icon.color="$BAR_COLOR" \
+    icon.color="$YELLOW_COLOR" \
     background.color="$YELLOW_COLOR" \
     background.border_color="$YELLOW_COLOR" \
     background.drawing=on
