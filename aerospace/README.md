@@ -52,10 +52,10 @@ useful when tuning colors or width interactively.
 ## Status bar
 
 AeroSpace also starts the tracked [SketchyBar configuration](../sketchybar/README.md)
-and notifies it whenever the focused workspace changes. A 48-point top gap keeps
-tiled windows clear of the custom bar while the native macOS menu bar is hidden.
-Use `option-shift-b` to toggle SketchyBar before accessing native application
-menus.
+and notifies it whenever the focused workspace changes. macOS reserves the top
+menu-bar region, so the normal 10-point AeroSpace gap provides separation below
+the custom bar. Use `option-shift-b` to toggle SketchyBar before accessing native
+application menus.
 
 ## Shortcut notation
 
