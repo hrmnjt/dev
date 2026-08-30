@@ -80,14 +80,14 @@ automatically-unhide-macos-hidden-apps = false
 preset = 'qwerty'
 
 # Ten-point gaps leave enough separation for window borders without wasting too
-# much space. The larger top gap keeps tiled windows below SketchyBar when the
-# native macOS menu bar is set to auto-hide.
+# much space. macOS already reserves the top menu-bar region used by SketchyBar,
+# so the top edge needs only the same visual gap as the other edges.
 [gaps]
 inner.horizontal = 10
 inner.vertical = 10
 outer.left = 10
 outer.bottom = 10
-outer.top = 48
+outer.top = 10
 outer.right = 10
 
 # -----------------------------------------------------------------------------

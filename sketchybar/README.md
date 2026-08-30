@@ -65,8 +65,8 @@ permission.
 
 AeroSpace starts SketchyBar and emits `aerospace_workspace_change` whenever the
 focused workspace changes. SketchyBar also refreshes occupancy when applications
-or native Space windows change. Tiled windows stay below the bar through
-AeroSpace's larger top gap.
+or native Space windows change. macOS reserves the menu-bar region, and the
+normal 10-point AeroSpace top gap separates tiled windows from the bar.
 
 ## Next evaluation
 
