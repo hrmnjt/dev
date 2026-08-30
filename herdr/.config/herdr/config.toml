@@ -17,3 +17,6 @@ delivery = "herdr"
 
 [ui.toast.herdr]
 position = "top-right"
+
+[experimental]
+kitty_graphics = true
