@@ -112,6 +112,7 @@ herdr plugin list --plugin hrmnjt.default-tabs
 - [Local llama.cpp inference](llama/README.md)
 - [Neovim](nvim/README.md)
 - [Pi agent package](pi/README.md)
+- [SketchyBar](sketchybar/README.md)
 - [Starship](starship/README.md)
 - [Wallpapers](wallpapers/README.md)
 - [Zed](zed/README.md)
