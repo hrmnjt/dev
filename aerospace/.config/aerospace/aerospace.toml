@@ -318,3 +318,8 @@ run = 'layout floating'
 [[on-window-detected]]
 if.app-id = 'com.microsoft.rdc.macos'
 run = 'layout floating'
+
+[[on-window-detected]]
+if.app-id = 'com.pais.handy'
+run = 'layout floating'
+
