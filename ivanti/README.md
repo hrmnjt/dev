@@ -56,6 +56,15 @@ The script can break if Ivanti renames menu items or restructures the menu
 bar dropdown. When that happens, the fix is adjusting the AppleScript menu
 navigation paths.
 
+## SketchyBar indicator
+
+The tracked SketchyBar shows VPN state through a routing-table check in
+`sketchybar/.config/sketchybar/plugins/vpn.sh`, refreshed every 30 seconds: a
+default route over a `utun` interface means connected. It needs no permissions
+and never opens the Ivanti menu. Set `IVANTI_ROUTE_MARKER` in that script for a
+more specific routing-table marker. Terminal Accessibility permission is still
+required for the `vpn` control commands themselves.
+
 ## Troubleshooting after AeroSpace or terminal changes
 
 AeroSpace itself does not control the VPN. The common failure is macOS TCC
