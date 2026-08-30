@@ -92,10 +92,15 @@ cask "nikitabobko/tap/aerospace"
 cask "itsycal"
 cask "monodraw"
 cask "obsidian"
+
 # Infinite canvas whiteboard
 cask "tldraw"
+
 # Image editor
 cask "gimp"
+
+# voice to text local
+cask "handy"
 
 # JetBrains Mono plus Nerd Font glyphs for starship prompt icons in terminals.
 cask "font-jetbrains-mono-nerd-font"
