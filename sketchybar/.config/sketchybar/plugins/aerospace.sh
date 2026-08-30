@@ -12,9 +12,9 @@ if [[ "$workspace" == "$focused_workspace" ]]; then
     background.color="$YELLOW_COLOR" \
     background.border_color="$YELLOW_COLOR" \
     background.drawing=on
-elif (( window_count > 0 )); then
+elif ((window_count > 0)); then
   sketchybar --set "$NAME" \
-    icon.color="$TEXT_COLOR" \
+    icon.color="$MUTED_COLOR" \
     background.color="$SURFACE_ALT_COLOR" \
     background.border_color="$BORDER_COLOR" \
     background.drawing=on
