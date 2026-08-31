@@ -156,6 +156,9 @@ alt-tab = 'workspace-back-and-forth'
 # Move the current workspace to the next monitor. With two displays, this means
 # "send this whole workspace to the other screen". This keeps the MacBook +
 # portrait monitor setup flexible instead of pinning workspaces to displays.
+# Avoid [workspace-to-monitor-force-assignment] unless a workspace must always
+# live on one display; forced assignments make this binding ineffective for
+# those workspaces.
 alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
 
 # Move the focused window to a workspace.
