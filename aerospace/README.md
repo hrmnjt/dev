@@ -31,8 +31,7 @@ Reload AeroSpace after ordinary configuration edits:
 option-shift-r
 ```
 
-After installing JankyBorders or SketchyBar for the first time, fully restart
-AeroSpace so its startup commands launch both visual helpers.
+After installing JankyBorders for the first time, fully restart AeroSpace so its startup commands launch both visual helpers.
 
 ## Focused-window border
 
@@ -51,25 +50,19 @@ useful when tuning colors or width interactively.
 
 ## Status bar
 
-The workspace indicator is [AeroStatus](../_aerostatus/README.md), a small
-native menu-bar item built from this repository with `just aerostatus`. It
-shows the same Omarchy-inspired treatment the SketchyBar strip used (yellow
-block for the focused workspace, gray for occupied, muted numbers for empty)
-and supports clicking a workspace to switch to it. Everything else in the top
-bar is the native macOS menu bar: Wi-Fi, VPN, battery, clock, and application
-menus.
+The workspace indicator is AeroSpace's own menu bar item; everything else in
+the top bar is the native macOS menu bar: Wi-Fi, VPN, battery, clock, and
+application menus.
 
-AeroSpace starts AeroStatus via `after-startup-command` and notifies it of
-workspace changes through `exec-on-workspace-change`. Build and install the
-binary before restarting AeroSpace after the first installation:
+The tray item can be restyled from AeroSpace's menu under **Experimental UI
+Settings (No stability guarantees)**. The tracked setup assumes the **"i3 style
+ordered"** style: one keycap per workspace that has windows, the focused one
+filled, empty workspaces hidden, with a `|` separator per monitor. The choice
+is stored in the app's `UserDefaults` and applies immediately. Note it is
+experimental upstream and may change between versions.
 
-```bash
-just aerostatus
-```
-
-The normal 10-point AeroSpace top gap separates tiled windows from the menu
-bar. The previous SketchyBar configuration remains in the repository under
-`sketchybar/` but is no longer started automatically.
+macOS reserves the top menu-bar region, so the normal 10-point AeroSpace gap
+provides separation below it.
 
 ## Shortcut notation
 

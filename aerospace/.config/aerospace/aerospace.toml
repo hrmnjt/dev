@@ -34,20 +34,10 @@ after-login-command = []
 
 # Start the visual helpers with AeroSpace. The borders command detects an
 # existing process, so restarting AeroSpace does not create duplicate
-# instances. AeroStatus draws the workspace indicator in the native menu bar;
-# build it first with `just aerostatus`.
+# instances. The workspace indicator is AeroSpace's own menu bar item; style
+# it via the tray menu under "Experimental UI Settings".
 after-startup-command = [
     'exec-and-forget borders style=round width=3.0 hidpi=on active_color=0xfffabd2f inactive_color=0x80665c54',
-    'exec-and-forget $HOME/.local/bin/aerostatus',
-]
-
-# Keep AeroStatus's workspace indicator synchronized with AeroSpace's virtual
-# workspaces rather than macOS Mission Control spaces. The binary connects to
-# the running instance's socket and exits immediately.
-exec-on-workspace-change = [
-    '/bin/bash',
-    '-c',
-    '"$HOME/.local/bin/aerostatus" --notify "$AEROSPACE_FOCUSED_WORKSPACE"',
 ]
 
 # Keep AeroSpace's tree structure tidy by removing unnecessary nested containers.
@@ -83,8 +73,8 @@ automatically-unhide-macos-hidden-apps = false
 preset = 'qwerty'
 
 # Ten-point gaps leave enough separation for window borders without wasting too
-# much space. macOS already reserves the top menu-bar region used by SketchyBar,
-# so the top edge needs only the same visual gap as the other edges.
+# much space. macOS already reserves the top menu-bar region, so the top edge
+# needs only the same visual gap as the other edges.
 [gaps]
 inner.horizontal = 10
 inner.vertical = 10

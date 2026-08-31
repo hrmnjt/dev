@@ -66,11 +66,12 @@ utility.
 
 - [x] **Finish the minimal SketchyBar.**
 
-  Superseded: after a day of use, network management (Wi-Fi reconnects, VPN
-  toggles) proved more important than custom indicators, so the bar was
-  replaced by the native macOS menu bar plus [AeroStatus](_aerostatus/README.md),
-  a small repository-owned Swift menu-bar item for AeroSpace workspaces. The
-  SketchyBar configuration is retained for reference.
+  Superseded and removed: after a day of use, network management (Wi-Fi
+  reconnects, VPN toggles) proved more important than custom indicators. The
+  workspace indicator is now AeroSpace's own menu bar item with the
+  "i3 style ordered" experimental tray style, and everything else in the top
+  bar is the native macOS menu bar. Both the SketchyBar configuration and the
+  intermediate AeroStatus Swift helper were removed.
 
 ## Cohesive visual projects
 

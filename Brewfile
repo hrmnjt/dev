@@ -83,10 +83,9 @@ cask "whatsapp"
 cask "thunderbird"
 
 # Utilities
-# Focused-window borders and the status bar used alongside AeroSpace.
+# Focused-window borders used alongside AeroSpace.
 tap "FelixKratz/formulae"
 brew "borders"
-brew "sketchybar"
 # Tiling window manager trial to replace AltTab with workspace-based navigation.
 cask "nikitabobko/tap/aerospace"
 cask "itsycal"

@@ -53,9 +53,6 @@ just brewinst
 # 8. Deploy the dotfiles
 just stowall
 
-# 8.1 Build the AeroStatus native workspace indicator (requires Xcode CLT)
-just aerostatus
-
 # 9. Install and configure Pi
 # 9.1. Pi - https://pi.dev/docs/latest/quickstart#install
 # 9.2. Install dependencies for pi
@@ -107,7 +104,6 @@ herdr plugin list --plugin hrmnjt.default-tabs
 #### Setup references
 
 - [AeroSpace](aerospace/README.md)
-- [AeroStatus](_aerostatus/README.md)
 - [Ghostty](ghostty/README.md)
 - [Git](git/README.md)
 - [Herdr](herdr/README.md)
@@ -116,7 +112,6 @@ herdr plugin list --plugin hrmnjt.default-tabs
 - [Local llama.cpp inference](llama/README.md)
 - [Neovim](nvim/README.md)
 - [Pi agent package](pi/README.md)
-- [SketchyBar](sketchybar/README.md) (retired in favor of AeroStatus; kept for reference)
 - [Starship](starship/README.md)
 - [Wallpapers](wallpapers/README.md)
 - [Zed](zed/README.md)
