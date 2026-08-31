@@ -64,15 +64,6 @@ utility.
   landscape and portrait compositions. Add `just wallpaper-next` to cycle only
   through that collection. Coordinate the lock screen where macOS permits it.
 
-- [x] **Finish the minimal SketchyBar.**
-
-  Superseded and removed: after a day of use, network management (Wi-Fi
-  reconnects, VPN toggles) proved more important than custom indicators. The
-  workspace indicator is now AeroSpace's own menu bar item with the
-  "i3 style ordered" experimental tray style, and everything else in the top
-  bar is the native macOS menu bar. Both the SketchyBar configuration and the
-  intermediate AeroStatus Swift helper were removed.
-
 ## Cohesive visual projects
 
 - [ ] **Define the Gruvbox source of truth.**
