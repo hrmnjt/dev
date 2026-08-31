@@ -1,5 +1,12 @@
 # SketchyBar configuration
 
+> **Status: retired.** The workspace indicator now lives in the native macOS
+> menu bar via [AeroStatus](../_aerostatus/README.md), which restored native
+> Wi-Fi/VPN/battery/clock interactivity. AeroSpace no longer starts SketchyBar;
+> this configuration is kept for reference and can be re-enabled by swapping
+> the `after-startup-command` entry in `aerospace.toml` back to
+> `exec-and-forget sketchybar`.
+
 This package provides a small Gruvbox status bar that complements AeroSpace. It
 is intentionally an initial baseline rather than a framework or a large
 collection of third-party plugins.

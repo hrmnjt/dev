@@ -51,11 +51,25 @@ useful when tuning colors or width interactively.
 
 ## Status bar
 
-AeroSpace also starts the tracked [SketchyBar configuration](../sketchybar/README.md)
-and notifies it whenever the focused workspace changes. macOS reserves the top
-menu-bar region, so the normal 10-point AeroSpace gap provides separation below
-the custom bar. Use `option-shift-b` to toggle SketchyBar before accessing native
-application menus.
+The workspace indicator is [AeroStatus](../_aerostatus/README.md), a small
+native menu-bar item built from this repository with `just aerostatus`. It
+shows the same Omarchy-inspired treatment the SketchyBar strip used (yellow
+block for the focused workspace, gray for occupied, muted numbers for empty)
+and supports clicking a workspace to switch to it. Everything else in the top
+bar is the native macOS menu bar: Wi-Fi, VPN, battery, clock, and application
+menus.
+
+AeroSpace starts AeroStatus via `after-startup-command` and notifies it of
+workspace changes through `exec-on-workspace-change`. Build and install the
+binary before restarting AeroSpace after the first installation:
+
+```bash
+just aerostatus
+```
+
+The normal 10-point AeroSpace top gap separates tiled windows from the menu
+bar. The previous SketchyBar configuration remains in the repository under
+`sketchybar/` but is no longer started automatically.
 
 ## Shortcut notation
 
@@ -97,7 +111,7 @@ So `alt-1` in the config means `option-1` on the keyboard.
 | `option-slash` | cycle tiled layout orientation |
 | `option-comma` | cycle accordion layout orientation |
 | `option-shift-r` | reload config |
-| `option-shift-b` | toggle SketchyBar for native menu-bar access |
+| `option-r`, then `h/j/k/l` | resize with vim directions |
 
 Prefer `option-f` over the green macOS fullscreen button.
 
@@ -180,7 +194,7 @@ Current floating rules include:
 
 - Finder
 - App Store
-- Calendar, when opened from SketchyBar
+- Calendar
 - WhatsApp
 - System Settings
 - Pulse Secure / Ivanti-style VPN window

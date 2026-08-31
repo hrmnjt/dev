@@ -64,17 +64,13 @@ utility.
   landscape and portrait compositions. Add `just wallpaper-next` to cycle only
   through that collection. Coordinate the lock screen where macOS permits it.
 
-- [ ] **Finish the minimal SketchyBar.**
+- [x] **Finish the minimal SketchyBar.**
 
-  The initial bar shows AeroSpace workspaces, the focused app, date/time,
-  battery, Wi-Fi/Personal Hotspot, and Ivanti VPN. Add only useful remaining
-  state: Focus, microphone, and screen recording. Distinguish urgent workspaces
-  when AeroSpace exposes a reliable signal, and hide secondary metrics behind
-  clicks or popovers.
-
-  Validate the notch, portrait display, native menu-bar toggle, and top gap.
-  Replace Itsycal only after a compact calendar popup proves sufficient. Do not
-  add Ice or Thaw alongside the custom bar.
+  Superseded: after a day of use, network management (Wi-Fi reconnects, VPN
+  toggles) proved more important than custom indicators, so the bar was
+  replaced by the native macOS menu bar plus [AeroStatus](_aerostatus/README.md),
+  a small repository-owned Swift menu-bar item for AeroSpace workspaces. The
+  SketchyBar configuration is retained for reference.
 
 ## Cohesive visual projects
 
