@@ -30,7 +30,7 @@ final class SocketServer {
         var address = sockaddr_un()
         address.sun_family = sa_family_t(AF_UNIX)
         let pathBytes = Array(path.utf8)
-        withUnsafeMutableBytes(of: &address.sun_path) { pointer in
+        _ = withUnsafeMutableBytes(of: &address.sun_path) { pointer in
             pathBytes.copyBytes(to: pointer, count: min(pathBytes.count, pointer.count - 1))
         }
 
@@ -39,7 +39,7 @@ final class SocketServer {
                 bind(fd, socketPointer, socklen_t(MemoryLayout<sockaddr_un>.size))
             }
         }
-        guard bindResult == 0, listen(fd, 8) == 0 else { return }
+        guard bindResult == 0, Darwin.listen(fd, 8) == 0 else { return }
 
         while true {
             let client = accept(fd, nil, nil)
@@ -70,7 +70,7 @@ enum NotifyClient {
         address.sun_family = sa_family_t(AF_UNIX)
         let path = SocketServer.socketPath()
         let pathBytes = Array(path.utf8)
-        withUnsafeMutableBytes(of: &address.sun_path) { pointer in
+        _ = withUnsafeMutableBytes(of: &address.sun_path) { pointer in
             pathBytes.copyBytes(to: pointer, count: min(pathBytes.count, pointer.count - 1))
         }
 
