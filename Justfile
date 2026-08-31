@@ -61,6 +61,15 @@ macos-gruvbox:
 wallpaper:
     wallpaper="${HOME}/.local/share/wallpapers/pink-floyd-gruvbox-dark.jpg"; osascript -e "tell application \"System Events\" to tell every desktop to set picture to POSIX file \"$wallpaper\""
 
+# --- AeroStatus (native menu-bar workspace indicator) ---
+
+# Build and install the AeroStatus helper used by AeroSpace. Requires Xcode
+# Command Line Tools (provides swift). See _aerostatus/README.md.
+aerostatus:
+    cd _aerostatus && swift build -c release
+    mkdir -p ~/.local/bin
+    cp -f _aerostatus/.build/release/aerostatus ~/.local/bin/aerostatus
+
 # --- Gondolin VM image ---
 
 # Build a custom VM image with git, ripgrep, jq, fd, and other dev tools.
