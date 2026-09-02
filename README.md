@@ -74,6 +74,9 @@ ssh -T git@github.com
 # After SSH authentication succeeds, update this checkout:
 git remote set-url origin git@github.com:hrmnjt/dev.git
 
+# 10.1. Authenticate the GitHub CLI over SSH; see gh/README.md
+gh auth login
+
 # 11. Complete required app permissions
 # 11.1. Grant AeroSpace Accessibility permission; see the aerospace/README.md
 # 11.2. Grant Ghostty or the active terminal Accessibility and Automation
@@ -105,6 +108,7 @@ herdr plugin list --plugin hrmnjt.default-tabs
 
 - [AeroSpace](aerospace/README.md)
 - [Ghostty](ghostty/README.md)
+- [Gh](gh/README.md)
 - [Git](git/README.md)
 - [Herdr](herdr/README.md)
 - [Ivanti VPN](ivanti/README.md)

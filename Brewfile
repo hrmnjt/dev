@@ -21,6 +21,8 @@ brew "jq"
 brew "fd"
 # Terminal Git interface used standalone and through LazyVim
 brew "lazygit"
+# GitHub CLI - PRs, issues, and gh auth for git credential helper
+brew "gh"
 
 # Editor
 brew "neovim"
