@@ -17,7 +17,7 @@
       "python3",
       "openssh",
       "git",
-      "gh",
+      "github-cli",
       "hugo",
       "ripgrep",
       "jq",
