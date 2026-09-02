@@ -46,15 +46,16 @@ intentionally not tracked:
 This is the foundation. It overrides pi's built-in model tools so assistant tool
 calls run in a lightweight Alpine VM instead of directly on the host Mac.
 
-Model-facing tools routed through Gondolin:
+Model-facing built-in tools routed through Gondolin:
 
 - `read`
 - `write`
 - `edit`
 - `bash`
-- `ls`
-- `find`
-- `grep`
+
+These are the only built-in tools enabled by default. Filesystem exploration
+uses shell commands such as `rg`, `fd`, and `ls` through the sandboxed `bash`
+tool rather than separate Pi `grep`, `find`, or `ls` tools.
 
 The current host project is mounted read/write at `/workspace` inside the VM.
 When that workspace contains this repository's host `_models/` cache, only the
@@ -302,7 +303,8 @@ to this repo.
 
 ## First-time settings setup
 
-`settings.template.json` tracks intentional defaults. Pi owns `settings.json`
+`settings.template.json` tracks intentional defaults, including the minimal
+built-in tool set (`read`, `write`, `edit`, and `bash`). Pi owns `settings.json`
 and may update volatile keys such as `defaultModel`, `defaultProvider`, and
 `lastChangelogVersion`.
 
