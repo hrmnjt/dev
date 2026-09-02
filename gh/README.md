@@ -44,7 +44,7 @@ checks from inside the VM. The guest cannot run `gh auth login`, so share the
 host token through the environment before starting pi:
 
 ```bash
-export GH_TOKEN="$(gh auth token)"
+export GH_TOKEN="$(gh auth token)"   # already exported by zsh/.zshrc
 ```
 
 Host-side operations (interactive `gh auth login`, browser-based reviews) run

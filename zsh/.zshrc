@@ -8,6 +8,11 @@ export HOMEBREW_NO_AUTO_UPDATE=1
 # Gondolin custom VM image (built with `just gondolin-image`)
 export GONDOLIN_GUEST_DIR="$HOME/.gondolin/custom-image"
 
+# Share GitHub CLI auth with the Gondolin sandbox; the guest env inherits this
+# so the agent can raise PRs (see gh/README.md). Guarded so shell startup stays
+# quiet when gh is missing or unauthenticated.
+command -v gh >/dev/null 2>&1 && export GH_TOKEN="$(gh auth token 2>/dev/null)"
+
 # starship.rs prompt
 # https://starship.rs/guide/
 eval "$(starship init zsh)"
