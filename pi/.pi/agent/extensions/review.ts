@@ -1,16 +1,21 @@
 /**
- * Terminal-native review UI for pi.
+ * Neovim-first review UI for pi, with the original terminal UI as a fallback.
  *
  * Usage:
- *   /review             Review working tree changes vs HEAD
- *   /review staged      Review staged changes
- *   /review unstaged    Review unstaged changes
- *   /review main..HEAD  Review a commit/range
- *   /review --base main Review changes against a base branch
+ *   /review                    Review working tree changes vs HEAD in Neovim
+ *   /review staged             Review staged changes in Neovim
+ *   /review unstaged           Review unstaged changes in Neovim
+ *   /review main...HEAD        Review a commit/range in Neovim
+ *   /review --base main        Review changes against a base branch in Neovim
+ *   /review --tui main...HEAD  Use pi's built-in terminal review UI
  */
 
 import { spawnSync } from "node:child_process";
-import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
   type Component,
   Editor,
@@ -21,7 +26,7 @@ import {
   type TUI,
   visibleWidth,
   wrapTextWithAnsi,
-} from "@mariozechner/pi-tui";
+} from "@earendil-works/pi-tui";
 
 type ReviewTarget =
   | { kind: "head" }
@@ -93,6 +98,18 @@ type GitContext = {
   diffStat: string;
 };
 
+type ReviewMode = "nvim" | "tui";
+
+type ParsedReviewRequest = {
+  mode: ReviewMode;
+  target: ReviewTarget;
+};
+
+type NvimReviewOutcome =
+  | { action: "submit"; comments: ReviewComment[] }
+  | { action: "cancel" }
+  | { action: "error"; message: string };
+
 type FocusPane = "files" | "diff";
 type Mode = "navigate" | "edit-comment" | "confirm-submit" | "help" | "confirm-cancel";
 
@@ -110,6 +127,7 @@ type Hitbox =
   | { kind: "diff-line"; row: number; colStart: number; colEnd: number; fileIndex: number; hunkIndex: number; lineIndex: number };
 
 const GUEST_WORKSPACE = "/workspace";
+const NVIM_REVIEW_SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "review-nvim.lua");
 
 function runText(command: string, args: string[], cwd: string): string | null {
   const result = spawnSync(command, args, {
@@ -137,40 +155,35 @@ function reviewHelpLines(): string[] {
   return [
     "Review help",
     "",
-    "Usage",
-    "  /review              review working tree changes vs HEAD",
-    "  /review HEAD         same as /review",
-    "  /review staged       review staged changes",
-    "  /review unstaged     review unstaged changes",
-    "  /review main..HEAD   review an explicit git range",
-    "  /review --base main  review changes against a base branch",
-    "  /review help         show this help",
+    "Usage (Neovim is the default)",
+    "  /review                   review working tree changes vs HEAD",
+    "  /review HEAD              same as /review",
+    "  /review staged            review staged changes",
+    "  /review unstaged          review unstaged changes",
+    "  /review main...HEAD       review an explicit git range",
+    "  /review --base main       review changes against a base branch",
+    "  /review --tui [target]    use pi's terminal review UI instead",
+    "  /review help              show this help",
     "",
-    "Keyboard",
-    "  j/k      move selected line, or selected file in the narrow file list",
-    "  h/l      previous/next file",
-    "  n/N      next/previous hunk",
-    "  c        comment selected line",
-    "  Enter    save comment in the comment dialog",
-    "  Esc      cancel comment dialog, or quit/cancel from navigation",
-    "  dd       delete selected line comment",
-    "  s        submit review comments to pi",
-    "  ?        show in-UI help",
-    "  q        quit review",
-    "  Tab      switch focus between file list and diff on narrow terminals",
+    "Neovim",
+    "  Standard Vim motions and search remain unchanged.",
+    "  [f / ]f       previous/next changed file",
+    "  [c / ]c       previous/next diff hunk",
+    "  [r / ]r       previous/next review comment",
+    "  <leader>rf    toggle changed-files sidebar",
+    "  <leader>rc    add or edit a comment at the cursor",
+    "  <leader>rd    delete the comment at the cursor",
+    "  <leader>rs    submit review (also ZZ)",
+    "  <leader>rq    cancel review (also ZQ)",
+    "  <leader>rh    show Neovim review help",
     "",
-    "Mouse",
-    "  click file row      select file in the narrow file list",
-    "  click diff line     select line",
-    "  mouse wheel in diff  scroll through lines",
+    "Terminal UI (--tui)",
+    "  j/k line · h/l file · n/N hunk · c comment · dd delete · s submit · ? help · q quit",
     "",
     "Comments",
-    "  Comments are saved in memory while the review UI is open.",
-    "  Each submitted comment includes its selected diff line/context so pi can read it accurately.",
-    "  Press s to preview and submit them directly to the current pi conversation.",
-    "",
-    "Deleted files",
-    "  Deleted files are preserved as deleted unless a comment explicitly asks pi to restore them.",
+    "  Comments stay in memory while reviewing and are sent to the current pi conversation.",
+    "  Each comment includes its file, source line, hunk, and nearby diff context.",
+    "  Deleted files remain deleted unless a comment explicitly asks pi to restore them.",
     "",
     "Press q, Esc, or Enter to close this help.",
   ];
@@ -183,6 +196,22 @@ function parseTarget(args: string): ReviewTarget {
   if (trimmed === "unstaged" || trimmed === "--unstaged") return { kind: "unstaged" };
   if (trimmed.startsWith("--base ")) return { kind: "base", base: trimmed.slice("--base ".length).trim() || "main" };
   return { kind: "range", range: trimmed };
+}
+
+function parseReviewRequest(args: string): ParsedReviewRequest | { error: string } {
+  const tokens = args.trim().split(/\s+/).filter(Boolean);
+  const hasTui = tokens.includes("--tui");
+  const hasNvim = tokens.includes("--nvim");
+
+  if (hasTui && hasNvim) {
+    return { error: "Choose only one review UI: --tui or --nvim." };
+  }
+
+  const targetArgs = tokens.filter((token) => token !== "--tui" && token !== "--nvim").join(" ");
+  return {
+    mode: hasTui ? "tui" : "nvim",
+    target: parseTarget(targetArgs),
+  };
 }
 
 function targetLabel(target: ReviewTarget): string {
@@ -460,7 +489,7 @@ function formatReviewCommentForPrompt(comment: ReviewComment, index: number): st
 function buildReviewMessage(result: ReviewResult, context: GitContext): string {
   const comments = result.comments.map(formatReviewCommentForPrompt).join("\n\n---\n\n");
 
-  return `I reviewed the current changes in pi's terminal review UI.
+  return `I reviewed the current changes in pi's review UI.
 
 <review-context>
 Generated: ${new Date().toISOString()}
@@ -493,6 +522,146 @@ Please address every actionable review comment. Rules:
 <review-comments>
 ${comments || "(none)"}
 </review-comments>`;
+}
+
+function optionalInteger(value: unknown): number | undefined {
+  return Number.isInteger(value) && (value as number) >= 0 ? value as number : undefined;
+}
+
+function normalizeNvimComment(value: unknown, index: number): ReviewComment | null {
+  if (!value || typeof value !== "object") return null;
+  const input = value as Record<string, unknown>;
+  if (typeof input.filePath !== "string" || !input.filePath || typeof input.body !== "string") return null;
+
+  let anchor: ReviewCommentAnchor | undefined;
+  if (input.anchor && typeof input.anchor === "object") {
+    const rawAnchor = input.anchor as Record<string, unknown>;
+    const lineKind = rawAnchor.lineKind;
+    const context = Array.isArray(rawAnchor.context)
+      ? rawAnchor.context.filter((line): line is string => typeof line === "string").slice(0, 20)
+      : undefined;
+    anchor = {
+      hunkHeader: typeof rawAnchor.hunkHeader === "string" ? rawAnchor.hunkHeader : undefined,
+      hunkSection: typeof rawAnchor.hunkSection === "string" ? rawAnchor.hunkSection : undefined,
+      lineKind: lineKind === "context" || lineKind === "add" || lineKind === "del" || lineKind === "meta"
+        ? lineKind
+        : undefined,
+      diffLine: typeof rawAnchor.diffLine === "string" ? rawAnchor.diffLine : undefined,
+      context,
+    };
+  }
+
+  return {
+    id: typeof input.id === "string" && input.id ? input.id : `nvim-${Date.now()}-${index}`,
+    filePath: input.filePath,
+    hunkIndex: optionalInteger(input.hunkIndex),
+    oldLine: optionalInteger(input.oldLine),
+    newLine: optionalInteger(input.newLine),
+    body: input.body,
+    anchor,
+  };
+}
+
+function parseNvimOutcome(raw: string, exitCode: number | null, spawnError?: Error): NvimReviewOutcome {
+  if (spawnError) {
+    const missing = (spawnError as Error & { code?: string }).code === "ENOENT";
+    return {
+      action: "error",
+      message: missing
+        ? "Neovim was not found on the host PATH. Install nvim or use /review --tui."
+        : `Could not start Neovim: ${spawnError.message}`,
+    };
+  }
+
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return exitCode === 0
+      ? { action: "cancel" }
+      : { action: "error", message: `Neovim exited with code ${exitCode ?? "unknown"} before returning a review.` };
+  }
+
+  try {
+    const payload = JSON.parse(trimmed) as Record<string, unknown>;
+    if (payload.protocol !== 1) throw new Error("unsupported protocol");
+    if (payload.action === "cancel") return { action: "cancel" };
+    if (payload.action === "error") {
+      return {
+        action: "error",
+        message: typeof payload.message === "string" ? payload.message : "The Neovim review UI failed.",
+      };
+    }
+    if (payload.action !== "submit" || !Array.isArray(payload.comments)) {
+      throw new Error("invalid review payload");
+    }
+
+    const comments = payload.comments
+      .map(normalizeNvimComment)
+      .filter((comment): comment is ReviewComment => comment !== null && comment.body.trim().length > 0);
+    if (comments.length !== payload.comments.length) throw new Error("invalid review comment");
+    return { action: "submit", comments };
+  } catch (error) {
+    return {
+      action: "error",
+      message: `Could not read Neovim review output: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+}
+
+async function openNvimReview(root: string, target: ReviewTarget, ctx: ExtensionContext): Promise<NvimReviewOutcome> {
+  return ctx.ui.custom<NvimReviewOutcome>((tui, _theme, _keybindings, done) => {
+    let outcome: NvimReviewOutcome = { action: "cancel" };
+    let stopped = false;
+    let tempDir: string | undefined;
+
+    try {
+      tempDir = mkdtempSync(join(tmpdir(), "pi-review-"));
+      const outputPath = join(tempDir, "result.json");
+      writeFileSync(outputPath, "", { encoding: "utf8", mode: 0o600 });
+
+      tui.stop();
+      stopped = true;
+      process.stdout.write("\x1b[2J\x1b[H");
+
+      const command = [
+        "git",
+        "-c",
+        "core.quotePath=false",
+        ...diffArgs(target, ["--no-color", "--no-ext-diff", "--unified=6"]),
+      ];
+      const result = spawnSync(
+        "nvim",
+        ["-n", "-i", "NONE", "/dev/null", "-c", "lua dofile(vim.env.PI_REVIEW_LUA)"],
+        {
+          cwd: root,
+          encoding: "utf8",
+          env: {
+            ...process.env,
+            PI_REVIEW_GIT_COMMAND: JSON.stringify(command),
+            PI_REVIEW_LUA: NVIM_REVIEW_SCRIPT,
+            PI_REVIEW_OUTPUT_PATH: outputPath,
+            PI_REVIEW_TARGET: targetLabel(target),
+          },
+          stdio: "inherit",
+        },
+      );
+
+      outcome = parseNvimOutcome(readFileSync(outputPath, "utf8"), result.status, result.error);
+    } catch (error) {
+      outcome = {
+        action: "error",
+        message: `Neovim review failed: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    } finally {
+      if (tempDir) rmSync(tempDir, { recursive: true, force: true });
+      if (stopped) {
+        tui.start();
+        tui.requestRender(true);
+      }
+    }
+
+    done(outcome);
+    return { render: () => [], invalidate: () => {} };
+  });
 }
 
 class HelpComponent implements Component {
@@ -1384,7 +1553,7 @@ class ReviewComponent implements Component {
 async function review(pi: ExtensionAPI, args: string, ctx: ExtensionContext) {
   const trimmedArgs = args.trim();
   if (trimmedArgs === "help" || trimmedArgs === "--help" || trimmedArgs === "-h") {
-    if (!ctx.hasUI) {
+    if (ctx.mode !== "tui") {
       ctx.ui.notify("/review help requires interactive mode", "error");
       return;
     }
@@ -1394,19 +1563,25 @@ async function review(pi: ExtensionAPI, args: string, ctx: ExtensionContext) {
     return;
   }
 
-  if (!ctx.hasUI) {
+  if (ctx.mode !== "tui") {
     ctx.ui.notify("/review requires interactive mode", "error");
     return;
   }
 
-  const cwd = process.cwd();
+  const request = parseReviewRequest(trimmedArgs);
+  if ("error" in request) {
+    ctx.ui.notify(request.error, "error");
+    return;
+  }
+
+  const cwd = ctx.cwd;
   if (!isGitRepo(cwd)) {
     ctx.ui.notify("/review must be run from inside a git repository.", "error");
     return;
   }
 
   const root = repoRoot(cwd);
-  const target = parseTarget(trimmedArgs);
+  const { mode, target } = request;
   const { files, context } = collectReview(root, target);
 
   if (files.length === 0) {
@@ -1414,9 +1589,23 @@ async function review(pi: ExtensionAPI, args: string, ctx: ExtensionContext) {
     return;
   }
 
-  const result = await ctx.ui.custom<ReviewResult | null>((tui, _theme, _kb, done) => {
-    return new ReviewComponent(files, target, tui, done);
-  });
+  let result: ReviewResult | null;
+  if (mode === "nvim") {
+    const outcome = await openNvimReview(root, target, ctx);
+    if (outcome.action === "cancel") {
+      ctx.ui.notify("Review cancelled", "info");
+      return;
+    }
+    if (outcome.action === "error") {
+      ctx.ui.notify(outcome.message, "error");
+      return;
+    }
+    result = { target, comments: outcome.comments };
+  } else {
+    result = await ctx.ui.custom<ReviewResult | null>((tui, _theme, _kb, done) => {
+      return new ReviewComponent(files, target, tui, done);
+    });
+  }
 
   if (result === null) {
     ctx.ui.notify("Review cancelled", "info");
@@ -1434,7 +1623,7 @@ async function review(pi: ExtensionAPI, args: string, ctx: ExtensionContext) {
 
 export default function (pi: ExtensionAPI) {
   pi.registerCommand("review", {
-    description: "Review current git changes in a terminal UI and send comments to pi",
+    description: "Review current git changes in Neovim and send comments to pi",
     handler: async (args, ctx) => {
       await review(pi, args, ctx);
     },
