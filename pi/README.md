@@ -20,7 +20,8 @@ pi/
 │       │   ├── clipboard-image.ts # Attach host clipboard images before Gondolin
 │       │   ├── exit.ts            # Graceful /exit command
 │       │   ├── gondolin.ts        # VM sandbox for assistant tools
-│       │   ├── review.ts          # Terminal-native diff review UI
+│       │   ├── review.ts          # Neovim-first diff review command
+│       │   ├── review-nvim.lua    # In-memory Neovim review UI
 │       │   ├── review-summary.ts  # Model-driven PR review summary
 │       │   ├── uv.ts              # Prefer uv over pip/poetry/venv
 │       │   └── wal-writer.ts      # Append host Obsidian WAL notes
@@ -167,12 +168,15 @@ Command:
 Useful when I want to answer several clarifying questions without copy/pasting a
 manual response.
 
-### Terminal diff review — `extensions/review.ts`
+### Diff review — `extensions/review.ts` and `extensions/review-nvim.lua`
 
-`/review` is a terminal-native code review UI for the current git repository. It
-collects a diff, parses files/hunks/line numbers, lets me navigate with keyboard
-or mouse, attach comments to lines/hunks, and then sends those comments back to
-pi as a structured user message.
+`/review` opens the current Git diff in host Neovim by default. The diff and
+comment editors are scratch buffers: source files are never opened for writing,
+and review comments stay in Neovim memory until submission. They return to pi
+through a private mode-0600 file inside a mode-0700 OS temporary directory,
+which the extension removes before restoring pi. Neovim uses the normal host
+configuration, including the Stow-deployed LazyVim setup; it does not run inside
+Gondolin.
 
 Commands:
 
@@ -180,28 +184,43 @@ Commands:
 /review
 /review staged
 /review unstaged
-/review main..HEAD
+/review main...HEAD
 /review --base main
+/review --tui main...HEAD
 /review help
 ```
 
-The review UI is optimized for reading diffs in-place:
+The Neovim review buffer preserves standard Vim motions and search. Review-only
+buffer mappings are:
 
-- wide terminals show a full-width diff with a two-line current-file header
-  (`status + basename + file position/comments`, then `directory + +N/-N`)
-- narrow terminals keep a separate file-list tab and diff tab
-- diff rows reserve a marker column, show both old/new line numbers in muted
-  text, and keep the code indentation aligned
-- selected rows use a bright `›` marker instead of inverse video so added/removed
-  lines keep their normal colors and indentation
-- mouse clicks select files/lines, and the wheel scrolls through the diff
+```text
+[f / ]f       previous/next changed file
+[c / ]c       previous/next diff hunk
+[r / ]r       previous/next review comment
+<leader>rf    toggle the changed-files sidebar
+<leader>rc    add or edit a multiline comment
+<leader>rd    delete the comment at the cursor
+<leader>rs    submit the review (also ZZ)
+<leader>rq    cancel the review (also ZQ)
+<leader>rh    show review help
+```
 
-Submitted comments include an anchor snapshot: file path, hunk, selected line,
-line kind, and nearby diff context. The generated message tells pi to treat the
-reviewer's feedback as authoritative, use the embedded snippet only as a locator,
-inspect the referenced files under `/workspace`, preserve unrelated changes,
-avoid resurrecting deleted files unless explicitly requested, and summarize how
-each comment was addressed.
+The changed-files sidebar contains only files in the selected diff and jumps
+within the unified review buffer; it does not use netrw or open writable source
+buffers. Multiline comments use an `acwrite` scratch buffer, so `:w`, `:wq`,
+`ZZ`, and `Ctrl-s` update only the in-memory review state.
+
+`--tui` opens the previous self-contained pi review UI instead. It retains its
+keyboard and mouse navigation for environments where host Neovim is unavailable.
+If `nvim` is missing, the command reports the error and suggests `/review --tui`
+rather than silently changing interfaces.
+
+Submitted comments from either UI include an anchor snapshot: file path, hunk,
+selected line, line kind, and nearby diff context. The generated message tells pi
+to treat the reviewer's feedback as authoritative, use the embedded snippet only
+as a locator, inspect the referenced files under `/workspace`, preserve unrelated
+changes, avoid resurrecting deleted files unless explicitly requested, and
+summarize how each comment was addressed.
 
 ### Review summary — `extensions/review-summary.ts`
 
