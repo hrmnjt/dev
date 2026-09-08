@@ -121,6 +121,8 @@ cask "dbeaver-community"
 brew "azure-cli"
 brew "databricks/tap/databricks"
 brew "telnet"
+# Java 17 for local Spark in seha_crm ingestion tests (keg-only; JAVA_HOME set in zsh/.zshrc)
+brew "openjdk@17"
 
 # Shit that I need to deal with at work
 cask "microsoft-auto-update"

@@ -30,6 +30,13 @@ dab() {
   databricks bundle "$@"
 }
 
+# Java for local Spark (work ingestion tests). openjdk@17 is keg-only, so point
+# JAVA_HOME straight at Contents/Home instead of relying on the system wrapper
+# (/usr/libexec/java_home), which would need a sudo symlink into
+# /Library/Java/JavaVirtualMachines.
+[[ -d /opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home ]] &&
+  export JAVA_HOME="/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
+
 # git folder navigation
 alias cdp='cd ~/code/github.com/hrmnjt'
 alias cdw='cd ~/code/work/doh'
