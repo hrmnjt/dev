@@ -103,6 +103,29 @@ To clean up, exit Pi, remove the active test worktree with `ctrl+b`, then
 git branch -d chore/herdr/test-default-tabs
 ```
 
+## Agent notifications
+
+The official Pi integration reports lifecycle state to Herdr. The tracked config
+uses Herdr's `terminal` delivery, so Ghostty shows a desktop notification when a
+background agent finishes or needs input. Herdr suppresses the active tab and
+waits one second to filter transient states. Herdr's separate sound is disabled,
+leaving Ghostty/macOS as the single notification sound source.
+
+Deploy and reload the config, then verify the integration:
+
+```bash
+just stowall
+herdr server reload-config
+herdr integration status
+```
+
+To test, run the following and switch away from Ghostty before it fires:
+
+```bash
+(sleep 5; herdr notification show "Herdr notification test" \
+  --body "Ghostty desktop delivery is working") &
+```
+
 ## Worktree workflow
 
 Herdr's **New worktree** shortcut creates a branch from the parent workspace's
