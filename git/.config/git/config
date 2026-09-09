@@ -7,6 +7,9 @@
 [fetch]
     prune = true
 
+[pull]
+    ff = only
+
 # Automatically use personal config in personal repos
 [includeIf "gitdir:~/code/github.com/hrmnjt/"]
     path = ~/.config/git/config.personal
