@@ -153,13 +153,15 @@ alt-0 = 'workspace 10'
 # to "toggle between the two things I am currently working on".
 alt-tab = 'workspace-back-and-forth'
 
-# Move the current workspace to the next monitor. With two displays, this means
-# "send this whole workspace to the other screen". This keeps the MacBook +
-# portrait monitor setup flexible instead of pinning workspaces to displays.
-# Avoid [workspace-to-monitor-force-assignment] unless a workspace must always
-# live on one display; forced assignments make this binding ineffective for
-# those workspaces.
-alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
+# Move the current workspace between monitors, wrapping around. With two
+# displays both bindings mean "send this whole workspace to the other screen";
+# with three or more they cycle forward/backward through the displays. This
+# keeps the MacBook + portrait monitor setup flexible instead of pinning
+# workspaces to displays. Avoid [workspace-to-monitor-force-assignment] unless
+# a workspace must always live on one display; forced assignments make these
+# bindings ineffective for those workspaces.
+alt-shift-period = 'move-workspace-to-monitor --wrap-around next'
+alt-shift-comma = 'move-workspace-to-monitor --wrap-around prev'
 
 # Move the focused window to a workspace.
 # After moving, use alt-1..9 / alt-0 to follow it if you want to go there.

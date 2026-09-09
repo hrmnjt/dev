@@ -56,8 +56,11 @@ provides separation below it.
 
 ## Two displays
 
-`option-shift-tab` sends the whole current workspace to the other monitor
-(MacBook Pro + portrait BenQ). Neither display owns a fixed set of workspaces.
+`option-shift-period` / `option-shift-comma` send the whole current workspace to
+the next / previous monitor, wrapping around. With two displays either binding
+means "send this workspace to the other screen"; with three (MacBook + portrait
++ landscape) they cycle through displays in order. Neither display owns a fixed
+set of workspaces.
 
 Avoid `[workspace-to-monitor-force-assignment]` unless a workspace truly must
 live on one display; forced assignments make `move-workspace-to-monitor`
