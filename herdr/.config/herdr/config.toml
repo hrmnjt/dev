@@ -13,10 +13,13 @@ pane_scrollbars = false
 tab_bar_position = "bottom"
 
 [ui.toast]
-delivery = "herdr"
+delivery = "terminal"
+delay_seconds = 1
 
-[ui.toast.herdr]
-position = "top-right"
+# Ghostty/macOS owns the desktop-notification sound. Disable Herdr's separate
+# semantic sound to avoid hearing both for the same agent state change.
+[ui.sound]
+enabled = false
 
 [experimental]
 kitty_graphics = true
