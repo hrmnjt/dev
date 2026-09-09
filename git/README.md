@@ -15,8 +15,9 @@ git/
     └── ignore            # Global gitignore (macOS junk, direnv, vim swaps)
 ```
 
-**config** sets `init.defaultBranch = main`, `rerere.enabled = true`,
-`merge.conflictStyle = zdiff3`, and these host identity rules:
+**config** sets `init.defaultBranch = main`, prunes deleted remote-tracking
+branches whenever Git fetches, requires pulls to fast-forward, enables `rerere`,
+uses `zdiff3` conflict markers, and applies these host identity rules:
 
 ```ini
 [includeIf "gitdir:~/code/github.com/hrmnjt/"]
@@ -49,6 +50,18 @@ No per-repo config, no forgotten `git config user.email` after a re-clone.
 
 The directory convention (`~/code/github.com/hrmnjt/` vs `~/code/work/`) is
 the only ongoing cost, and it's already enforced by how I organize repos.
+
+## Pull behavior
+
+The tracked defaults make a plain pull equivalent to using `--prune --ff-only`:
+
+```bash
+git pull
+```
+
+`fetch.prune = true` removes stale remote-tracking branches during the fetch
+stage, while `pull.ff = only` refuses a pull that would create a merge commit.
+Git still updates only the current branch from its configured upstream.
 
 ## Deploy
 
