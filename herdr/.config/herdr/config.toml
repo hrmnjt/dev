@@ -7,6 +7,21 @@ name = "gruvbox"
 open_worktree = "prefix+shift+o"
 remove_worktree = "prefix+shift+d"
 
+# ChmaraX/herdr-nvim plugin actions. Install the plugin first:
+#   herdr plugin install ChmaraX/herdr-nvim
+# herdr binds no plugin actions by default; these mirror the README.
+[[keys.command]]
+key = "prefix+e"
+type = "plugin_action"
+command = "chmarax.herdr-nvim.toggle"
+description = "nvim sidebar"
+
+[[keys.command]]
+key = "prefix+o"
+type = "plugin_action"
+command = "chmarax.herdr-nvim.pick-file"
+description = "open file from agent output"
+
 [ui]
 prompt_new_tab_name = true
 pane_scrollbars = false
