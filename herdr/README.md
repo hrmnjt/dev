@@ -103,6 +103,50 @@ To clean up, exit Pi, remove the active test worktree with `ctrl+b`, then
 git branch -d chore/herdr/test-default-tabs
 ```
 
+## herdr-nvim sidebar and file picker
+
+[herdr-nvim](https://github.com/ChmaraX/herdr-nvim) adds a persistent nvim
+sidebar and a fuzzy picker over the files the workspace agent touched. It has
+two halves, installed separately:
+
+1. The herdr plugin, on the host Mac:
+
+   ```bash
+   herdr --version            # requires herdr >= 0.7.4
+   herdr plugin install ChmaraX/herdr-nvim
+   just stowall
+   herdr server reload-config
+   ```
+
+   The install clones the plugin into `~/.config/herdr/plugins/` (tracked as
+   mutable state, not in Git) and its build hook downloads a prebuilt ~7 MB
+   `herdr-nvim` binary from GitHub Releases. Like other third-party plugins,
+   it is installed rather than vendored; only the keybindings below are
+   tracked here. To hack on the plugin, clone it elsewhere and override the
+   installed copy with `herdr plugin link /path/to/herdr-nvim`.
+
+   The tracked `config.toml` binds the two actions herdr leaves unbound by
+   default:
+
+   | Shortcut | Action |
+   |---|---|
+   | `prefix+e` | toggle the per-tab nvim sidebar |
+   | `prefix+o` | open a file from the picker (agent-touched files first) |
+
+   The existing `prefix+shift+o` worktree binding is unaffected. If
+   `prefix+e` or `prefix+o` ever collide with a built-in binding in a future
+   herdr release, rebind the action in `config.toml`.
+
+2. The nvim plugin for annotations, provided by
+   `nvim/.config/nvim/lua/plugins/herdr.lua` (see the
+   [Neovim README](../nvim/README.md#herdr-nvim-annotations)).
+
+Because this Neovim configuration lives at the default appname
+(`~/.config/nvim`), the sidebar's daemon loads it without any
+`sidebar.nvim_env` override in `~/.config/herdr-nvim/config.toml`.
+
+Verify the installation with `herdr-nvim doctor` from a herdr session.
+
 ## Agent notifications
 
 The official Pi integration reports lifecycle state to Herdr. The tracked config
