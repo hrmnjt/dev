@@ -10,7 +10,7 @@
  *
  * The command sends a structured prompt to pi with commit/file/diff-stat
  * context and a review rubric. The model then uses tools to inspect the code
- * and returns a holistic summary, dimension scores, findings, and callouts.
+ * and returns a concise summary, findings, and reviewer callouts.
  */
 
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
@@ -22,128 +22,82 @@ let lastReviewedSha: string | null = null;
 
 const REVIEW_RUBRIC = `## Review Guidelines
 
-You are acting as a code reviewer for a proposed code change made by another
-engineer. Work through this review **step by step, out loud**, using tools to
-examine the code. Do NOT generate the full review in one shot — show your work.
+Inspect the diff and relevant surrounding code with tools before writing the
+final review. Briefly show the key checks as you work.
 
-### Determining what to flag
+Flag only issues that:
+- were introduced or made worse by the diff;
+- have concrete, provable impact on correctness, performance, security, or
+  maintainability; and
+- are discrete, actionable, and likely worth fixing.
 
-Flag issues that:
-1. Meaningfully impact correctness, performance, security, or maintainability.
-2. Are discrete and actionable (not multiple issues combined into one).
-3. Were introduced in the changes being reviewed (not pre-existing issues unless
-   the change makes them worse).
-4. The author would likely fix if they knew about them.
-5. Have provable impact — identify the specific parts affected, don't speculate.
-6. Demand rigor consistent with the rest of the codebase.
+Do not speculate or combine unrelated issues in one finding.
 
-### Priority levels
+### Priority
 
-Tag each finding with a priority level:
-- **[P0]** — Drop everything to fix. Blocking. Only for universal issues that
-  don't depend on assumptions about inputs.
-- **[P1]** — Urgent. Should be addressed in the next cycle.
-- **[P2]** — Normal. To be fixed eventually.
-- **[P3]** — Low. Nice to have.
+- **[P0]** — Blocking for all users, independent of input assumptions.
+- **[P1]** — Urgent; fix in the next cycle.
+- **[P2]** — Normal priority.
+- **[P3]** — Minor improvement.
 
-### Comment guidelines
+For each finding, cite the changed file and line, explain the impact and when it
+occurs, and recommend a fix. Use one brief paragraph, keep snippets under three
+lines, and omit praise or filler.
 
-1. Be clear about *why* the issue is a problem, not just what it is.
-2. Communicate severity appropriately — don't exaggerate.
-3. Be brief — at most 1 paragraph per finding.
-4. Keep code snippets under 3 lines when providing fix examples.
-5. Explicitly state scenarios or environments where the issue arises.
-6. Use a matter-of-fact tone — helpful reviewer, not accusatory.
-7. Avoid flattery or unhelpful phrases like "Great job on...".
+### High-signal checks
 
-### Untrusted user input
+For code handling untrusted input, check for open redirects, unparameterized
+SQL, SSRF through user-supplied URLs, and sanitization where output escaping is
+required.
 
-When reviewing code that handles user input:
-1. Flag open redirects — they must validate against trusted domains only.
-2. Flag SQL that is not parameterized.
-3. Flag HTTP fetches with user-supplied URLs that aren't protected against
-   access to local resources (SSRF).
-4. Prefer escaping over sanitizing where possible (e.g., HTML escaping).
-
-### Error handling (fail-fast)
-
-When reviewing added or modified error handling, default to fail-fast:
-1. Evaluate every new or changed \`try/catch\`: identify what can fail and why
-   local handling is correct at that exact layer.
-2. Silent local error recovery (especially parsing, IO, or network fallbacks)
-   is a high-signal review candidate unless there is explicit justification.
-3. If a catch exists only to satisfy lint/style without real handling, flag it.
-4. When uncertain, prefer crashing fast over silent degradation.
+Inspect every changed \`try/catch\`. Flag silent parsing, IO, or network
+fallbacks—and catches added only for lint—unless recovery is justified at that
+layer. Prefer fail-fast behavior over silent degradation.
 
 ---
 
 ## Review Dimensions
 
-Cover each dimension. Read relevant code and cite specific file paths and
-line numbers in your findings.
+Check every dimension, but report only concrete findings:
 
-- **Design & Architecture** — Patterns, modularity, API/interface design.
-  Does this fit the existing codebase? Is there tight coupling? Would a
-  different approach be simpler?
-- **Performance** — N+1 queries, blocking operations on hot paths, algorithmic
-  complexity, unnecessary allocations, missing caching, large dependencies for
-  trivial functionality.
-- **Security** — Injection risks (SQL, command, script), auth/authz gaps,
-  sensitive data exposure (logs, errors, client-side), input validation,
-  hardcoded secrets, SSRF, open redirects.
-- **Effectiveness** — Does it solve the problem well? Simpler alternatives?
-  Dead code or over-engineering? Missing error handling for expected failures?
-- **Correctness** — Edge cases, race conditions, null/undefined safety,
-  off-by-one errors, incorrect assumptions about data or state, type safety.
-- **Code Quality** — Readability, naming, comments (explain WHY not WHAT),
-  consistency, DRY, test coverage of edge cases.
+- **Design:** fit, modularity, coupling, and API boundaries.
+- **Performance:** hot-path blocking, N+1 work, complexity, and waste.
+- **Security:** injection, auth/authz, secrets, exposure, and input validation.
+- **Effectiveness:** unnecessary complexity, dead code, and simpler alternatives.
+- **Correctness:** edge cases, races, nullability, assumptions, and type safety.
+- **Code Quality:** readability, consistency, duplication, and test coverage.
 
 ## Output Format
 
-Compile findings in this format for easy copy-paste into ADO PR comments:
+Use line-oriented markdown that copies cleanly into ADO PR comments. Do not use
+tables.
 
-**Holistic Summary** — 2-3 paragraph overall assessment.
+**Summary** — One short paragraph covering the change, overall risk, and any
+important caveats.
 
-**Verdict** — \`correct\` (no blocking issues) or \`needs attention\` (has P0/P1 issues).
+**Verdict** — \`correct\` (no P0/P1 findings) or \`needs attention\` (has P0/P1
+findings).
 
-**Dimension Scores** (1-5):
+**Findings** — one block per finding, most severe first. Replace placeholders in
+braces; priority must be P0, P1, P2, or P3:
 
-| Dimension | Score | Notes |
-|-----------|-------|-------|
-| Design | ?/5 | |
-| Performance | ?/5 | |
-| Security | ?/5 | |
-| Effectiveness | ?/5 | |
-| Correctness | ?/5 | |
-| Code Quality | ?/5 | |
+### [{priority}] \`{path/to/file}\`:{line} — {concise issue title}
 
-**Findings** — List each finding with its priority tag, file location, and
-explanation. Keep line references short (avoid ranges over 5-10 lines). Only
-flag code that overlaps with the actual diff — don't flag pre-existing code.
+{One brief paragraph describing the impact, triggering conditions, and fix.}
 
-| Priority | File | Lines | Issue | Recommendation |
-|----------|------|-------|-------|----------------|
-| P0 | \`path/to/file\` | 42 | SQL injection: user input passed directly to query | Use parameterized query: \`db.query("SELECT ... WHERE id = ?", [input])\` |
-| P1 | \`path/to/file\` | 15 | Missing null check on response from API call | Add guard: \`if (!response) throw new Error(...)\` |
-| P2 | \`path/to/file\` | 78 | Duplicate logic also in … | Extract shared utility |
-| P3 | \`path/to/file\` | 100 | Naming could be clearer | Consider renaming to … |
+If there are no findings, write: *(none)*
 
-**Human Reviewer Callouts (Non-Blocking)** — Include only those that apply.
-These are informational for the human reviewer, not fix items. Do not include
-them in Findings unless there is an independent defect. These callouts alone
-must not change the verdict.
+**Human Reviewer Callouts (Non-Blocking)** — include only applicable items.
+Do not repeat a callout as a finding unless it is independently defective.
 
-- **This change adds a database migration:** <files/details>
-- **This change introduces a new dependency:** <package(s)/details>
-- **This change changes a dependency (or the lockfile):** <files/package(s)/details>
-- **This change modifies auth/permission behavior:** <what changed and where>
-- **This change introduces backwards-incompatible public schema/API/contract changes:** <what changed and where>
-- **This change includes irreversible or destructive operations:** <operation and scope>
+- **Adds a database migration:** <files/details>
+- **Adds a new dependency:** <package(s)/details>
+- **Changes a dependency or lockfile:** <files/package(s)/details>
+- **Modifies auth/permissions:** <what changed and where>
+- **Breaks a public schema/API/contract:** <what changed and where>
+- **Includes irreversible or destructive operations:** <operation and scope>
 
-If none apply, write: *(none)*
-
-**Security Deep-Dive** (if applicable) — Detailed analysis of any
-security-sensitive code paths.`;
+If none apply, write: *(none)*`;
 
 type ExecResult = {
   code: number;
