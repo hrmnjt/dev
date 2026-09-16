@@ -95,8 +95,8 @@ outer.right = 10
 #   1 = Ghostty / shell
 #   2 = Obsidian
 #   3 = Brave
-#   4 = Microsoft Teams / Outlook PWA
-#   5 = spare / temporary
+#   4 = Outlook PWA
+#   5 = Microsoft Teams PWA
 #   6 = Thunderbird
 #   7-8 = ad hoc personal projects
 #   9-10 = spare / temporary
@@ -255,10 +255,10 @@ run = 'move-node-to-workspace 3'
 if.app-id = 'com.apple.Safari'
 run = 'move-node-to-workspace 3'
 
-# Work comms -> workspace 4.
+# Microsoft Teams PWA -> workspace 5.
 [[on-window-detected]]
 if.app-id = 'com.brave.Browser.app.ompifgpmddkgmclendfeacglnodjjndh'
-run = 'move-node-to-workspace 4'
+run = 'move-node-to-workspace 5'
 
 # Outlook PWA -> workspace 4.
 [[on-window-detected]]
