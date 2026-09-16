@@ -188,6 +188,8 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202609
 
+- 20260916: Split the Outlook and Teams PWAs across AeroSpace workspaces four
+  and five.
 - 20260915: Dropped the nvim tab from the Herdr default-tabs plugin.
 - 20260914: Made the Pi review summary copy-friendly.
 - 20260910: Integrated the herdr-nvim sidebar and annotations.
