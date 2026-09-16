@@ -24,6 +24,12 @@ Do not add a fallback Git identity inside Gondolin. Identity selection must
 remain fail-closed, and linked worktrees must inherit the identity of their
 primary repository.
 
+## Changelog
+
+For every change, check whether an entry in the root `README.md` changelog
+already exists. If it does, make sure the entry matches what the change
+actually does. If it does not, add one.
+
 ## Pi development
 
 Before modifying Pi extensions, themes, skills, prompts, keybindings, models,
