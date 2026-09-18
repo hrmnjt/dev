@@ -144,13 +144,6 @@ utility.
   and Git identity selection. Add an explicit update command if
   `HOMEBREW_NO_AUTO_UPDATE=1` remains enabled.
 
-- [ ] **Clean up existing inconsistencies.**
-
-  Remove duplicate Homebrew initialization from `.zprofile` and `.zshrc`.
-  Replace `alias pass='cat ~/.pass | pbcopy'` with Bitwarden CLI or macOS
-  Keychain retrieval. Correct the Herdr documentation that says two tabs when
-  the plugin creates `shell`, `pi`, and `nvim`.
-
 ## Visual utilities to evaluate
 
 These are candidates, not tasks. Install one only when its specific behavior is

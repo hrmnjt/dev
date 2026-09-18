@@ -73,4 +73,9 @@ Notable commands and aliases include:
 | `cdp` | Enter the personal repositories directory |
 | `cdw` | Enter the work repositories directory |
 | `gbclean` | Remove merged local branches whose upstream is gone |
+| `keypass <service> [account]` | Copy a generic password from macOS Keychain |
 | `llm` | Manage and inspect the host llama.cpp router service |
+
+Homebrew is initialized once in `.zprofile`; `.zshrc` does not repeat it. The
+`keypass` helper replaces the old plaintext `~/.pass` clipboard alias and fails
+without copying anything when the requested Keychain item is unavailable.
