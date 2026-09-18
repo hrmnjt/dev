@@ -21,28 +21,7 @@ alias loadshell='exec zsh -l'
 # Using eza instead of ls for an extra l command
 alias l='eza --all --git --long --show-symlinks'
 
-# Copy a password from macOS Keychain without keeping it in a plaintext file.
-# Usage: keypass <service> [account]
-keypass() {
-  if (( $# < 1 || $# > 2 )); then
-    print -u2 'usage: keypass <service> [account]'
-    return 2
-  fi
-
-  local service="$1"
-  local account="${2:-}"
-  local password
-
-  if [[ -n "$account" ]]; then
-    password="$(security find-generic-password -s "$service" -a "$account" -w)" || return
-  else
-    password="$(security find-generic-password -s "$service" -w)" || return
-  fi
-
-  print -rn -- "$password" | pbcopy
-  unset password
-  print "Copied Keychain password for ${service}."
-}
+alias pass='cat ~/.pass | pbcopy'
 
 # Databricks Asset Bundles
 dab() {

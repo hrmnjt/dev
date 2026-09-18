@@ -188,8 +188,8 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202609
 
-- 20260918: Removed duplicate Homebrew shell initialization and replaced the
-  plaintext password clipboard alias with a macOS Keychain helper.
+- 20260918: Removed duplicate Homebrew shell initialization and cleared stale
+  shell and Herdr cleanup items from the backlog.
 - 20260916: Split the Outlook and Teams PWAs across AeroSpace workspaces four
   and five.
 - 20260915: Dropped the nvim tab from the Herdr default-tabs plugin.
