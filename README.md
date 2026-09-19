@@ -102,6 +102,10 @@ herdr plugin list --plugin hrmnjt.default-tabs
 # 14.3. Brave configuration
 # - Brave extensions: Bitwarden, Readwise Highlighter, and Dark Reader.
 # - Install the Gruvbox Slate Brave theme.
+# 14.4. Bitwarden desktop
+# - Sign in, then enable Settings → Security → Unlock with Touch ID.
+# - Optionally enable Ask for Touch ID on app start.
+# - Keep the Brave extension; use Apple Passwords when a master password is needed.
 ```
 
 #### Setup references
@@ -188,6 +192,8 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202609
 
+- 20260918: Added the Bitwarden desktop app and Touch ID setup notes; floated
+  Bitwarden and Apple Passwords in AeroSpace.
 - 20260918: Removed duplicate Homebrew shell initialization and cleared stale
   shell and Herdr cleanup items from the backlog.
 - 20260916: Split the Outlook and Teams PWAs across AeroSpace workspaces four
