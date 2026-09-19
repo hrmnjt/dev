@@ -79,6 +79,9 @@ cask "postman"
 # Browser - trying out brave, waiting for ladybird
 cask "brave-browser"
 
+# Desktop password manager with Touch ID unlock
+cask "bitwarden"
+
 # Messaging
 cask "whatsapp"
 # Email client

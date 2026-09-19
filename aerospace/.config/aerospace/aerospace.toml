@@ -288,6 +288,15 @@ run = 'layout floating'
 if.app-id = 'com.apple.AppStore'
 run = 'layout floating'
 
+# Password managers are quick-access utility windows; keep them floating.
+[[on-window-detected]]
+if.app-id = 'com.apple.Passwords'
+run = 'layout floating'
+
+[[on-window-detected]]
+if.app-id = 'com.bitwarden.desktop'
+run = 'layout floating'
+
 # Calendar is a quick utility window; keep it floating.
 [[on-window-detected]]
 if.app-id = 'com.apple.iCal'
