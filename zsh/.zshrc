@@ -21,8 +21,6 @@ alias loadshell='exec zsh -l'
 # Using eza instead of ls for an extra l command
 alias l='eza --all --git --long --show-symlinks'
 
-alias pass='cat ~/.pass | pbcopy'
-
 # Databricks Asset Bundles
 dab() {
   databricks bundle "$@"
