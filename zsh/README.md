@@ -1,8 +1,9 @@
 # Zsh configuration
 
 This package sets the XDG environment, Neovim as the default terminal editor,
-Homebrew shell environment, the `JAVA_HOME` used by local Spark (work ingestion
-tests), prompt, aliases, local-tool paths, and the `wt` Git worktree helper.
+Homebrew shell environment, persistent history, completions, fuzzy search, the
+`JAVA_HOME` used by local Spark (work ingestion tests), prompt, aliases,
+local-tool paths, and the `wt` Git worktree helper.
 
 Deploy and reload it from the repository root:
 
@@ -13,6 +14,24 @@ loadshell
 
 `loadshell` starts a fresh login shell instead of sourcing `.zshrc`, preserving
 Ghostty shell integration.
+
+## History, completion, and fuzzy search
+
+Zsh keeps up to 50,000 persistent history entries in `~/.zsh_history`, shares
+new commands between active shells, and removes duplicates while retaining the
+most recent occurrence. Native `compinit` completion is enabled.
+
+The official `fzf --zsh` integration is loaded when `fzf` is available:
+
+| Binding | Action |
+|---|---|
+| `Ctrl-R` | Search command history |
+| `Ctrl-T` | Insert a selected file or directory |
+| `Alt-C` | Change to a selected directory |
+| `**` then `Tab` | Trigger fuzzy completion |
+
+The integration is guarded so a shell still starts before Homebrew packages are
+installed on a new Mac.
 
 ## Git worktree helper
 

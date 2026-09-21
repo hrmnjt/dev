@@ -16,28 +16,37 @@ utility.
 
 ## Next up
 
-- [ ] **Build a better shell baseline.**
+- [x] **Establish the dependency-free shell baseline.**
 
-  Configure persistent, deduplicated Zsh history; completions; and `fzf --zsh`
-  history/file/directory search. Add `zoxide`, `zsh-autosuggestions`, and
-  `zsh-syntax-highlighting` loaded last. Add `direnv`, since `.direnv` is already
-  in the global Git ignore, and `gh` for GitHub workflows.
+  Configure persistent, deduplicated Zsh history, native completions, and
+  `fzf --zsh` history/file/directory search. Completed 2026-09-21.
 
-  A small optional CLI set would be `bat`, `git-delta`, `yazi`, `btop`, and
-  `tealdeer`. Delta should become Git's pager and work inside Lazygit. Avoid a
-  large Zsh framework.
+- [ ] **Add focused shell enhancements.**
+
+  Evaluate `zoxide` and `direnv`, then add `zsh-autosuggestions` and
+  `zsh-syntax-highlighting`, loaded last and without a large Zsh framework.
+  Treat each `direnv allow` as approval to execute repository-owned code.
+
+- [ ] **Evaluate optional CLI improvements individually.**
+
+  Candidates are `bat`, `git-delta`, `yazi`, `btop`, and `tealdeer`. Add each
+  only when it solves recurring friction. If adopted, Delta should become Git's
+  pager and work inside Lazygit. `gh` is already installed and configured.
 
 - [ ] **Add focused AeroSpace movement and layout actions.**
 
-  Add actions for moving a window and following it, moving it to the other
-  display, balancing a workspace, and toggling a distraction-free single-window
-  layout. Native macOS fullscreen should remain the exception.
+  Add actions for moving a window and following it, moving an individual window
+  to the other display, and balancing a workspace. First define what a new
+  distraction-free action would add beyond the existing AeroSpace fullscreen
+  and accordion bindings. Native macOS fullscreen should remain the exception.
 
 - [ ] **Add clipboard history without replacing Spotlight.**
 
   Try [Maccy](https://maccy.app/) on an explicit shortcut such as
-  `Cmd-Shift-V`. Consider Raycast only if it deliberately replaces Spotlight,
-  clipboard history, snippets, calculations, and quick links together.
+  `Cmd-Shift-V`. Before adopting it, choose retention and clearing behavior and
+  verify how passwords and other sensitive clipboard entries are excluded.
+  Consider Raycast only if it deliberately replaces Spotlight, clipboard
+  history, snippets, calculations, and quick links together.
 
 - [ ] **Track intentional macOS defaults.**
 
@@ -71,7 +80,8 @@ utility.
   Decide between classic Gruvbox Dark Hard and Gruvbox Material Dark Hard, then
   document the canonical background, foreground, selection, accent, border,
   success, warning, and error colors. Align Ghostty, Neovim, Zed, Starship,
-  `fzf`, Lazygit, Pi, Herdr, Obsidian, Brave, and any window borders/bar.
+  `fzf`, Lazygit, Pi, Herdr, Obsidian, Brave, focused-window borders, and the
+  native AeroSpace workspace indicator.
 
   Start with one palette file or document. A generator is justified only when a
   second theme or daytime profile creates real duplication.
@@ -79,9 +89,10 @@ utility.
 - [ ] **Grow `just macos-gruvbox` into a focused theme command.**
 
   Eventually, `just theme gruvbox-dark` could coordinate macOS appearance,
-  wallpaper, Ghostty, borders, the optional bar, editors, TUIs, and an Obsidian
-  CSS snippet. Browser settings can remain documented if they cannot be applied
-  safely.
+  wallpaper, Ghostty, borders, the native workspace indicator, editors, TUIs,
+  and an Obsidian CSS snippet. Browser settings can remain documented if they
+  cannot be applied safely. Do not reintroduce a custom status bar without a
+  concrete need that the native menu bar cannot meet.
 
   A restrained Gruvbox Light/day profile is more useful than collecting many
   unrelated themes. Font switching should likewise wait until there is a real
@@ -115,7 +126,9 @@ utility.
   [Lunar](https://lunar.fyi/), or MonitorControl for BenQ brightness, contrast,
   and HiDPI control. Calibrate or choose ICC profiles so Gruvbox colors and font
   weight agree across displays. Decide intentionally how True Tone, Night Shift,
-  and automatic brightness should behave when docked.
+  and automatic brightness should behave when docked. Test workspace placement,
+  focus, portrait orientation, scaling, and window recovery after wake and after
+  disconnecting or reconnecting each display.
 
 ## Workflow projects
 
@@ -144,7 +157,45 @@ utility.
   and Git identity selection. Add an explicit update command if
   `HOMEBREW_NO_AUTO_UPDATE=1` remains enabled.
 
+## Reliability, privacy, and recovery
+
+- [ ] **Document backup and restore boundaries.**
+
+  List important state that Git cannot restore, including Obsidian data, ignored
+  local configuration, credentials, and application state. Choose an encrypted
+  backup approach, distinguish irreplaceable data from downloadable caches such
+  as `_models`, and test restoring a small representative sample.
+
+- [ ] **Make configuration changes recoverable.**
+
+  Add preview and recovery guidance for Stow deployment and macOS defaults.
+  Capture an existing default before changing it, and distinguish restoring its
+  previous value from deleting a repository-added override.
+
+- [ ] **Add lightweight, non-mutating configuration checks.**
+
+  Add `just check` for shell syntax, supported configuration formats, and focused
+  regression tests for helpers such as `wt` and fail-closed Git identity
+  selection. Keep this separate from host-only deployment and `just doctor`.
+
+- [ ] **Define a screen-sharing and presentation profile.**
+
+  Extend Ghostty's proposed no-shader option with opaque backgrounds, readable
+  font sizing, notification suppression, and a reminder to hide clipboard
+  history and sensitive tabs. Start as a manual checklist and automate it only
+  if it sees regular use.
+
+- [ ] **Document shell-history privacy.**
+
+  Record secret-safe command practices and a quick way to remove an accidental
+  history entry. Do not rely on history filters to recognize every credential.
+
 ## Visual utilities to evaluate
+
+Before adopting one, record the recurring friction it solves, what current tool
+it replaces, the permissions or background services it requires, and the
+one-week removal criterion. A candidate should graduate into a focused task
+before it is added to `Brewfile`.
 
 These are candidates, not tasks. Install one only when its specific behavior is
 wanted.
