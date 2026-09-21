@@ -192,9 +192,10 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202609
 
-- 20260921: Added persistent deduplicated Zsh history, native completions, fzf
-  shell search, autosuggestions, and syntax highlighting; expanded and pruned
-  the setup backlog, including deferred shell-performance work.
+- 20260921: Added persistent deduplicated Zsh history, privacy controls, native
+  completions, fzf shell search, autosuggestions, and syntax highlighting;
+  expanded and pruned the setup backlog, including deferred shell-performance
+  work.
 - 20260918: Added the Bitwarden desktop app and Touch ID setup notes; floated
   Bitwarden and Apple Passwords in AeroSpace.
 - 20260918: Removed duplicate Homebrew shell initialization and cleared stale

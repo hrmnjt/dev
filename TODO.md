@@ -195,10 +195,10 @@ utility.
   `fzf --zsh`, `gh auth token`, and `brew shellenv`, and introduce caching or
   lazy loading only where the measurements justify the maintenance cost.
 
-- [ ] **Document shell-history privacy.**
+- [x] **Document shell-history privacy.**
 
-  Record secret-safe command practices and a quick way to remove an accidental
-  history entry. Do not rely on history filters to recognize every credential.
+  Add leading-space exclusion, secret-safe command guidance, a `histedit` cleanup
+  helper, and a two-shell verification procedure. Completed 2026-09-21.
 
 ## Visual utilities to evaluate
 

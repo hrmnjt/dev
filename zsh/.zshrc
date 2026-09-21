@@ -13,6 +13,7 @@ setopt extended_history
 setopt hist_expire_dups_first
 setopt hist_find_no_dups
 setopt hist_ignore_all_dups
+setopt hist_ignore_space
 setopt hist_reduce_blanks
 setopt hist_save_no_dups
 setopt share_history
@@ -57,6 +58,18 @@ alias cdw='cd ~/code/work/doh'
 
 # Delete local branches whose upstream is gone and are merged into the current branch.
 alias gbclean='git fetch --prune && git branch -vv --merged | awk '\''$1 != "*" && /: gone]/{print $1}'\'' | while read -r branch; do git branch -d "$branch"; done'
+
+# Open the history file to remove an accidentally recorded command, then switch
+# this shell to the edited history. Close other shells first so their in-memory
+# histories cannot restore the removed entry later.
+histedit() {
+  local editor="${VISUAL:-${EDITOR:-vi}}"
+
+  fc -W "$HISTFILE" || return 1
+  "$editor" "$HISTFILE" || return 1
+  fc -p "$HISTFILE"
+  print -- "history reloaded from $HISTFILE"
+}
 
 # git worktree helper
 [[ -f ~/.config/zsh/wt.zsh ]] && source ~/.config/zsh/wt.zsh
