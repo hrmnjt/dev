@@ -71,9 +71,6 @@ histedit() {
   print -- "history reloaded from $HISTFILE"
 }
 
-# git worktree helper
-[[ -f ~/.config/zsh/wt.zsh ]] && source ~/.config/zsh/wt.zsh
-
 # Router lifecycle and status command. Invoke through sh so the Stow link does
 # not depend on the source file's executable mode.
 alias llm='/bin/sh "$HOME/.local/bin/llm"'
