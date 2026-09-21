@@ -3,6 +3,24 @@
 
 # Homebrew is initialized once for login shells in ~/.zprofile.
 
+# Keep useful history across shells while removing duplicate commands. Shared
+# history makes commands available to other active shells as they are entered.
+HISTFILE="${ZDOTDIR:-$HOME}/.zsh_history"
+HISTSIZE=50000
+SAVEHIST=50000
+setopt append_history
+setopt extended_history
+setopt hist_expire_dups_first
+setopt hist_find_no_dups
+setopt hist_ignore_all_dups
+setopt hist_reduce_blanks
+setopt hist_save_no_dups
+setopt share_history
+
+# Initialize Zsh's native completion system before tool-specific integrations.
+autoload -Uz compinit
+compinit
+
 # Gondolin custom VM image (built with `just gondolin-image`)
 export GONDOLIN_GUEST_DIR="$HOME/.gondolin/custom-image"
 
@@ -54,6 +72,13 @@ export FZF_DEFAULT_OPTS=" \
 --color=prompt:#d79921,pointer:#d65d0e,marker:#689d6a,spinner:#689d6a \
 --color=border:#665c54,label:#ebdbb2,separator:#504945 \
 --color=selected-bg:#3c3836"
+
+# fzf's official Zsh integration provides Ctrl-R history search, Ctrl-T file
+# search, Alt-C directory navigation, and completion. Keep startup usable when
+# fzf has not yet been installed on a newly bootstrapped Mac.
+if command -v fzf >/dev/null 2>&1; then
+  source <(fzf --zsh)
+fi
 
 # Ghostty shell integration
 #
