@@ -1,5 +1,15 @@
 # Dotfiles management with GNU stow. See README.md for full documentation.
 
+# --- Diagnostics ---
+
+# Validate tracked configuration, then inspect the host installation unless
+# --only-check is passed. Use --verbose for command output and diagnostics. This
+# command never repairs or changes the setup.
+[arg("only_check", long="only-check", value="true")]
+[arg("verbose", long="verbose", short="v", value="true")]
+@doctor only_check="false" verbose="false":
+    DOCTOR_ONLY_CHECK="{{only_check}}" DOCTOR_VERBOSE="{{verbose}}" /bin/sh ./_scripts/doctor.sh
+
 # --- Stow commands ---
 
 # Top-level directory nomenclature:

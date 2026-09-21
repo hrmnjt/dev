@@ -127,6 +127,37 @@ herdr plugin list --plugin hrmnjt.default-tabs
 
 ### frequently performed operations
 
+#### Checking repository and host health
+
+Run the portable, non-mutating repository checks while editing:
+
+```bash
+just doctor --only-check
+```
+
+This validates shell syntax, strict JSON, TOML, Git and Just configuration,
+whitespace, conflict markers, and fail-closed Git identity selection in isolated
+temporary repositories. Tools unavailable inside Gondolin are reported as
+warnings rather than hiding the checks that did run.
+
+Run the complete diagnostic on the host Mac:
+
+```bash
+just doctor
+```
+
+The full mode runs the same repository checks, then inspects Brew packages,
+expected commands, Stow links, the deployed Git identity, Pi dependencies and
+settings, the Gondolin image, AeroSpace, Herdr, and GitHub CLI authentication.
+It reports remediation commands but never installs, rewrites, reloads, or
+repairs the setup. Add `--verbose` (or `-v`) to either mode to show the commands
+and captured output behind integration checks:
+
+```bash
+just doctor --verbose
+just doctor --only-check --verbose
+```
+
 #### Managing packages
 
 Install the package, add it to `Brewfile` with a descriptive comment, and verify
@@ -192,6 +223,9 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202609
 
+- 20260921: Added a non-mutating repository and host doctor with pytest-style
+  results, verbose diagnostics, a portable check-only mode, and isolated Git
+  identity regression tests.
 - 20260921: Removed the retired `wt` shell helper after adopting Herdr's managed
   worktree workflow.
 - 20260921: Added focused-window follow, monitor movement, and workspace balance
