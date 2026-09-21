@@ -175,8 +175,9 @@ utility.
 - [ ] **Add lightweight, non-mutating configuration checks.**
 
   Add `just check` for shell syntax, supported configuration formats, and focused
-  regression tests for helpers such as `wt` and fail-closed Git identity
-  selection. Keep this separate from host-only deployment and `just doctor`.
+  regression tests for fail-closed Git identity selection and other retained
+  repository helpers. Keep this separate from host-only deployment and
+  `just doctor`.
 
 - [ ] **Define a screen-sharing and presentation profile.**
 

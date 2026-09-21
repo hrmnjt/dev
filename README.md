@@ -192,6 +192,8 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202609
 
+- 20260921: Removed the retired `wt` shell helper after adopting Herdr's managed
+  worktree workflow.
 - 20260921: Added focused-window follow, monitor movement, and workspace balance
   actions to AeroSpace.
 - 20260921: Added persistent deduplicated Zsh history, privacy controls, native

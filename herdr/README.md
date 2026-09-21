@@ -172,6 +172,9 @@ To test, run the following and switch away from Ghostty before it fires:
 
 ## Worktree workflow
 
+Herdr is the repository's sole worktree workflow, covering creation, reopening,
+and removal through managed workspaces and their default tabs.
+
 Herdr's **New worktree** shortcut creates a branch from the parent workspace's
 current `HEAD`. Herdr does not currently provide a config option for changing
 that base to `origin/main` and does not fetch the remote automatically.
