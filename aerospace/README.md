@@ -54,13 +54,28 @@ on a new machine. It is experimental upstream and may change between versions.
 macOS reserves the top menu-bar region, so the normal 10-point AeroSpace gap
 provides separation below it.
 
+## Window movement and layout
+
+Movement bindings keep focus with the window when the destination changes:
+
+| Binding | Action |
+|---|---|
+| `option-shift-1` … `option-shift-0` | Move the focused window to workspace 1 … 10 and follow it |
+| `option-control-period` / `option-control-comma` | Move the focused window to the next / previous monitor and follow it |
+| `option-shift-period` / `option-shift-comma` | Move the whole workspace to the next / previous monitor |
+| `option-b` | Balance all window sizes in the current workspace |
+
+`option-f` remains the distraction-free single-window action. It uses
+AeroSpace fullscreen rather than a native macOS fullscreen Space. Use
+`option-comma` instead when an accordion layout with visible window edges is
+more useful; a separate overlapping distraction-free mode is unnecessary.
+
 ## Two displays
 
-`option-shift-period` / `option-shift-comma` send the whole current workspace to
-the next / previous monitor, wrapping around. With two displays either binding
-means "send this workspace to the other screen"; with three (MacBook + portrait
-+ landscape) they cycle through displays in order. Neither display owns a fixed
-set of workspaces.
+The monitor movement bindings wrap around. With two displays, either direction
+means “send this window/workspace to the other screen”; with three (MacBook +
+portrait + landscape), next and previous cycle through displays in order.
+Neither display owns a fixed set of workspaces.
 
 Avoid `[workspace-to-monitor-force-assignment]` unless a workspace truly must
 live on one display; forced assignments make `move-workspace-to-monitor`

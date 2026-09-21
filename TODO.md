@@ -33,12 +33,12 @@ utility.
   only when it solves recurring friction. If adopted, Delta should become Git's
   pager and work inside Lazygit. `gh` is already installed and configured.
 
-- [ ] **Add focused AeroSpace movement and layout actions.**
+- [x] **Add focused AeroSpace movement and layout actions.**
 
-  Add actions for moving a window and following it, moving an individual window
-  to the other display, and balancing a workspace. First define what a new
-  distraction-free action would add beyond the existing AeroSpace fullscreen
-  and accordion bindings. Native macOS fullscreen should remain the exception.
+  Follow windows moved to another workspace, move and follow an individual
+  window between displays, and balance workspace sizes. Keep AeroSpace
+  fullscreen and accordion as the existing distraction-free choices rather than
+  adding an overlapping mode. Completed 2026-09-21.
 
 - [ ] **Add clipboard history without replacing Spotlight.**
 

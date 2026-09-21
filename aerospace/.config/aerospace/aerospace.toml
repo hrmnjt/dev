@@ -124,13 +124,17 @@ alt-shift-j = 'move down'
 alt-shift-k = 'move up'
 alt-shift-l = 'move right'
 
+# Restore equal sizing after manual resize or a layout change.
+alt-b = 'balance-sizes'
+
 # Resize the focused area. Smart resize chooses the useful dimension based on
 # the current split direction.
 alt-minus = 'resize smart -50'
 alt-equal = 'resize smart +50'
 
-# AeroSpace fullscreen/maximize for the focused window.
-# Prefer this over the green macOS fullscreen button while learning.
+# AeroSpace fullscreen/maximize is the distraction-free single-window action.
+# Prefer this over the green macOS fullscreen button; alt-comma remains useful
+# when other windows should stay visible at the edge of an accordion layout.
 alt-f = 'fullscreen'
 
 # Toggle the focused window between tiled and floating.
@@ -163,19 +167,23 @@ alt-tab = 'workspace-back-and-forth'
 alt-shift-period = 'move-workspace-to-monitor --wrap-around next'
 alt-shift-comma = 'move-workspace-to-monitor --wrap-around prev'
 
-# Move the focused window to a workspace.
-# After moving, use alt-1..9 / alt-0 to follow it if you want to go there.
-# `alt-0` maps to workspace 10, matching the jump binding above.
-alt-shift-1 = 'move-node-to-workspace 1'
-alt-shift-2 = 'move-node-to-workspace 2'
-alt-shift-3 = 'move-node-to-workspace 3'
-alt-shift-4 = 'move-node-to-workspace 4'
-alt-shift-5 = 'move-node-to-workspace 5'
-alt-shift-6 = 'move-node-to-workspace 6'
-alt-shift-7 = 'move-node-to-workspace 7'
-alt-shift-8 = 'move-node-to-workspace 8'
-alt-shift-9 = 'move-node-to-workspace 9'
-alt-shift-0 = 'move-node-to-workspace 10'
+# Move only the focused window between monitors and follow it. Ctrl distinguishes
+# this from the Shift bindings above, which move the whole workspace.
+alt-ctrl-period = 'move-node-to-monitor --focus-follows-window --wrap-around next'
+alt-ctrl-comma = 'move-node-to-monitor --focus-follows-window --wrap-around prev'
+
+# Move the focused window to a workspace and follow it there. `alt-0` maps to
+# workspace 10, matching the jump binding above.
+alt-shift-1 = 'move-node-to-workspace --focus-follows-window 1'
+alt-shift-2 = 'move-node-to-workspace --focus-follows-window 2'
+alt-shift-3 = 'move-node-to-workspace --focus-follows-window 3'
+alt-shift-4 = 'move-node-to-workspace --focus-follows-window 4'
+alt-shift-5 = 'move-node-to-workspace --focus-follows-window 5'
+alt-shift-6 = 'move-node-to-workspace --focus-follows-window 6'
+alt-shift-7 = 'move-node-to-workspace --focus-follows-window 7'
+alt-shift-8 = 'move-node-to-workspace --focus-follows-window 8'
+alt-shift-9 = 'move-node-to-workspace --focus-follows-window 9'
+alt-shift-0 = 'move-node-to-workspace --focus-follows-window 10'
 
 # Reload this file after editing.
 alt-shift-r = 'reload-config'
