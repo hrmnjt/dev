@@ -307,7 +307,7 @@ in a normal host terminal:
 ```bash
 cd ~/code/github.com/hrmnjt/dev
 just stowall
-just pi-deps
+npm install --prefix ~/.pi/agent
 ```
 
 Then run this inside pi:

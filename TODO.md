@@ -158,11 +158,6 @@ utility.
   `--only-check` for portable checks and `--verbose` for captured integration
   diagnostics. Completed 2026-09-21.
 
-- [ ] **Add an explicit Homebrew update command.**
-
-  Provide a deliberate update path while `HOMEBREW_NO_AUTO_UPDATE=1` remains
-  enabled; keep it separate from non-mutating diagnostics and package cleanup.
-
 ## Reliability, privacy, and recovery
 
 - [ ] **Document backup and restore boundaries.**

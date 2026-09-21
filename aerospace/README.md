@@ -18,7 +18,7 @@ home: ~/.config/aerospace/aerospace.toml
 Install and deploy from the repository root:
 
 ```bash
-just brewinst
+brew bundle install
 just stowall
 ```
 

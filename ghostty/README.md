@@ -29,7 +29,7 @@ prevents a terminal window from rendering correctly.
 Install and deploy from the repository root:
 
 ```bash
-just brewinst
+brew bundle install
 just stowall
 ```
 

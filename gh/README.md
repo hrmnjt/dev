@@ -27,7 +27,7 @@ layered Git config in [Git](../git/README.md); `git_protocol: ssh` only makes
 Run on the host Mac from the repository root:
 
 ```bash
-just brewinst
+brew bundle install
 just stowall
 
 # Authenticate over SSH, reusing the key from just ghsshkey

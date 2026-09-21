@@ -23,36 +23,11 @@ stowall:
 unstowall:
     stow --no-folding -t ~ -D [!_]*/
 
-# --- Homebrew commands ---
-# 1. Install new packages manually: `brew install <package>`
-# 2. Add package to `Brewfile` with descriptive comment on the line above
-# 3. Commit changes to git
-# 4. On new machines, run `just brewinst` to install all packages
-
-# Verify all Brewfile packages are installed (useful before commits or after pulling)
-brewcheck:
-    brew bundle check
-
-# Install all packages defined in Brewfile (idempotent: skips already installed)
-brewinst:
-    brew bundle install
-
-# Show packages installed locally but missing from Brewfile (candidates to add or remove)
-brewdiff:
-    brew bundle cleanup
-
-# Uninstall packages not in Brewfile (run brewdiff first to preview what gets removed)
-brewclean:
-    brew bundle cleanup --force
-
 # --- Setup commands (new machine) ---
 
-# Create directory structure for git repos (github personal + work)
-gitsetup:
-    mkdir -p ~/code/github.com/hrmnjt
-    mkdir -p ~/code/work/doh
-
-# Generate ed25519 SSH key for GitHub, add to ssh-agent, copy pubkey to clipboard
+# Generate ed25519 SSH key for GitHub, add to ssh-agent, copy pubkey to clipboard.
+# Keep this recipe because the script encodes key naming, SSH config, Keychain,
+# and clipboard behavior rather than aliasing one standard command.
 ghsshkey:
     ./_scripts/sshsetup.sh
 
@@ -81,7 +56,3 @@ gondolin-image:
     npx @earendil-works/gondolin build \
         --config pi/.pi/agent/gondolin-image.json \
         --output ~/.gondolin/custom-image
-
-# Install pi extension dependencies (run after stowall)
-pi-deps:
-    npm install --prefix ~/.pi/agent

@@ -48,7 +48,7 @@ cd ~/code/github.com/hrmnjt/dev
 mkdir -p _models
 
 # 7. Install everything tracked in Brewfile
-just brewinst
+brew bundle install
 
 # 8. Deploy the dotfiles
 just stowall
@@ -56,7 +56,7 @@ just stowall
 # 9. Install and configure Pi
 # 9.1. Pi - https://pi.dev/docs/latest/quickstart#install
 # 9.2. Install dependencies for pi
-just pi-deps
+npm install --prefix ~/.pi/agent
 # 9.3. Initialize Pi's intentional settings
 if [[ ! -f ~/.pi/agent/settings.json ]]; then
   cp ~/.pi/agent/settings.template.json ~/.pi/agent/settings.json
@@ -67,7 +67,7 @@ just gondolin-image
 exec zsh -l
 
 # 10. Configure Git and GitHub SSH
-just gitsetup
+mkdir -p ~/code/work/doh
 just ghsshkey
 # Add the copied public key at https://github.com/settings/keys
 ssh -T git@github.com
@@ -160,25 +160,14 @@ just doctor --only-check --verbose
 
 #### Managing packages
 
-Install the package, add it to `Brewfile` with a descriptive comment, and verify
-that the bundle is complete:
+Use Homebrew's native commands directly; the Justfile deliberately avoids thin
+wrappers around standard CLI operations:
 
 ```bash
-brew install <package>
-# Edit Brewfile
-just brewcheck
-```
-
-Inspect packages installed locally but missing from `Brewfile` with:
-
-```bash
-just brewdiff
-```
-
-Remove untracked packages only after reviewing that output:
-
-```bash
-just brewclean
+brew install <package>       # then add it to Brewfile with a descriptive comment
+brew bundle check            # verify every tracked package is installed
+brew bundle cleanup          # preview installed packages absent from Brewfile
+brew bundle cleanup --force  # remove them only after reviewing the preview
 ```
 
 #### Local models
@@ -223,6 +212,8 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202609
 
+- 20260921: Pruned thin Just wrappers for standard Homebrew, directory, and npm
+  commands; retained recipes that encode repository-specific behavior.
 - 20260921: Added a non-mutating repository and host doctor with pytest-style
   results, verbose diagnostics, a portable check-only mode, and isolated Git
   identity regression tests.

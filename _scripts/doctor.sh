@@ -314,7 +314,7 @@ check_brew_bundle() {
   if [ "$brew_status" -eq 0 ]; then
     pass "Brewfile packages"
   else
-    fail "Brewfile packages (run: just brewcheck)"
+    fail "Brewfile packages (run: brew bundle install)"
   fi
 }
 
@@ -386,7 +386,7 @@ check_pi() {
     if [ "$npm_status" -eq 0 ]; then
       pass "Pi extension dependencies"
     else
-      fail "Pi extension dependencies (run: just pi-deps)"
+      fail "Pi extension dependencies (run: npm install --prefix ~/.pi/agent)"
     fi
   else
     fail "Pi extension dependencies (npm unavailable)"
