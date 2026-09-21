@@ -11,8 +11,12 @@ brew "starship"
 brew "eza"
 # Replacement for make - I use for hrmnjt/dev and other projects
 brew "just"
-# Fuzzy finder for custom tools and other
+# Fuzzy finder for custom tools and shell history/path completion
 brew "fzf"
+# Fish-like command suggestions from shell history
+brew "zsh-autosuggestions"
+# Interactive command-line syntax highlighting
+brew "zsh-syntax-highlighting"
 # Replacement for grep that I use for neovim
 brew "ripgrep"
 # JSON processor used by local llama.cpp and settings helpers

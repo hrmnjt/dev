@@ -33,6 +33,18 @@ The official `fzf --zsh` integration is loaded when `fzf` is available:
 The integration is guarded so a shell still starts before Homebrew packages are
 installed on a new Mac.
 
+## Interactive feedback
+
+Two small plugins are sourced directly from Homebrew without a plugin manager:
+
+- `zsh-autosuggestions` shows a suggestion from history as you type. Press the
+  right arrow or `End` to accept it.
+- `zsh-syntax-highlighting` identifies valid and invalid commands before they
+  run. It is sourced after every other shell integration, as required upstream.
+
+Their source paths are guarded, so `.zshrc` remains usable before `just brewinst`
+installs the formulas on a new Mac. Reload with `loadshell` after installation.
+
 ## Git worktree helper
 
 `wt` provides a lightweight shell-only workflow for creating, selecting, and
