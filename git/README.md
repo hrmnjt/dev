@@ -12,7 +12,7 @@ git/
     ├── config            # Global defaults + includeIf rules
     ├── config.personal   # [user] name=harmanjeet email=harman@hrmnjt.dev
     ├── config.work       # [user] name=Harmanjeet Singh Nagi email=hanagi@doh.gov.ae
-    └── ignore            # Global gitignore (macOS junk, direnv, vim swaps)
+    └── ignore            # Global gitignore (macOS junk and vim swaps)
 ```
 
 **config** sets `init.defaultBranch = main`, prunes deleted remote-tracking

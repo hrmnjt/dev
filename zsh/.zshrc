@@ -92,3 +92,13 @@ if [[ "$TERM_PROGRAM" == "ghostty" ]]; then
     source "/Applications/Ghostty.app/Contents/Resources/ghostty/shell-integration/zsh/ghostty-integration"
   fi
 fi
+
+# Lightweight interactive feedback, sourced directly without a plugin manager.
+# Homebrew sets HOMEBREW_PREFIX in .zprofile; guards keep bootstrap shells usable
+# until the formulas are installed. Syntax highlighting must remain last.
+if [[ -n "$HOMEBREW_PREFIX" ]]; then
+  [[ -r "$HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] &&
+    source "$HOMEBREW_PREFIX/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
+  [[ -r "$HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] &&
+    source "$HOMEBREW_PREFIX/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+fi

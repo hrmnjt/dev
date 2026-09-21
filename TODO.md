@@ -21,11 +21,11 @@ utility.
   Configure persistent, deduplicated Zsh history, native completions, and
   `fzf --zsh` history/file/directory search. Completed 2026-09-21.
 
-- [ ] **Add focused shell enhancements.**
+- [x] **Add lightweight interactive shell feedback.**
 
-  Evaluate `zoxide` and `direnv`, then add `zsh-autosuggestions` and
-  `zsh-syntax-highlighting`, loaded last and without a large Zsh framework.
-  Treat each `direnv allow` as approval to execute repository-owned code.
+  Add `zsh-autosuggestions` and `zsh-syntax-highlighting`, sourced directly
+  without a plugin manager and with syntax highlighting loaded last. Completed
+  2026-09-21.
 
 - [ ] **Evaluate optional CLI improvements individually.**
 
@@ -184,6 +184,16 @@ utility.
   font sizing, notification suppression, and a reminder to hide clipboard
   history and sensitive tabs. Start as a manual checklist and automate it only
   if it sees regular use.
+
+- [ ] **Profile and optimize shell startup after shell features settle.**
+
+  Keep the current configuration simple while planned shell features are still
+  being added, then profile the complete startup path and optimize measured
+  bottlenecks methodically. The 2026-09-21 baseline is about `0.088` seconds for
+  `zsh -lic exit`; `zsh -f -ic exit` rounds to `0.000` seconds and
+  `gh auth token` averages about `0.024` seconds. Inspect `compinit`, Starship,
+  `fzf --zsh`, `gh auth token`, and `brew shellenv`, and introduce caching or
+  lazy loading only where the measurements justify the maintenance cost.
 
 - [ ] **Document shell-history privacy.**
 
