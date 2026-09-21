@@ -150,12 +150,18 @@ utility.
   the Vim workflow. Build a Hyper-key layer only after identifying concrete
   actions that do not conflict with AeroSpace's Option bindings.
 
-- [ ] **Add a repository health command.**
+- [x] **Add a repository health command.**
 
-  `just doctor` should check Brew packages, expected binaries, Stow links, Pi
-  dependencies, the Gondolin image, Herdr integration, AeroSpace configuration,
-  and Git identity selection. Add an explicit update command if
-  `HOMEBREW_NO_AUTO_UPDATE=1` remains enabled.
+  Add a non-mutating `just doctor` for repository validation, Brew packages,
+  expected binaries, Stow links, Pi dependencies, the Gondolin image, Herdr,
+  AeroSpace, GitHub authentication, and Git identity selection. Provide
+  `--only-check` for portable checks and `--verbose` for captured integration
+  diagnostics. Completed 2026-09-21.
+
+- [ ] **Add an explicit Homebrew update command.**
+
+  Provide a deliberate update path while `HOMEBREW_NO_AUTO_UPDATE=1` remains
+  enabled; keep it separate from non-mutating diagnostics and package cleanup.
 
 ## Reliability, privacy, and recovery
 
@@ -172,12 +178,12 @@ utility.
   Capture an existing default before changing it, and distinguish restoring its
   previous value from deleting a repository-added override.
 
-- [ ] **Add lightweight, non-mutating configuration checks.**
+- [x] **Add lightweight, non-mutating configuration checks.**
 
-  Add `just check` for shell syntax, supported configuration formats, and focused
-  regression tests for fail-closed Git identity selection and other retained
-  repository helpers. Keep this separate from host-only deployment and
-  `just doctor`.
+  Add `just doctor --only-check` for shell syntax, strict JSON, TOML, Git and
+  Just configuration, whitespace, conflict markers, and isolated regression
+  tests for personal, work, unknown-path, and linked-worktree Git identity
+  selection. Completed 2026-09-21.
 
 - [ ] **Define a screen-sharing and presentation profile.**
 
