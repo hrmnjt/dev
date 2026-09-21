@@ -34,7 +34,7 @@ Pi 0.81 or later and a current llama.cpp build with router support are required.
 The Homebrew package is tracked in `Brewfile`:
 
 ```bash
-just brewinst
+brew bundle install
 brew upgrade llama.cpp # when upgrading an existing machine
 just stowall
 loadshell

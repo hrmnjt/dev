@@ -17,7 +17,7 @@ lazygit/.config/lazygit/config.yml -> ~/.config/lazygit/config.yml
 Run on the host Mac from the repository root:
 
 ```bash
-just brewinst
+brew bundle install
 just stowall
 ```
 

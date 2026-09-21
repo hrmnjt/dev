@@ -14,7 +14,7 @@ Font glyphs require the JetBrains Mono Nerd Font tracked in `Brewfile`.
 Install, deploy, and reload from the repository root:
 
 ```bash
-just brewinst
+brew bundle install
 just stowall
 loadshell
 ```

@@ -11,7 +11,7 @@ Ghostty already supplies the JetBrains Mono Nerd Font used by the interface.
 Run on the host Mac from the repository root:
 
 ```bash
-just brewinst
+brew bundle install
 just stowall
 nvim
 ```
@@ -77,7 +77,7 @@ unstage all changes, `c` to commit, and `?` to show context-sensitive help.
 Install the updated Brewfile and restart Neovim if the mappings are not present:
 
 ```bash
-just brewinst
+brew bundle install
 ```
 
 ## hledger journals

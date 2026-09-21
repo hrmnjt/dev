@@ -76,8 +76,8 @@ Two small plugins are sourced directly from Homebrew without a plugin manager:
 - `zsh-syntax-highlighting` identifies valid and invalid commands before they
   run. It is sourced after every other shell integration, as required upstream.
 
-Their source paths are guarded, so `.zshrc` remains usable before `just brewinst`
-installs the formulas on a new Mac. Reload with `loadshell` after installation.
+Their source paths are guarded, so `.zshrc` remains usable before the formulas
+are installed with `brew bundle install`. Reload with `loadshell` afterward.
 
 ## Other shell conveniences
 
