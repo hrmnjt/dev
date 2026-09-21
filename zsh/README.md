@@ -21,6 +21,40 @@ Zsh keeps up to 50,000 persistent history entries in `~/.zsh_history`, shares
 new commands between active shells, and removes duplicates while retaining the
 most recent occurrence. Native `compinit` completion is enabled.
 
+### History privacy
+
+Prefix a command with a literal space when it should not be saved:
+
+```zsh
+ print -r -- "temporary sensitive command"
+```
+
+`HIST_IGNORE_SPACE` excludes that line. Enter another command afterward so Zsh
+also removes the temporarily retained in-memory entry. This is a convenience,
+not a security boundary: prefer a tool's secure prompt or stdin for secrets,
+and remember that arguments may still appear in process listings, terminal
+scrollback, logs, or application telemetry.
+
+If a command is recorded accidentally, close every other active shell first and
+run:
+
+```zsh
+histedit
+```
+
+This writes the current history, opens `~/.zsh_history` in `$VISUAL` or
+`$EDITOR`, and reloads the edited file into the current shell after the editor
+closes. Remove the complete entry, including its extended-history metadata.
+Other active shells must be closed because their in-memory copies could restore
+the entry. Rotate any real credential that reached a command line; editing shell
+history does not make an exposed credential safe again.
+
+To test exclusion across two terminals, enter a dummy command with a leading
+space in the first, then enter `true`. In the second, confirm `Ctrl-R` cannot
+find the dummy value. Also run a harmless command without the leading space and
+confirm that the second terminal can find it, proving shared history still
+works.
+
 The official `fzf --zsh` integration is loaded when `fzf` is available:
 
 | Binding | Action |
@@ -104,6 +138,7 @@ Notable commands and aliases include:
 | `cdp` | Enter the personal repositories directory |
 | `cdw` | Enter the work repositories directory |
 | `gbclean` | Remove merged local branches whose upstream is gone |
+| `histedit` | Edit and reload shell history after closing other shells |
 | `llm` | Manage and inspect the host llama.cpp router service |
 
 Homebrew is initialized once in `.zprofile`; `.zshrc` does not repeat it.
