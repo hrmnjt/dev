@@ -192,6 +192,8 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202609
 
+- 20260921: Added focused-window follow, monitor movement, and workspace balance
+  actions to AeroSpace.
 - 20260921: Added persistent deduplicated Zsh history, privacy controls, native
   completions, fzf shell search, autosuggestions, and syntax highlighting;
   expanded and pruned the setup backlog, including deferred shell-performance
