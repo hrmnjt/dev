@@ -95,10 +95,11 @@ utility.
 
 - [ ] **Polish Ghostty as a visual anchor.**
 
-  Kept 12-pixel padding, `0.95` opacity, and explicit Gruvbox cursor/selection
-  colors after a host visual check. Compare terminal, Pi, Lazygit, and
-  transparent Neovim on both displays when convenient. Font weight, cell
-  height, and title-bar style remain choices only if the defaults feel wrong.
+  Kept 12-pixel padding and explicit Gruvbox cursor/selection colors after a
+  host visual check; restored the preferred `0.9` opacity. Compare terminal,
+  Pi, Lazygit, and transparent Neovim on both displays when convenient. Font
+  weight, cell height, and title-bar style remain choices only if the defaults
+  feel wrong.
 
   Keep the cursor-warp shader; commenting out `custom-shader` remains the simple
   screen-sharing, battery, or troubleshooting fallback. A subtle Pink Floyd

@@ -7,7 +7,7 @@ ghostty/.config/ghostty/config -> ~/.config/ghostty/config
 ```
 
 The configuration uses JetBrains Mono Nerd Font, the classic Gruvbox Dark Hard
-theme, 12-pixel padding, a `0.95`-opacity blurred background, an 18-point font,
+theme, 12-pixel padding, a `0.9`-opacity blurred background, an 18-point font,
 and a cursor movement shader. Yellow cursor and dark selection colors are set
 explicitly from [the palette](../GRUVBOX.md). Window maximization is left to
 AeroSpace rather than forced by Ghostty.

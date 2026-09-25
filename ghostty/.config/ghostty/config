@@ -17,8 +17,8 @@ theme = "Gruvbox Dark Hard"
 window-padding-x = 12
 window-padding-y = 12
 
-# Less translucent than before, keeping text readable over busy windows.
-background-opacity = 0.95
+# Keep the preferred translucent background.
+background-opacity = 0.9
 background-blur-radius = 20
 
 # Explicit focus and selection colors from the tracked Gruvbox palette.
