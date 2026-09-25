@@ -12,7 +12,8 @@ installed stylesheet using `$HOME`, so both `glow README.md` and Glow's TUI
 pick it up in new Zsh sessions. Glow needs an absolute style path at render
 time; putting `~` or `$HOME` literally in `glow.yml` does not work reliably.
 The stylesheet controls rendered Markdown, not every color of Glow's file
-browser UI.
+browser UI. Glow may create a default `glow.yml` at runtime; that mutable file
+is Git-ignored, and the `GLOW_STYLE` setting takes precedence over it.
 
 On the Mac, run `brew bundle install` and `just stowall`, then open a new Zsh
 session (`loadshell`) and try:
