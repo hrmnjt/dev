@@ -1,0 +1,11 @@
+# GLOW_STYLE in zsh points to the tracked Gruvbox JSON stylesheet using $HOME.
+# Keep a portable fallback for shells that do not export that variable.
+style: "auto"
+# mouse support (TUI-mode only)
+mouse: false
+# use pager to display markdown
+pager: false
+# word-wrap at width
+width: 80
+# show all files, including hidden and ignored.
+all: false
