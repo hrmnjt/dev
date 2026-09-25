@@ -28,6 +28,7 @@ differ even when its editor and terminal surfaces match.
 | Neovim | `nvim/.config/nvim/lua/plugins/theme.lua` | Classic `gruvbox.nvim`, explicit `contrast = "hard"`; transparency lets Ghostty draw the background. |
 | Starship | `starship/.config/starship.toml` | Hand-picked classic foreground/accent colors; no full-screen background. |
 | `fzf` | `zsh/.zshrc` | Classic Dark Hard background and selection. |
+| Glow | `glow/.config/glow/themes/gruvbox-dark-hard.json` | Classic Markdown colors; `zsh/.zshrc` supplies the absolute style path via `GLOW_STYLE`. Glow's browser chrome is app-owned. |
 | Lazygit | `lazygit/.config/lazygit/config.yml` | Classic colors, including brighter shades for focus and changes. |
 | Pi | `pi/.pi/agent/themes/gruvbox-dark.json` | Classic Dark Hard background and status colors; uses separate dimmer shades for a few message surfaces. |
 | Herdr | `herdr/.config/herdr/config.toml` | Built-in `gruvbox` theme; the app owns its palette. |

@@ -93,4 +93,6 @@ Notable commands and aliases include:
 | `histedit` | Edit and reload shell history after closing other shells |
 | `llm` | Manage and inspect the host llama.cpp router service |
 
-Homebrew is initialized once in `.zprofile`; `.zshrc` does not repeat it.
+`GLOW_STYLE` points Glow to the Stow-deployed Gruvbox Markdown stylesheet using
+`$HOME`; see [the Glow package](../glow/README.md). Homebrew is initialized once
+in `.zprofile`; `.zshrc` does not repeat it.

@@ -117,6 +117,7 @@ herdr plugin list --plugin hrmnjt.default-tabs
 - [Gruvbox Dark Hard palette and application map](GRUVBOX.md)
 - [AeroSpace](aerospace/README.md)
 - [Ghostty](ghostty/README.md)
+- [Glow](glow/README.md)
 - [Gh](gh/README.md)
 - [Git](git/README.md)
 - [Herdr](herdr/README.md)
@@ -242,6 +243,8 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202609
 
+- 20260922: Restored Glow with its classic Gruvbox Dark Hard Markdown style,
+  using a portable Zsh style path instead of the old hard-coded home directory.
 - 20260922: Tuned Ghostty padding and explicit Gruvbox cursor and selection
   colors; kept the preferred `0.9` opacity after a host comparison.
 - 20260922: Chose classic Gruvbox Dark Hard as the palette reference, switched
