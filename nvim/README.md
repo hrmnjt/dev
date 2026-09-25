@@ -96,7 +96,8 @@ not a lossless transformation of directives, includes, and comments.
 
 ### Changes on top of LazyVim
 
-- Use the Gruvbox theme.
+- Use classic Gruvbox Dark Hard (`contrast = "hard"`) with a transparent
+  background so Ghostty controls the terminal backdrop.
 - Show 80/120-column guides.
 - Include hidden and Git-ignored files in pickers by default.
 - Install and theme Lazygit for LazyVim's built-in Git interface.
