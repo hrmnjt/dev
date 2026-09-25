@@ -1,0 +1,210 @@
+{
+  "document": {
+    "block_prefix": "\n",
+    "block_suffix": "\n",
+    "color": "#ebdbb2",
+    "margin": 2
+  },
+  "block_quote": {
+    "indent": 1,
+    "indent_token": "\u2502 ",
+    "color": "#bdae93"
+  },
+  "paragraph": {},
+  "list": {
+    "level_indent": 2
+  },
+  "heading": {
+    "block_suffix": "\n",
+    "color": "#d79921",
+    "bold": true
+  },
+  "h1": {
+    "prefix": " ",
+    "suffix": " ",
+    "color": "#fbf1c7",
+    "background_color": "#d65d0e",
+    "bold": true
+  },
+  "h2": {
+    "prefix": "## ",
+    "color": "#d79921",
+    "bold": true
+  },
+  "h3": {
+    "prefix": "### ",
+    "color": "#98971a",
+    "bold": true
+  },
+  "h4": {
+    "prefix": "#### ",
+    "color": "#689d6a",
+    "bold": true
+  },
+  "h5": {
+    "prefix": "##### ",
+    "color": "#458588",
+    "bold": true
+  },
+  "h6": {
+    "prefix": "###### ",
+    "color": "#b16286",
+    "bold": false
+  },
+  "text": {},
+  "strikethrough": {
+    "crossed_out": true
+  },
+  "emph": {
+    "italic": true
+  },
+  "strong": {
+    "bold": true
+  },
+  "hr": {
+    "color": "#665c54",
+    "format": "\n--------\n"
+  },
+  "item": {
+    "block_prefix": "\u2022 ",
+    "color": "#ebdbb2"
+  },
+  "enumeration": {
+    "block_prefix": ". ",
+    "color": "#ebdbb2"
+  },
+  "task": {
+    "ticked": "[\u2713] ",
+    "unticked": "[ ] "
+  },
+  "link": {
+    "color": "#83a598",
+    "underline": true
+  },
+  "link_text": {
+    "color": "#689d6a",
+    "bold": true
+  },
+  "image": {
+    "color": "#b16286",
+    "underline": true
+  },
+  "image_text": {
+    "color": "#928374",
+    "format": "Image: {{.text}} \u2192"
+  },
+  "code": {
+    "prefix": "\u00a0",
+    "suffix": "\u00a0",
+    "color": "#fe8019",
+    "background_color": "#3c3836"
+  },
+  "code_block": {
+    "color": "#d5c4a1",
+    "margin": 2,
+    "chroma": {
+      "text": {
+        "color": "#ebdbb2"
+      },
+      "error": {
+        "color": "#fbf1c7",
+        "background_color": "#cc241d"
+      },
+      "comment": {
+        "color": "#928374",
+        "italic": true
+      },
+      "comment_preproc": {
+        "color": "#d65d0e"
+      },
+      "keyword": {
+        "color": "#cc241d"
+      },
+      "keyword_reserved": {
+        "color": "#cc241d"
+      },
+      "keyword_namespace": {
+        "color": "#d65d0e"
+      },
+      "keyword_type": {
+        "color": "#d79921"
+      },
+      "operator": {
+        "color": "#d65d0e"
+      },
+      "punctuation": {
+        "color": "#d5c4a1"
+      },
+      "name": {
+        "color": "#ebdbb2"
+      },
+      "name_builtin": {
+        "color": "#d79921"
+      },
+      "name_function": {
+        "color": "#98971a"
+      },
+      "name_class": {
+        "color": "#d79921"
+      },
+      "name_namespace": {
+        "color": "#d79921"
+      },
+      "name_variable": {
+        "color": "#ebdbb2"
+      },
+      "name_variable_global": {
+        "color": "#ebdbb2"
+      },
+      "name_variable_magic": {
+        "color": "#b16286"
+      },
+      "name_attribute": {
+        "color": "#689d6a"
+      },
+      "name_tag": {
+        "color": "#458588"
+      },
+      "literal_number": {
+        "color": "#b16286"
+      },
+      "literal_string": {
+        "color": "#98971a"
+      },
+      "literal_string_escape": {
+        "color": "#d65d0e"
+      },
+      "generic_deleted": {
+        "color": "#fb4934"
+      },
+      "generic_emph": {
+        "italic": true
+      },
+      "generic_inserted": {
+        "color": "#b8bb26"
+      },
+      "generic_strong": {
+        "bold": true
+      },
+      "generic_subheading": {
+        "color": "#d79921"
+      },
+      "background": {
+        "background_color": "#1d2021"
+      }
+    },
+    "background_color": "#1d2021"
+  },
+  "table": {
+    "center_separator": "\u253c",
+    "column_separator": "\u2502",
+    "row_separator": "\u2500"
+  },
+  "definition_list": {},
+  "definition_term": {},
+  "definition_description": {
+    "block_prefix": "\n\ud83e\udc36 "
+  },
+  "html_block": {},
+  "html_span": {}
+}

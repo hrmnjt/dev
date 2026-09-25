@@ -75,6 +75,10 @@ histedit() {
 # not depend on the source file's executable mode.
 alias llm='/bin/sh "$HOME/.local/bin/llm"'
 
+# Glow needs an absolute path for custom styles; using $HOME here avoids a
+# machine-specific path in its config file.
+export GLOW_STYLE="$HOME/.config/glow/themes/gruvbox-dark-hard.json"
+
 # fzf theme: Gruvbox Dark Hard, matching Ghostty and Starship.
 export FZF_DEFAULT_OPTS=" \
 --color=bg:#1d2021,bg+:#282828,fg:#ebdbb2,fg+:#fbf1c7 \
