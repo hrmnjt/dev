@@ -48,24 +48,22 @@ utility.
   Consider Raycast only if it deliberately replaces Spotlight, clipboard
   history, snippets, calculations, and quick links together.
 
-- [ ] **Track intentional macOS defaults.**
+- [x] **Track intentional macOS defaults.**
 
-  Add an idempotent `_scripts/macos-defaults.sh` and a dedicated Just recipe.
-  Keep behavioral defaults separate from `just macos-gruvbox`.
+  Added and host-tested the idempotent `_scripts/macos-defaults.sh` preview,
+  typed backup, apply, and restore workflow. It intentionally uses a direct script
+  rather than a thin Just wrapper and keeps behavioral defaults separate from
+  `just macos-gruvbox`.
 
-  Settings worth evaluating:
+  The initial set covers Dock auto-hide/recent apps, stable Mission Control Space
+  ordering, key repeat, Finder path/status bars and extensions, expanded save and
+  print dialogs, the existing `~/Downloads` screenshot dump folder, smart
+  quote/dash disabling, and disabling wallpaper-click desktop reveal. Gruvbox
+  highlight and pointer colors remain part of the later visual source-of-truth
+  work.
 
-  - Auto-hide and simplify the Dock.
-  - Prevent Mission Control from rearranging Spaces.
-  - Increase key-repeat speed and reduce its initial delay.
-  - Show Finder's path bar, status bar, and file extensions.
-  - Use expanded save/print dialogs and a dedicated screenshot directory.
-  - Disable smart quotes and dashes for coding.
-  - Set a Gruvbox-compatible highlight color in addition to the orange accent.
-  - Give the macOS pointer a restrained Gruvbox outline or fill color.
-  - Disable “click wallpaper to reveal desktop” if it fights AeroSpace.
-
-  Verify all Space and display settings against AeroSpace before applying them.
+  Restore and reapply were verified on 2026-09-22. Confirm Space ordering remains
+  stable during normal AeroSpace use after the next login.
 
 - [ ] **Build a wallpaper collection for both displays.**
 
@@ -169,9 +167,10 @@ utility.
 
 - [ ] **Make configuration changes recoverable.**
 
-  Add preview and recovery guidance for Stow deployment and macOS defaults.
-  Capture an existing default before changing it, and distinguish restoring its
-  previous value from deleting a repository-added override.
+  macOS defaults now have preview and typed per-key backup/restore support,
+  including the distinction between an old value and an absent override. Add
+  equivalent preview and recovery guidance for Stow deployment before marking
+  this complete.
 
 - [x] **Add lightweight, non-mutating configuration checks.**
 

@@ -86,6 +86,10 @@ gh auth login
 # 12. Gruvbox macOS appearance
 just macos-gruvbox
 
+# 12.1. Review and apply intentional behavioral defaults
+./_scripts/macos-defaults.sh preview
+./_scripts/macos-defaults.sh apply
+
 # 13. Local models
 # 13.1. Deploy the llama.cpp package based on llama/README.md
 llm start
@@ -158,6 +162,31 @@ just doctor --verbose
 just doctor --only-check --verbose
 ```
 
+#### Managing macOS defaults
+
+Preview the tracked behavioral defaults before changing the host:
+
+```bash
+./_scripts/macos-defaults.sh preview
+```
+
+`apply` creates a timestamped backup of every managed key that would change,
+then writes only those changes. Backups live under
+`~/.local/state/hrmnjt-dev/macos-defaults/` and record whether each key existed,
+so restoration can either write its previous typed value or remove an override
+that was previously absent.
+
+```bash
+./_scripts/macos-defaults.sh apply
+./_scripts/macos-defaults.sh backups
+./_scripts/macos-defaults.sh restore latest
+./_scripts/macos-defaults.sh restore <backup-directory>
+```
+
+A restore first captures the current state as another backup. The script does
+not restart Dock or Finder, move existing screenshots, or apply settings
+silently; log out and back in after applying or restoring when necessary.
+
 #### Managing packages
 
 Use Homebrew's native commands directly; the Justfile deliberately avoids thin
@@ -212,6 +241,8 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202609
 
+- 20260922: Added preview, typed backup, apply, and restore support for a focused
+  set of intentional macOS behavioral defaults.
 - 20260921: Pruned thin Just wrappers for standard Homebrew, directory, and npm
   commands; retained recipes that encode repository-specific behavior.
 - 20260921: Added a non-mutating repository and host doctor with pytest-style
