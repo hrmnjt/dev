@@ -12,3 +12,7 @@ zed/.config/zed/themes/**
 
 # pi
 pi/.pi/agent/usage-data/
+
+# Glow may create its default config beside the Stow-deployed theme.
+# The tracked GLOW_STYLE environment setting chooses our theme instead.
+glow/.config/glow/glow.yml
