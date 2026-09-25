@@ -95,14 +95,27 @@ utility.
 
 - [ ] **Polish Ghostty as a visual anchor.**
 
-  Test balanced padding around `10–14` pixels and opacity around `0.94–0.96`;
-  Neovim transparency currently compounds Ghostty's `0.9` opacity. Tune cell
-  height and font weight on both displays, choose an intentional title-bar
-  style, and set explicit cursor and selection colors.
+  Kept 12-pixel padding, `0.95` opacity, and explicit Gruvbox cursor/selection
+  colors after a host visual check. Compare terminal, Pi, Lazygit, and
+  transparent Neovim on both displays when convenient. Font weight, cell
+  height, and title-bar style remain choices only if the defaults feel wrong.
 
-  Keep the cursor-warp shader, with an easy no-shader profile for screen sharing,
-  battery use, and troubleshooting. A subtle Pink Floyd prism on LazyVim's
-  dashboard would add personality without more editor chrome.
+  Keep the cursor-warp shader; commenting out `custom-shader` remains the simple
+  screen-sharing, battery, or troubleshooting fallback. A subtle Pink Floyd
+  prism on LazyVim's dashboard is an optional separate visual experiment.
+
+- [ ] **Polish Pi's appearance as a whole.**
+
+  Review the existing Gruvbox theme in context: prompt cursor visibility,
+  editor and message backgrounds, borders, selection contrast, tool output,
+  and footer readability. Pi renders the prompt cursor with inverse video;
+  Ghostty's cursor color does not change it, and the theme has no dedicated
+  cursor color. Prefer Pi's theme and built-in settings first. If they fall
+  short, investigate the smallest supported UI customization; a differently
+  colored prompt cursor may require replacing the editor, so justify that only
+  if the broader appearance pass benefits too. Avoid a parallel renderer and
+  check responsiveness before keeping custom rendering. Do this separately
+  after Ghostty's trial, not as part of its config change.
 
 - [ ] **Theme the application surfaces that remain visually prominent.**
 

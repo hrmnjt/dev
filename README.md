@@ -242,6 +242,8 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202609
 
+- 20260922: Tuned Ghostty padding and opacity with explicit Gruvbox cursor and
+  selection colors; checked the result on the host.
 - 20260922: Chose classic Gruvbox Dark Hard as the palette reference, switched
   Zed to its built-in classic theme, and made Neovim's hard contrast explicit.
 - 20260922: Added preview, typed backup, apply, and restore support for a focused
