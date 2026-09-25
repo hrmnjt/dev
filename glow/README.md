@@ -1,8 +1,10 @@
 # Glow Markdown renderer
 
-This package deploys a classic Gruvbox Dark Hard Glamour stylesheet:
+This package deploys a classic Gruvbox Dark Hard Glamour stylesheet and an
+intentional Glow configuration:
 
 ```text
+glow/.config/glow/glow.yml -> ~/.config/glow/glow.yml
 glow/.config/glow/themes/gruvbox-dark-hard.json -> ~/.config/glow/themes/gruvbox-dark-hard.json
 ```
 
@@ -11,9 +13,10 @@ on the earlier tracked Glow style. `zsh/.zshrc` sets `GLOW_STYLE` to the
 installed stylesheet using `$HOME`, so both `glow README.md` and Glow's TUI
 pick it up in new Zsh sessions. Glow needs an absolute style path at render
 time; putting `~` or `$HOME` literally in `glow.yml` does not work reliably.
-The stylesheet controls rendered Markdown, not every color of Glow's file
-browser UI. Glow may create a default `glow.yml` at runtime; that mutable file
-is Git-ignored, and the `GLOW_STYLE` setting takes precedence over it.
+The tracked `glow.yml` keeps Glow's current CLI and TUI defaults and uses
+`style: auto` when launched outside Zsh; `GLOW_STYLE` overrides this fallback
+in Zsh. The stylesheet controls rendered Markdown, not every color of Glow's
+file browser UI.
 
 On the Mac, run `brew bundle install` and `just stowall`, then open a new Zsh
 session (`loadshell`) and try:
