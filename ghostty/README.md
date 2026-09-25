@@ -6,9 +6,11 @@ This package configures Ghostty as the primary terminal.
 ghostty/.config/ghostty/config -> ~/.config/ghostty/config
 ```
 
-The configuration uses JetBrains Mono Nerd Font, the Gruvbox Dark Hard theme,
-a translucent blurred background, an 18-point font, and a cursor movement
-shader. Window maximization is left to AeroSpace rather than forced by Ghostty.
+The configuration uses JetBrains Mono Nerd Font, the classic Gruvbox Dark Hard
+theme, 12-pixel padding, a `0.95`-opacity blurred background, an 18-point font,
+and a cursor movement shader. Yellow cursor and dark selection colors are set
+explicitly from [the palette](../GRUVBOX.md). Window maximization is left to
+AeroSpace rather than forced by Ghostty.
 
 ## Cursor animation
 
@@ -33,5 +35,9 @@ brew bundle install
 just stowall
 ```
 
-Restart Ghostty or open a new window after changing the configuration. Shell
-integration for fresh login shells is handled in `zsh/.zshrc`.
+Reload Ghostty with `Cmd-Shift-,` after changing the configuration. Some
+settings may require a new terminal to take effect. Compare padding, selection
+contrast, and text legibility on both displays, including Neovim's transparent
+background. If the result feels worse, revert the visual settings in
+`.config/ghostty/config`; disabling the shader is still just one commented
+line. Shell integration for fresh login shells is handled in `zsh/.zshrc`.

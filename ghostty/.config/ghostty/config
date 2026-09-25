@@ -10,12 +10,22 @@ font-size = 18
 # setting fontface for terminal
 font-family = "JetBrainsMono Nerd Font Mono"
 
-# theme for ghostty
+# Classic Gruvbox Dark Hard, matching the rest of the terminal UI.
 theme = "Gruvbox Dark Hard"
 
-# transparent background
-background-opacity = 0.9
+# Give tiled windows breathing room without taking too much space.
+window-padding-x = 12
+window-padding-y = 12
+
+# Less translucent than before, keeping text readable over busy windows.
+background-opacity = 0.95
 background-blur-radius = 20
+
+# Explicit focus and selection colors from the tracked Gruvbox palette.
+cursor-color = #fabd2f
+cursor-text = #1d2021
+selection-background = #3c3836
+selection-foreground = #fbf1c7
 
 # animate cursor movement with a short, fading Neovide-style warp
 custom-shader = shaders/cursor_warp.glsl
