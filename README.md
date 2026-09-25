@@ -114,6 +114,7 @@ herdr plugin list --plugin hrmnjt.default-tabs
 
 #### Setup references
 
+- [Gruvbox Dark Hard palette and application map](GRUVBOX.md)
 - [AeroSpace](aerospace/README.md)
 - [Ghostty](ghostty/README.md)
 - [Gh](gh/README.md)
@@ -241,6 +242,8 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202609
 
+- 20260922: Chose classic Gruvbox Dark Hard as the palette reference, switched
+  Zed to its built-in classic theme, and made Neovim's hard contrast explicit.
 - 20260922: Added preview, typed backup, apply, and restore support for a focused
   set of intentional macOS behavioral defaults.
 - 20260921: Pruned thin Just wrappers for standard Homebrew, directory, and npm

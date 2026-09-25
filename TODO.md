@@ -73,16 +73,13 @@ utility.
 
 ## Cohesive visual projects
 
-- [ ] **Define the Gruvbox source of truth.**
+- [x] **Define the Gruvbox source of truth.**
 
-  Decide between classic Gruvbox Dark Hard and Gruvbox Material Dark Hard, then
-  document the canonical background, foreground, selection, accent, border,
-  success, warning, and error colors. Align Ghostty, Neovim, Zed, Starship,
-  `fzf`, Lazygit, Pi, Herdr, Obsidian, Brave, focused-window borders, and the
-  native AeroSpace workspace indicator.
-
-  Start with one palette file or document. A generator is justified only when a
-  second theme or daytime profile creates real duplication.
+  Classic Gruvbox Dark Hard is documented in `GRUVBOX.md` with canonical colors
+  and a map of tracked surfaces. Zed uses its built-in classic variant and
+  Neovim explicitly requests hard contrast. Herdr and the browser use app-owned
+  themes; Obsidian remains a separate visual project. No generator is needed.
+  Completed 2026-09-22, pending host visual checks of Zed and Neovim.
 
 - [ ] **Grow `just macos-gruvbox` into a focused theme command.**
 
