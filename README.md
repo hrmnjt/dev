@@ -243,6 +243,9 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202609
 
+- 20260926: Added a narrowly scoped Pi bridge to tldraw offline's host-local
+  canvas API, including selected-canvas screenshot images for vision models;
+  the app's skill stays host-installed and Gondolin gets no host shell access.
 - 20260922: Restored Glow with its tracked config and classic Gruvbox Dark Hard
   Markdown style, using a portable Zsh style path instead of the old hard-coded
   home directory.

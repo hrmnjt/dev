@@ -23,6 +23,7 @@ pi/
 │       │   ├── review.ts          # Neovim-first diff review command
 │       │   ├── review-nvim.lua    # In-memory Neovim review UI
 │       │   ├── review-summary.ts  # Model-driven PR review summary
+│       │   ├── tldraw.ts          # Authenticated host-local canvas API bridge
 │       │   ├── uv.ts              # Prefer uv over pip/poetry/venv
 │       │   └── wal-writer.ts      # Append host Obsidian WAL notes
 │       ├── gondolin-image.json    # Custom Alpine VM image definition
@@ -287,6 +288,58 @@ Commands:
 
 Use this when I ask to record a worklog, WAL, daily note, or Obsidian note from a
 pi session.
+
+### tldraw offline — `extensions/tldraw.ts`
+
+The app-installed `tldraw-offline` skill lives under
+`~/.pi/agent/skills/tldraw-offline/`. Install it from tldraw offline's home
+screen; do not track or copy its proprietary contents into this repository.
+Its host `curl` / `tq` commands cannot run in Gondolin: the guest cannot read
+`~/Library/Application Support/tldraw/server.json` or connect to the host's
+loopback API. The extension instead exposes four focused model tools in the
+host Pi process:
+
+- `tldraw_guide` reads only the app-installed `SKILL.md` so the agent can consult
+  the current instructions without mounting host skill files into Gondolin.
+- `tldraw_search(code)` calls the local `/api/search` endpoint to discover docs,
+  inspect shapes, and read recipes.
+- `tldraw_exec(docId, code)` calls `/api/doc/:id/exec` for the explicitly
+  selected document. It can change a canvas and execute JavaScript in the app.
+- `tldraw_screenshot(docId, size?, mode?, bounds?)` asks the app for a JPEG of a
+  selected canvas (or app window) and returns image content directly to a
+  vision-capable model. `bounds` optionally crops canvas page coordinates.
+
+The extension reads the app's port and per-launch bearer token on each request;
+it sends requests only to `127.0.0.1` at that port, with no arbitrary URL or
+host filesystem tool. The token is not mounted into Gondolin. These tools
+*do* grant the model control of tldraw documents, so use them only on canvases
+you trust. For screenshots the bridge reads only a regular JPEG named for the
+selected document inside tldraw's own temp directory, with a 10 MiB limit. It
+never returns or accepts a host file path and does not mount that directory
+into Gondolin. Screenshot images enter the Pi session and the selected model's
+context; avoid capturing private boards with an untrusted provider. The bridge
+still does not support durable board-script workspace edits; don't use the
+installed skill's host-only shell commands as a workaround. Keep `.tldraw`
+archives out of direct edits while open.
+
+First interactive trial (after `just stowall` and `/reload`): open and save
+`scratch.tldraw`, then ask Pi:
+
+```text
+Use tldraw_guide, then find my saved scratch.tldraw with tldraw_search.
+Confirm its ownership and existing shapes before editing. On that canvas,
+draw a small three-step Request → Review → Ship flow with bound arrows.
+Read the relevant app recipe first; verify shapes, bindings, and lints once,
+then save the local document. Do not edit any other canvas.
+```
+
+To check the result visually, ask Pi to find `scratch.tldraw` by name again
+and call `tldraw_screenshot` with that document id and `size: "medium"`.
+Pi sends the JPEG as an image tool result, not a path for the guest to read.
+Select a model with image input first (`/model`).
+
+The first tool call must happen on the host, so this end-to-end test needs a
+running tldraw offline app and Pi on the Mac; Gondolin alone cannot simulate it.
 
 ### Graceful exit — `extensions/exit.ts`
 
