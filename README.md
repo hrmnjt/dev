@@ -243,6 +243,7 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202609
 
+- 20260929: Added the Bruno API client cask to the Brewfile.
 - 20260926: Added a narrowly scoped Pi bridge to tldraw offline's host-local
   canvas API, including selected-canvas screenshot images for vision models;
   the app's skill stays host-installed and Gondolin gets no host shell access.
