@@ -114,6 +114,7 @@ herdr plugin list --plugin hrmnjt.default-tabs
 
 #### Setup references
 
+- [TODO and decision backlog](TODO.md)
 - [Gruvbox Dark Hard palette and application map](GRUVBOX.md)
 - [AeroSpace](aerospace/README.md)
 - [Ghostty](ghostty/README.md)
@@ -243,6 +244,9 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261001: Added a decision-first TODO backlog, accepted a Pi 1.x compatibility
+  baseline and future native-sandbox migration with extension updates and an
+  explicit Gondolin rollback; runtime behavior remains unchanged.
 - 20261001: Moved Herdr's explicit Kitty graphics setting from the deprecated
   experimental key to `terminal.kitty_graphics`.
 
