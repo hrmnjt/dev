@@ -241,6 +241,11 @@ Workflow changes worth remembering, newest first. Everything up to and
 including [1.0.0] stays as one block at the bottom; changes after it are
 expanded month by month. Full history lives in `git log`.
 
+### 202610
+
+- 20261001: Moved Herdr's explicit Kitty graphics setting from the deprecated
+  experimental key to `terminal.kitty_graphics`.
+
 ### 202609
 
 - 20260929: Added the Bruno API client cask to the Brewfile.
