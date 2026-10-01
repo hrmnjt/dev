@@ -244,9 +244,16 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
-- 20261001: Added a decision-first TODO backlog, accepted a Pi 1.x compatibility
-  baseline and future native-sandbox migration with extension updates and an
-  explicit Gondolin rollback; runtime behavior remains unchanged.
+- 20261001: Added a decision-first TODO backlog with accepted plans for Pi 1.x
+  compatibility checks, codemode `on`, structured custom-tool results, OpenAI
+  login migration, the requested `openai` / `gpt-6.1-sol` default with `high`
+  thinking after confirming availability, persistent session-aware review
+  checkpoints, focused extension API and `/answer` maintenance, and native
+  sandboxing with extension updates and explicit Gondolin rollback. Keep the
+  current Gruvbox/fullscreen experience. Deferred a standalone overflow-log fix
+  in favor of migration checks, deferred local classifiers and Pi Durable,
+  planned a bounded local-first workflow investigation, and removed MCP for
+  lack of a use case. Runtime behavior remains unchanged.
 - 20261001: Moved Herdr's explicit Kitty graphics setting from the deprecated
   experimental key to `terminal.kitty_graphics`.
 
