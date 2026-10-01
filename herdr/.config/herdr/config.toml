@@ -36,5 +36,5 @@ delay_seconds = 1
 [ui.sound]
 enabled = false
 
-[experimental]
+[terminal]
 kitty_graphics = true
