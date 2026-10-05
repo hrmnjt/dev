@@ -6,8 +6,8 @@
  *
  *   ~/code/github.com/hrmnjt/worklog/wal/YYYYMMDD.md
  *
- * The tool runs in the host Pi process, not inside Gondolin, and does not mount
- * the vault into the VM. The WAL directory must already exist. Missing daily
+ * The tool runs in the trusted host Pi process so sessions outside the worklog
+ * project can append without general external-write permission. Missing daily
  * notes are created from wal/daily.md when present; otherwise the appended note
  * becomes the file content.
  *
@@ -396,12 +396,12 @@ export default function (pi: ExtensionAPI) {
     name: "wal_append",
     label: "WAL Append",
     description:
-      "Append Markdown to the end of the host Obsidian WAL daily note at worklog/wal/YYYYMMDD.md. The WAL directory must already exist. Creates a missing daily note from wal/daily.md when present. This writes only to the configured WAL path; it does not mount the vault into Gondolin.",
+      "Append Markdown to the end of the host Obsidian WAL daily note at worklog/wal/YYYYMMDD.md. The WAL directory must already exist. Creates a missing daily note from wal/daily.md when present. This writes only to the configured WAL path, without granting general filesystem write access outside the current project.",
     promptSnippet:
       "Append Markdown to the end of the host Obsidian WAL daily note (worklog/wal/YYYYMMDD.md).",
     promptGuidelines: [
       "Use wal_append when the user asks to record worklog, WAL, daily-note, or Obsidian vault notes from the current Pi session.",
-      "Use wal_append instead of read/write/edit for WAL notes; the WAL vault is host-side and is intentionally not mounted into Gondolin.",
+      "Use wal_append instead of read/write/edit for WAL notes; it supports controlled appends from sessions outside the worklog project.",
       "wal_append appends exactly the Markdown text you pass at the end of the daily note; include any desired heading or bullet structure in the text itself.",
     ],
     parameters: WalAppendParams,

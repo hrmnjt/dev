@@ -2,9 +2,9 @@
  * Clipboard Image Attachment
  *
  * Pi's Ctrl+V image handler writes clipboard bytes to a host temporary file and
- * inserts that file's path into the editor. Gondolin-routed tools cannot read
- * the host temp directory, so convert only Pi-generated clipboard temp paths
- * into image attachments before the prompt reaches the model.
+ * inserts that file's path into the editor. Convert only Pi-generated clipboard
+ * temp paths into image attachments before the prompt reaches the model, then
+ * clean up those host temporary files through this trusted input handler.
  */
 
 import fs from "node:fs/promises";

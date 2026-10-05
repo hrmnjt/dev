@@ -52,16 +52,8 @@ brew "typst"
 # Plain-text accounting - tracking personal finances
 brew "hledger"
 
-# Tunnel to expose local services - primarily for pi sandbox
+# Tunnel to expose local services when explicitly needed
 brew "cloudflared"
-
-# Virtualization (Gondolin sandbox) that I use with pi-agent
-# VM emulator for Gondolin sandbox in pi
-brew "qemu"
-# Compression lib needed for Gondolin custom image builds
-brew "lz4"
-# ext4 filesystem tools needed for Gondolin custom image builds
-brew "e2fsprogs"
 
 # Audio/video processing - occasionally needed for media tasks
 brew "ffmpeg"

@@ -1,6 +1,6 @@
 /**
  * Narrow host bridge to tldraw offline's authenticated local canvas API.
- * Model-facing shell and files remain in Gondolin; the token never enters the VM.
+ * The bridge handles credentials internally; never request or print its API token.
  */
 import fs from "node:fs/promises";
 import { constants } from "node:fs";
@@ -153,7 +153,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "tldraw_guide",
     label: "tldraw guide",
-    description: "Read the app-installed tldraw-offline skill from the host. Call this before using tldraw. Its curl/tq and temp-file instructions are HOST-only; use tldraw_search, tldraw_exec, and tldraw_screenshot instead because bash runs in Gondolin.",
+    description: "Read the app-installed tldraw-offline skill from the host. Call this before using tldraw. Use tldraw_search, tldraw_exec, and tldraw_screenshot instead of its host curl/tq examples: these narrow tools handle credentials internally and return screenshots as images. Never request or print the bearer token.",
     parameters: Type.Object({}),
     async execute() {
       // A fixed file, not a user-supplied path; never expose the host filesystem generally.

@@ -45,14 +45,3 @@ macos-gruvbox:
 # The image is deployed by stow to ~/.local/share/wallpapers/.
 wallpaper:
     wallpaper="${HOME}/.local/share/wallpapers/pink-floyd-gruvbox-dark.jpg"; osascript -e "tell application \"System Events\" to tell every desktop to set picture to POSIX file \"$wallpaper\""
-
-# --- Gondolin VM image ---
-
-# Build a custom VM image with git, ripgrep, jq, fd, and other dev tools.
-# Config: pi/.pi/agent/gondolin-image.json
-# Output: ~/.gondolin/custom-image (used by GONDOLIN_GUEST_DIR env var)
-# Requires: lz4, e2fsprogs (see Brewfile)
-gondolin-image:
-    npx @earendil-works/gondolin build \
-        --config pi/.pi/agent/gondolin-image.json \
-        --output ~/.gondolin/custom-image

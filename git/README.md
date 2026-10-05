@@ -26,12 +26,16 @@ uses `zdiff3` conflict markers, and applies these host identity rules:
     path = ~/.config/git/config.work
 ```
 
-Gondolin does not use a tracked `/workspace/` identity rule because every host
-repository is mounted at that same guest path. Instead, the pi Gondolin
-extension resolves the host checkout's primary repository path and generates a
-VM-specific Git config with the matching personal or work identity. Unknown
-host paths remain fail-closed, so commits fail rather than using the wrong
-identity. Linked worktrees inherit the identity of their primary repository.
+Pi's native sandbox uses real host paths and the same Git configuration; there
+is no guest-path identity rewrite or fallback identity. Linked worktrees inherit
+the identity of their primary repository through Git's common-directory rules.
+Unknown paths have no selected identity; sandboxed commands set
+`user.useConfigOnly=true`, so Git cannot invent one. Use ordinary bash Git
+commands for status, staging, commits, fetch, and push when requested, not direct
+file edits in `.git`. Git metadata is a writable exception when outside the launch
+directory (including linked worktrees and launches from a subdirectory); arbitrary
+primary-checkout source remains outside the boundary. New worktree/clone locations
+must be inside the write boundary or created deliberately on the host.
 
 ## What this enables
 

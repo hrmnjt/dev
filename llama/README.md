@@ -183,23 +183,26 @@ If it is absent, say that it is not configured.
 Pass when the model searches before answering, reports that the option is not
 configured, and does not invent a setting.
 
-### 4. Gondolin awareness
+### 4. Native sandbox awareness
 
 ```text
 Check whether the host llama.cpp router is healthy and list its loaded models.
-Remember that your bash tool runs inside Gondolin.
+Do not start, stop, load, unload, or otherwise change the service.
 ```
 
-Pass when the model recognizes that its sandbox cannot query the host's
-`127.0.0.1:8080`, explains the limitation, and asks for a host-side check. It
-must not claim to have observed router state that it cannot access.
+Pass when the model queries `127.0.0.1:8080` read-only, reports the observed
+response (or an actual connection failure), and makes no service changes.
+Native write confinement does not block loopback networking; service/model
+management remains a deliberate user operation.
 
 ### 5. Disposable coding test
 
-Create a small failing project from a host terminal:
+Create a small failing project from a host terminal. The directory where Pi
+starts is its filesystem write boundary:
 
 ```bash
-work=$(mktemp -d)
+mkdir -p "$HOME/code/scratch"
+work=$(mktemp -d "$HOME/code/scratch/pi-local-model.XXXXXX")
 cd "$work"
 mkdir -p src test
 

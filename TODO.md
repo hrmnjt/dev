@@ -1,7 +1,10 @@
 # TODO
 
-Decisions and future work for this setup. **Documentation only:** Gondolin stays
-active; no runtime, authentication, settings, or deployment changes yet.
+Decisions and future work for this setup. **Native is the only sandbox on this
+feature branch**, per the revised PI-14 choice. The initial restricted policy
+passed macOS tests; the user-approved Gondolin-parity correction is now applied
+and passes the revised host enforcement suite and doctor.
+Authentication, models, appearance, and persistent codemode settings are unchanged.
 
 ## Method
 
@@ -20,7 +23,7 @@ active; no runtime, authentication, settings, or deployment changes yet.
 |---|---|---|
 | PI-01 | accept | Establish Pi 1.x compatibility before migration; upgrade only if needed so compatibility and sandbox failures can be distinguished. |
 | PI-02 | accept | Codemode `on`, not `only`: allow batching/filtering while keeping direct tools. Validate sandbox routing before activation. |
-| PI-03 | defer | No standalone Gondolin overflow-log workaround; test `bash` and codemode full-output paths during PI-14. Revisit if still broken or blocking current work. |
+| PI-03 | defer | No standalone overflow-log workaround; test native `bash` and codemode full-output paths during PI-14. Revisit if still broken or blocking current work. |
 | PI-05 | accept | Structured custom-tool results for scripts, preserving readable direct results, tool names/arguments, narrow bridges, and screenshot images. |
 | PI-06 | accept | Migrate ChatGPT login from `openai-codex` to `openai`; provide host instructions during implementation and retain the old connection until verified. |
 | PI-07 | accept | Default to `openai` / `gpt-6.1-sol` with `high` thinking after confirming availability. No silent alternative; preserve the local shortlist. |
@@ -30,60 +33,109 @@ active; no runtime, authentication, settings, or deployment changes yet.
 | PI-11 | defer | Skip Pi Durable: no unattended recovery use case. Revisit when an actual job needs more than ordinary session persistence. |
 | PI-12 | accept | Focused supported-API/import and `/answer` maintenance, preserving behavior. No framework rewrite; compatibility cleanup is not proof of breakage. |
 | PI-13 | accept | Keep custom Gruvbox Dark Hard and fullscreen. No `system` theme migration or unrelated startup/display changes. |
-| PI-14 | accept | Native, Codex-style worktree-write sandbox; adapt extensions and retain explicit Gondolin rollback. Practical personal-machine protection, not enterprise hardening. |
+| PI-14 | accept | Native-only launch-directory write confinement, matching Gondolin's mounted cwd, with private scratch and linked Git metadata exceptions. Preserve Git/network capabilities and editable Pi source; no added offline/read-only-Git policy. Recovery is host Git/deployment, not a runtime selector. |
 
 PI-04 (MCP) was removed: no current use case. IDs remain stable.
 The requested PI-07 model is a preference, not a claim of provider availability.
 
 ## Native sandbox contract — PI-14
 
-- Use Pi's official sandbox example as a starting point, not its permissive
-  configuration or fail-open behavior unchanged.
-- Preserve Herdr's live-worktree workflow; no copy-and-review staging area.
-  Confine destructive filesystem operations to the active repository/worktree.
-- Enforce `bash`, `write`, and `edit`, including canonical paths, symlink escapes,
-  and nonexistent parent paths. Cwd alone is not confinement. Keep reads usable.
-- Direct calls and codemode must share enforcement and the uv guard. Fail closed
-  on dependency, startup, or execution errors; never fall back to host tools.
-- Agent-editable project settings cannot widen/disable policy. Protect safety
-  configuration and Git metadata, including linked-worktree common directories;
-  use explicit user/host Git operations where needed. Preserve fail-closed Git
-  identity with no fallback identity.
-- Define temporary-artifact, cache, network, and Git-operation policies before
-  activation. Overflow logs must be readable without broadly exposing host temp.
-- Keep user-entered `!` / `!!` host-side, plus trusted WAL/tldraw integrations.
-  These exceptions must not become general host shell/filesystem tools.
-- Retain Gondolin extension, dependencies, image definition, and setup notes.
-  Select exactly one backend explicitly; keeping an auto-discovered extension
-  file alone does not disable it. Select native only after host verification.
-- Writable Stow-linked checkout files can affect live host configuration; do not
-  claim the worktree is isolated from those effects.
+- Preserve Gondolin's actual boundary: the canonical directory where Pi starts,
+  not an automatically widened Git root. Keep Herdr's live-worktree workflow;
+  no copy-and-review staging area for project edits.
+- Constrain filesystem writes through `bash`, `write`, and `edit`; follow canonical
+  paths, symlinks and nonexistent parents. No unsandboxed fallback. Share routing
+  and the uv guard with nested/codemode calls.
+- Permit private scratch/cache and discovered Git metadata outside launch cwd,
+  matching the old linked-common-directory mount. Use bash Git commands for
+  staging, commits, fetch and push when requested, not hand-edits through file
+  tools. Preserve configured personal/work/linked identity, with no fallback.
+- Do not add offline mode, read-only Git, Pi-source locks or arbitrary project
+  config-based policy overrides. Stow-linked Pi source is editable inside the
+  launch boundary; edits affect new/reloaded sessions everywhere, not already-
+  loaded rules. Outside projects cannot write those targets through aliases.
+- Use Seatbelt directly: the previous sandbox-runtime imposed additional
+  mandatory locks. Keep its filesystem startup self-test, pinned private scratch,
+  image behavior and owned overflow cleanup, without its proxy/npm dependency.
+- Preserve normal reads, CLI authentication and networking/SSH. Keep the old dev
+  model-cache exclusion when inside cwd. Do not print credentials or send private
+  files to services without approval; this is not VM/read/credential isolation.
+- Keep user-entered `!` / `!!` host-side and the narrow WAL/tldraw integrations.
+  Host services/extensions can cause outside effects through IPC/network; the
+  profile confines this process's filesystem writes, not all remote effects.
+- Native remains mandatory on this branch; VM setup and selector stay removed.
+  Recovery is deliberate host Git/deployment. Global installs, Stow, launchd,
+  VPN and local-model management remain user tasks.
+
+## Verification snapshot
+
+- Host reports Pi **1.0.0**; no upgrade needed. Historical VM package versions
+  were **0.12.0**; those dependencies are removed, not upgraded.
+- Native-only tools, backend-free host paths, private scratch, shared uv guard,
+  bridge guidance, doctor, and deployment cleanup are implemented.
+- Initial native APIs type-checked against Pi 1.0.0 / sandbox-runtime 0.0.78;
+  that check predates the write-only correction.
+- Host deployment, retired dangling-link cleanup, npm installation, and the
+  `/sandbox` startup self-test succeeded, as reported by the user.
+- Initial restricted-policy host suite: **16 passed, 0 failed, 1 expected skip**.
+  This is historical evidence, not proof of the corrected profile.
+- The host applied the corrected policy/footer/manifest patch and removed five
+  retired npm packages; audit reports **0 vulnerabilities**. Policy/registry and
+  Stow tests against the candidate: **22 passed, 0 failed, 1 expected skip**. Syntax
+  checks pass, and Pi 1.0's official loader loads all five changed extension
+  factories without warnings. BSD patch round-trip matches all seven files.
+  Corrected host kernel rerun: **1 passed, 0 failed**, after changing the fixture's
+  `core.hooksPath=.` to absolute `.git/hooks` (no policy change). Kernel file
+  confinement/editable source, Git/hooks, loopback/Unix sockets, narrow launches,
+  linked-worktree commits, images, overflow and cleanup pass. Final combined host
+  suite: **23 passed, 0 failed, 1 expected skip**. Semantic type-check remains
+  pending. The current outer sandbox denies nested `sandbox_apply`, so enforcement
+  trials run on the host.
+- Tests now cover editable Pi source, narrow launch subdirectories, direct Git
+  file-tool guards, bash Git/config/hooks, linked metadata writes, ordinary reads,
+  normal networking/SSH-agent-style sockets, images and overflow cleanup.
+- Final host doctor: **24 passed, 0 failed, 0 warnings**. Pi deployment/settings,
+  Stow links, personal/work/unknown/linked Git identity, Herdr installation and
+  GitHub CLI authentication pass. The folded-directory Stow false positive is
+  resolved; six regression cases also pass.
+- Live model tools: direct write/edit/read, bash, and read-only Git status work.
+  Apple's Git launcher emits denied `xcrun_db` temp-cache warnings but returns
+  results; this remains a usability issue, not an enforcement bypass.
+- tldraw guide works; API trial is blocked because the desktop app is not
+  connected. No canvas changes or WAL test notes were made.
+- Fresh-process `/sandbox` confirms the revised launch boundary, private scratch,
+  bash Git metadata exception and unrestricted network/IPC profile are loaded.
+- Pending: interactive flows, codemode, actual GitHub network/SSH operations,
+  Herdr workflow and reload/cleanup checks. Npm cleanup/audit confirmation is complete: the
+  sandbox-runtime/node-forge dependency is removed, not patched.
+  See `pi/README.md`; this is not yet merge-verified.
+- User requested continuing all accepted TODO items after this correction;
+  enable codemode only after routing/failure checks, then structured results,
+  review checkpoints and `/answer` maintenance. Provider/model changes still
+  require user login and availability verification; never substitute PI-07.
 
 ## Next
 
-- [ ] **PI-01 — Establish the compatibility baseline**
-  - Check host `pi --version`, deployed settings/dependencies, and installed API
-    contracts; upgrade only if needed, without unrelated feature activation.
-  - Verify Gondolin, linked-worktree/unknown-path Git identity, `/answer`,
-    `/review`, `/review-summary`, clipboard images, WAL, tldraw, and Herdr.
-    Record results before migration. Depends on: none.
+- [ ] **PI-01 — Verify compatibility on the host**
+  - Versions/API contracts checked; verify deployed settings/dependencies without
+    unrelated activation. Check Git identities (including linked/unknown paths),
+    `/answer`, `/review`, `/review-summary`, images, WAL, tldraw, and Herdr.
+    Record results. Depends on: none.
 
-- [ ] **PI-14 — Build the native backend and explicit selector**
-  - Scope: sandbox/Gondolin extensions, dependencies, trusted backend policy,
-    and shared uv guard. Done when the contract above holds with one backend
-    registering tools, usable reads, and Gondolin still selectable.
+- [ ] **PI-14 — Verify the native-only backend**
+  - Implementation/removal complete; done when the contract above is verified
+    on macOS with one mandatory set of tools and no host fallback.
   - Verify workspace edits; blocked external writes/deletes; symlinks/new parents;
-    protected policy/Git paths; startup/dependency failure; direct/codemode calls;
+    editable Pi source and bash Git metadata; startup/launcher failure; direct/codemode calls;
     and uv blocking. Depends on: PI-01.
 
-- [ ] **PI-14 — Adapt extensions and verify migration/rollback**
-  - Audit all extensions for VM assumptions. Update review prompts/paths, Pi
-    resource discovery, clipboard/WAL/tldraw integration, Herdr, agent/setup
-    guides, and backend-aware doctor checks to use actual native paths.
-  - Done when host macOS enforcement and interactive tests pass, including
-    linked Herdr worktrees, images, `bash`/codemode overflow-log reads and cleanup
-    (PI-03), reload/restart, and an explicit switch back to Gondolin.
-    Depends on: PI-01 and the backend task.
+- [ ] **PI-14 — Verify the deployed migration**
+  - Adapted prompts/paths, discovery, clipboard/WAL/tldraw guidance, Herdr,
+    agent/setup guides, and doctor; remove stale deployed files before trials.
+  - Done when macOS enforcement and interactive checks pass, including linked
+    Herdr worktrees, images, overflow-log access/cleanup (PI-03), reload/restart,
+    unchanged auth/models/appearance, and an ordinary `pi` launch.
+    Depends on: PI-01 and the backend task. Record results before merging.
 
 ## Later
 
