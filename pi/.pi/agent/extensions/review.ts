@@ -28,6 +28,7 @@ import {
   wrapTextWithAnsi,
 } from "@earendil-works/pi-tui";
 
+
 type ReviewTarget =
   | { kind: "head" }
   | { kind: "staged" }
@@ -126,7 +127,6 @@ type Hitbox =
   | { kind: "file"; row: number; colStart: number; colEnd: number; fileIndex: number }
   | { kind: "diff-line"; row: number; colStart: number; colEnd: number; fileIndex: number; hunkIndex: number; lineIndex: number };
 
-const GUEST_WORKSPACE = "/workspace";
 const NVIM_REVIEW_SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "review-nvim.lua");
 
 function runText(command: string, args: string[], cwd: string): string | null {
@@ -486,14 +486,15 @@ function formatReviewCommentForPrompt(comment: ReviewComment, index: number): st
   return parts.join("\n\n");
 }
 
-function buildReviewMessage(result: ReviewResult, context: GitContext): string {
+function buildReviewMessage(result: ReviewResult, context: GitContext, hostRoot: string): string {
+  const workspace = hostRoot;
   const comments = result.comments.map(formatReviewCommentForPrompt).join("\n\n---\n\n");
 
   return `I reviewed the current changes in pi's review UI.
 
 <review-context>
 Generated: ${new Date().toISOString()}
-Repo: ${GUEST_WORKSPACE}
+Repo: ${workspace}
 Branch: ${context.branch}
 HEAD: ${context.head}
 Upstream: ${context.upstream}
@@ -511,7 +512,7 @@ ${context.diffStat || "(none)"}
 </review-context>
 
 Please address every actionable review comment. Rules:
-- Treat paths as relative to the current repository under /workspace.
+- Treat paths as relative to the current repository under ${workspace}.
 - Read each "Reviewer feedback" block as the authoritative human request; the selected diff context is only an anchor to help find the relevant code.
 - Inspect the relevant files/diffs before editing. Do not rely solely on the embedded snippet.
 - Preserve unrelated changes.
@@ -1617,7 +1618,7 @@ async function review(pi: ExtensionAPI, args: string, ctx: ExtensionContext) {
     return;
   }
 
-  pi.sendUserMessage(buildReviewMessage(result, context));
+  pi.sendUserMessage(buildReviewMessage(result, context, root));
   ctx.ui.notify(`Sent ${result.comments.length} review comment(s) to pi.`, "info");
 }
 

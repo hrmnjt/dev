@@ -55,14 +55,13 @@ just stowall
 
 # 9. Install and configure Pi
 # 9.1. Pi - https://pi.dev/docs/latest/quickstart#install
-# 9.2. Install dependencies for pi
+# 9.2. Reconcile Pi package metadata and remove retired backend dependencies
 npm install --prefix ~/.pi/agent
 # 9.3. Initialize Pi's intentional settings
 if [[ ! -f ~/.pi/agent/settings.json ]]; then
   cp ~/.pi/agent/settings.template.json ~/.pi/agent/settings.json
 fi
-# 9.4. Build the Pi sandbox
-just gondolin-image
+# 9.4. Pi uses the native macOS sandbox; see pi/README.md for migration and checks
 # Restart the login shell, then continue with step 10
 exec zsh -l
 
@@ -144,7 +143,7 @@ just doctor --only-check
 
 This validates shell syntax, strict JSON, TOML, Git and Just configuration,
 whitespace, conflict markers, and fail-closed Git identity selection in isolated
-temporary repositories. Tools unavailable inside Gondolin are reported as
+temporary repositories. Tools unavailable in the development sandbox are reported as
 warnings rather than hiding the checks that did run.
 
 Run the complete diagnostic on the host Mac:
@@ -155,7 +154,8 @@ just doctor
 
 The full mode runs the same repository checks, then inspects Brew packages,
 expected commands, Stow links, the deployed Git identity, Pi dependencies and
-settings, the Gondolin image, AeroSpace, Herdr, and GitHub CLI authentication.
+settings, native Seatbelt prerequisites, AeroSpace, Herdr, and GitHub CLI
+authentication.
 It reports remediation commands but never installs, rewrites, reloads, or
 repairs the setup. Add `--verbose` (or `-v`) to either mode to show the commands
 and captured output behind integration checks:
@@ -244,6 +244,30 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261005: Applied a host-approved correction to Pi's native policy: preserve
+  Gondolin's launch-directory write boundary, normal bash Git/network/SSH, and
+  editable Pi source. Use Seatbelt directly instead of sandbox-runtime's extra
+  mandatory locks/proxies; remove that dependency and the native footer. Preserve
+  private scratch, linked Git metadata, model-cache exclusion, uv routing, and
+  fail-closed startup/identity. Candidate policy/registry and Stow tests pass
+  (22 passed, 1 expected skip). Host npm cleanup reports zero vulnerabilities;
+  corrected the fixture hook path to absolute `.git/hooks` without policy changes.
+  The host Seatbelt kernel rerun passes, including hooks, loopback/Unix sockets,
+  linked-worktree commits, images, overflow and cleanup. Full host suite:
+  23 passed, 0 failed, 1 expected skip; doctor: 24 passed, 0 failed, 0 warnings.
+  A fresh-process `/sandbox` confirms the corrected policy is loaded;
+  codemode and interactive verification remain pending.
+- 20261002: Fixed doctor's Stow check to accept valid folded directory links
+  and reject links to the wrong checkout file; six regression cases pass.
+- 20261002: Replaced Gondolin with native-only macOS Pi sandboxing for
+  bash/read/write/edit, initially protected worktree/policy/Git paths, private scratch and
+  overflow logs, and shared uv routing. Removed VM/runner dependencies, image
+  configuration/recipe, VM-only Brew entries, and shell exports; updated review,
+  bridge, doctor, deployment, and migration tests (canonical macOS temp paths
+  and a valid PNG fixture). The macOS suite passes (16 passed, 1 expected skip),
+  including real Seatbelt enforcement, images, overflow access, and cleanup;
+  interactive verification remains pending. Authentication, models, appearance,
+  and codemode settings are unchanged.
 - 20261001: Added a concise decision-first TODO backlog for Pi compatibility,
   native sandboxing with Gondolin rollback, codemode, provider/model defaults,
   and extension maintenance; recorded deferred topics and local-first trials.

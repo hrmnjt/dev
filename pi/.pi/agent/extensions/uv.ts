@@ -5,8 +5,8 @@
  * Python tooling commands (pip, poetry, python -m pip/venv/py_compile) and
  * redirect users to use uv instead.
  *
- * It exports utilities used by the gondolin extension to inject uv
- * interception into the VM-sandboxed bash tool, and also registers a
+ * It exports utilities used by the native sandbox to inject uv
+ * interception into model-facing bash calls, and also registers a
  * /uv-help slash command for quick uv command reference.
  *
  * Intercepted commands:
@@ -16,7 +16,7 @@
  *   python -m venv       → uv venv
  *   python -m py_compile → uv run python -m ast (no bytecode pollution)
  *
- * The interception works at the command-text level via spawnHook, catching
+ * The interception works at the command-text level in the bash override, catching
  * both bare commands and explicit-path invocations (.venv/bin/pip, etc.).
  *
  * Based on: https://github.com/mitsuhiko/agent-stuff/blob/main/extensions/uv.ts
