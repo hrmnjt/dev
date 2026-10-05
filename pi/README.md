@@ -190,6 +190,40 @@ recorded.
 
 ## The tools and commands
 
+### Codemode — built-in extension
+
+The settings template enables `codemode` with `codemode.mode: "on"`. Direct
+`read`, `write`, `edit` and `bash` remain declared; this is not `only` mode.
+No extra extension, MCP server, classifier or image-generation model is needed.
+
+The live session-only trial passed nested read/write/edit, direct-read comparison,
+uv rejection, structured nonzero exits, >1 MiB bash output and readable
+`full_output_path`, rejected file-tool/bash writes to an SDK-owned external log,
+and completed-write preservation after an intentional script failure. The
+workspace probe was cleaned up; owned SDK overflow logs clean up on shutdown.
+
+Existing host runtime settings are not replaced by the template. To enable only
+this approved delta, **quit Pi first**, then run in a host terminal:
+
+```bash
+settings="$HOME/.pi/agent/settings.json"
+jq '.defaultTools = ((.defaultTools // ["read","write","edit","bash"])
+    | map(select(. != "codemode" and . != "+codemode" and . != "-codemode"))
+    + ["+codemode"])
+  | .codemode = ((.codemode // {}) + {"mode":"on"})' \
+  "$settings" > "$settings.tmp" && mv "$settings.tmp" "$settings"
+pi -c
+```
+
+This preserves other tool selections, codemode options, models, authentication,
+theme and display preferences. Confirm direct tools and `codemode` are available
+without `--tools`. Host runtime activation/fresh-default startup is still pending.
+For a custom agent directory, use its `settings.json` instead.
+
+To roll back activation, quit Pi and apply the same `defaultTools` expression
+with `["-codemode"]` instead of `["+codemode"]`, then restart. Do not overwrite
+runtime settings from the template or remove unrelated preferences.
+
 ### Caffeinate — `extensions/caffeinate.ts`
 
 This starts macOS `caffeinate` while the agent is working, preventing idle
@@ -502,7 +536,8 @@ the launch directory; it is not specially locked against development.
 ## First-time settings setup
 
 `settings.template.json` tracks intentional defaults, including the minimal
-built-in tool set (`read`, `write`, `edit`, and `bash`). Pi owns `settings.json`
+direct tool set (`read`, `write`, `edit`, and `bash`) plus codemode `on`.
+Pi owns `settings.json`
 and may update volatile keys such as `defaultModel`, `defaultProvider`, and
 `lastChangelogVersion`.
 

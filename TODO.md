@@ -4,7 +4,8 @@ Decisions and future work for this setup. **Native is the only sandbox on this
 feature branch**, per the revised PI-14 choice. The initial restricted policy
 passed macOS tests; the user-approved Gondolin-parity correction is now applied
 and passes the revised host enforcement suite and doctor.
-Authentication, models, appearance, and persistent codemode settings are unchanged.
+Authentication, models and appearance are unchanged. Codemode `on` is validated
+and added to the settings template; host runtime activation is pending.
 
 ## Method
 
@@ -109,6 +110,12 @@ The requested PI-07 model is a preference, not a claim of provider availability.
   Herdr workflow and reload/cleanup checks. Npm cleanup/audit confirmation is complete: the
   sandbox-runtime/node-forge dependency is removed, not patched.
   See `pi/README.md`; this is not yet merge-verified.
+- Live codemode trial passes nested read/write/edit and direct-read comparison,
+  uv rejection, structured nonzero exits, >1 MiB output/full-output reads,
+  file-tool and bash external-write rejection against an SDK-owned log, and
+  preservation of completed writes after script failure. Probe cleaned up.
+  Template enables `codemode` with mode `on`; host settings/default startup
+  confirmation remains pending. No classifiers or image-generation models used.
 - User requested continuing all accepted TODO items after this correction;
   enable codemode only after routing/failure checks, then structured results,
   review checkpoints and `/answer` maintenance. Provider/model changes still
@@ -140,6 +147,9 @@ The requested PI-07 model is a preference, not a claim of provider availability.
 ## Later
 
 - [ ] **PI-02 — Validate and enable codemode `on`**
+  - Template and activation/rollback docs implemented; live routing/failure/
+    overflow trial passes. Pending: user applies the host settings delta and
+    confirms fresh startup without `--tools` still exposes direct tools + codemode.
   - Scope: settings template, host runtime settings, and activation/rollback docs.
     Done when a read-only comparison validates nested routing, uv blocking,
     overflow access, and failure handling before activation.
