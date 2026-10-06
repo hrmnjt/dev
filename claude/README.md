@@ -105,3 +105,10 @@ changes back into `claude/.claude/settings.json`, delete the file, and run
 
 Project-specific rules belong in each repository's `.claude/settings.json`, not
 here.
+
+## Attribution
+
+`attribution` turns off the `Co-authored-by` commit trailer, the "Generated
+with Claude Code" pull request line, and the session link that cloud sessions
+add to commits. Cloud sessions on claude.ai do not read `~/.claude`, so this
+repository's own `.claude/settings.json` repeats the same setting for them.
