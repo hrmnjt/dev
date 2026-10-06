@@ -24,14 +24,19 @@ if ! grep -q "Host github.com" ~/.ssh/config 2>/dev/null; then
 
 Host github.com
   AddKeysToAgent yes
+  UseKeychain yes
   IdentityFile ${KEY_PATH}
 EOF
 else
     echo "Github host already exists in ~/.ssh/config - update IdentityFile manually if needed"
 fi
 
-# Start ssh-agent and add key to Apple Keychain
-eval "$(ssh-agent -s)"
+# Add the key to the launchd-managed agent and store its passphrase in the
+# Keychain; UseKeychain above reloads it from there after a reboot. Start a
+# private agent only when none is available.
+if [[ -z "${SSH_AUTH_SOCK:-}" ]]; then
+    eval "$(ssh-agent -s)"
+fi
 ssh-add --apple-use-keychain "$KEY_PATH"
 
 # Copy public key to clipboard

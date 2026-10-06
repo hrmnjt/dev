@@ -83,17 +83,27 @@ check_conflict_markers() {
 check_shell_syntax() {
   shell_failed=false
 
-  for script in $(find "$ROOT" -type f -name '*.sh' ! -path '*/.git/*' ! -path '*/node_modules/*' -print); do
-    case "$(sed -n '1p' "$script")" in
-      *bash*)
-        if command_exists bash; then
-          bash -n "$script" || shell_failed=true
-        else
-          shell_failed=true
-        fi
-        ;;
-      *) sh -n "$script" || shell_failed=true ;;
+  # Check *.sh files and extensionless scripts such as vpn and llm by their
+  # shebang. Include untracked files so new scripts are checked while editing.
+  for name in $(git -C "$ROOT" ls-files --cached --others --exclude-standard); do
+    script="$ROOT/$name"
+    { [ -f "$script" ] && [ ! -L "$script" ]; } || continue
+    shebang=$(sed -n '1{/^#!/p;}' "$script")
+    case "$name" in
+      *.sh) ;;
+      *) [ -n "$shebang" ] || continue ;;
     esac
+    case "$shebang" in
+      *bash*) interpreter=bash ;;
+      *zsh*|*node*|*python*|*lua*) continue ;;
+      *) interpreter=sh ;;
+    esac
+    debug "$interpreter -n $name"
+    if command_exists "$interpreter"; then
+      "$interpreter" -n "$script" || shell_failed=true
+    else
+      shell_failed=true
+    fi
   done
 
   if [ "$shell_failed" = true ]; then
