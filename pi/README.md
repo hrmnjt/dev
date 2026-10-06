@@ -641,6 +641,71 @@ jq -s '.[1] * .[0]' \
 Do not create runtime settings under `pi/.pi/agent/`; that directory contains
 the tracked package source, while Pi should write to the real host directory.
 
+## OpenAI migration and remaining host checks
+
+The live catalog lists `openai/gpt-6.1-sol` with text/image input and reasoning,
+272,000-token context. This is catalog metadata, not a successful authenticated
+request or a verified account limit. OpenAI authentication is not yet available
+in this session; the existing connection/defaults remain unchanged.
+
+After the new review helper is deployed, run in a **host terminal**:
+
+```bash
+just stowall
+node --test _tests/pi/*.test.* _tests/meta/*.test.*
+./_scripts/doctor.sh
+```
+
+Then in Pi:
+
+```text
+/reload
+/login openai
+```
+
+Use the ChatGPT/OAuth method if offered for your subscription. Keep the working
+`openai-codex` connection; do not logout or copy credential values. Once login
+succeeds, verify `openai/gpt-6.1-sol` appears in `/model`, select it for the current
+session, then choose `high` in `/thinking`. Do not save defaults until a real task,
+image input, `/answer`, and fresh-session behavior have been checked. If the
+exact model or thinking level is unavailable, stop and report it—no substitute.
+Only then update intentional template/runtime defaults while retaining the
+local shortlist and unrelated preferences.
+
+Remaining manual checks: `/review` Neovim submit/cancel, `/review --tui` mouse and
+keyboard submit/cancel, `/review-summary` unfinished/reload/tree/explicit completion,
+`/answer` extraction/submit/cancel with cloud and local models, clipboard images,
+Herdr linked worktrees and clean reload/shutdown scratch/log removal. The core
+native kernel suite already passed; rerun the updated full suite outside nested
+Seatbelt confinement before merging. Nothing is pushed or merged automatically.
+
+Current automated evidence: all ten tracked factories load without errors via
+Pi's official loader; all TypeScript extensions pass strict semantic checking;
+non-kernel regressions report **45 passed, 0 failed, 1 expected skip**.
+Repository doctor reports **12 passed, 0 failed, 0 warnings** in-session, with an
+expected denied `_models` traversal diagnostic from filesystem confinement.
+`git ls-remote origin HEAD` succeeds against the SSH GitHub remote without
+fetching, pushing or altering local refs. These are not live TUI/kernel proofs.
+
+### Bounded local-first investigation
+
+No loaded llama.cpp chat model is currently available to Pi. Starting the router,
+loading/downloading models and login stay deliberate host/user actions; follow
+[Local models](#local-llamacpp-models) and the existing shortlist, not a new model
+or automatic fallback. Once a selected local model is available, compare it and
+the verified requested cloud model in separate fresh sessions using only public
+or synthetic fixtures: exact-response instruction following, a short synthetic
+summary, read-only exploration of a disposable public fixture, and its small
+unit-tested bug fix. Record correctness/test results, grounded citations,
+latency, advertised context, and user-observed loading/memory costs. Include an
+explicit uncertainty case; do not claim trustworthy routing from one pass.
+
+Keep private repository/session material local unless a specific cloud handoff
+is explicitly approved. Reuse only the same nonprivate fixture/prompts for the
+comparison, send no hidden local transcript, and record which model ran each
+case. Automatic routing, classifiers and virtual-model frameworks remain out of
+scope. Actual comparative trials and task recommendations are still pending.
+
 ## Local llama.cpp models
 
 Pi 0.81 and later include a dynamic provider for a llama.cpp router. The
