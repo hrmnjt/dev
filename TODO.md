@@ -102,12 +102,16 @@ The requested PI-07 model is a preference, not a claim of provider availability.
 - Live model tools: direct write/edit/read, bash, and read-only Git status work.
   Apple's Git launcher emits denied `xcrun_db` temp-cache warnings but returns
   results; this remains a usability issue, not an enforcement bypass.
-- tldraw guide works; API trial is blocked because the desktop app is not
-  connected. No canvas changes or WAL test notes were made.
+- Reloaded tldraw tools pass live structured search/exec, direct exec output,
+  saved local scratch-canvas edits, JPEG forwarding via `image(shot.image)`, and
+  app-error rejection. No new lints; the disposable probe was removed and
+  `scratch.tldraw` restored to zero shapes/bindings with no unsaved changes.
+  No other canvas touched; no credentials or image bytes printed as text.
+  WAL test append awaits explicit approval; no WAL note written.
 - Fresh-process `/sandbox` confirms the revised launch boundary, private scratch,
   bash Git metadata exception and unrestricted network/IPC profile are loaded.
-- Pending: interactive flows, codemode, actual GitHub network/SSH operations,
-  Herdr workflow and reload/cleanup checks. Npm cleanup/audit confirmation is complete: the
+- Pending: remaining interactive flows, actual GitHub network/SSH operations,
+  Herdr workflow and complete reload/cleanup checks. Npm cleanup/audit confirmation is complete: the
   sandbox-runtime/node-forge dependency is removed, not patched.
   See `pi/README.md`; this is not yet merge-verified.
 - Live codemode trial passes nested read/write/edit and direct-read comparison,
@@ -160,10 +164,11 @@ The requested PI-07 model is a preference, not a claim of provider availability.
 - [ ] **PI-05 — Add structured custom-tool outputs**
   - Implemented schemas/structured results for WAL, tldraw search/exec and
     screenshots; guide stays text-based with read-only discovery hints. Six
-    schema/serializer/validation/SDK QuickJS tests pass (mocked outcomes are not
-    live bridge/vision proof). Pending: reload, connect saved scratch canvas,
-    verify live scripted fields/save/screenshot and an explicitly approved WAL
-    test append. No live WAL note or canvas edits made yet.
+    schema/serializer/validation/SDK QuickJS tests pass. Reloaded live tools also
+    pass scripted search/exec fields, direct exec output, scratch-canvas save,
+    visible JPEG forwarding and app-error rejection. Probe removed, empty canvas
+    saved, no new lints. Pending: explicitly approved WAL test append; no live
+    WAL note written.
   - Scope: tldraw search/exec, WAL results, screenshot handling, and useful
     discovery metadata; no namespace overhaul. Use supported `outputSchema` /
     `structuredContent`, not renderer-only `details`; preserve direct contracts.

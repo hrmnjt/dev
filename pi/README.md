@@ -137,9 +137,10 @@ The current outer sandbox denies nested `sandbox_apply`, so enforcement trials
 run on the host. No new semantic TypeScript check has been run.
 
 A fresh-process `/sandbox` confirms the revised launch boundary, scratch, Git
-metadata exception and unrestricted network/IPC profile are loaded. Interactive
-commands/images/integrations, codemode, Herdr workflow and reload/cleanup checks
-remain pending. Doctor validates installation
+metadata exception and unrestricted network/IPC profile are loaded. Codemode
+and reloaded tldraw structured calls/save/JPEG forwarding are verified below.
+Interactive commands, clipboard images, WAL, Herdr workflow and complete
+reload/cleanup checks remain pending. Doctor validates installation
 and configuration, not those interactive behaviors.
 
 Follow [deployment](#deploy-on-the-host-mac), then run in a host terminal on the
@@ -482,7 +483,12 @@ return { docId: shot.docId, pageName: shot.pageName, width: shot.width, height: 
 Never return/log `shot.image.data` or the whole screenshot object: that prints
 base64 as text rather than showing the image. Six schema/serializer/validation
 and SDK QuickJS transport tests pass; these use fixtures, not a real canvas,
-vision decoder or WAL append. Live bridge verification remains pending.
+vision decoder or WAL append. A separate live trial after reload verifies
+structured search/exec fields, direct exec output, local scratch-canvas save,
+visible JPEG forwarding and app-error rejection. The labeled rectangle rendered
+correctly with no lints; its disposable shape was removed and `scratch.tldraw`
+restored to zero shapes/bindings with no unsaved changes. No other canvas was
+touched. The controlled WAL append still awaits explicit approval.
 
 First interactive trial (after `just stowall` and `/reload`): open and save
 `scratch.tldraw`, then ask Pi:

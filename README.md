@@ -248,8 +248,9 @@ expanded month by month. Full history lives in `git log`.
   direct text, arguments, permissions and screenshot images; scripts consume
   API JSON/WAL fields and forward screenshots with `image(result.image)` without
   returning internal paths or printing image bytes. Six serializer/schema,
-  validation and SDK QuickJS transport tests pass; live canvas/WAL verification
-  remains pending.
+  validation and SDK QuickJS transport tests pass. Live scratch-canvas structured
+  search/exec, save, JPEG forwarding and app-error rejection pass; the disposable
+  probe was removed and the original empty canvas saved. WAL append awaits approval.
 - 20261005: Added validated codemode `on` defaults alongside direct tools. Live
   scripted reads/writes/edits, uv rejection, nonzero exits, overflow-log access,
   external write rejection and partial-write failure behavior pass. Keep models,
