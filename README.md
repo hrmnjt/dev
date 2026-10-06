@@ -247,8 +247,9 @@ expanded month by month. Full history lives in `git log`.
 - 20261006: Confirmed user OpenAI OAuth and exact `gpt-6.1-sol` availability;
   set tracked `openai/gpt-6.1-sol/high` defaults and update the cloud shortlist,
   preserving both local models, codemode and appearance. User deferred real-task,
-  image and provider checks. Minimal host settings delta documented; runtime
-  activation/fresh-session confirmation remain pending, old login retained.
+  image and provider checks. User applied the minimal host settings delta;
+  runtime provider/model/high and exact-model thinking override are verified.
+  Fresh-start procedure reported complete; old login retained.
 - 20261006: Verified all ten tracked extensions with Pi's official loader,
   all-extension strict semantic checking and 45 non-kernel regression passes
   (one expected skip). Subsequent host Stow and the updated full suite pass:

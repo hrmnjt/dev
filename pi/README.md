@@ -651,8 +651,9 @@ The live catalog lists `openai/gpt-6.1-sol` with text/image input and reasoning,
 request or a verified account limit. User OpenAI OAuth login succeeded and the
 exact model is authenticated/available. The user chose to defer real-task, image
 and provider-extension checks and apply defaults now; do not claim those checks
-passed. The tracked template defaults to `openai/gpt-6.1-sol/high`; host settings
-activation and fresh-start confirmation remain pending. Keep the old login.
+passed. Template and host settings default to `openai/gpt-6.1-sol/high`, with
+an exact-model `high` override. Host settings are read-only verified and the user
+reports the activation/fresh-start procedure complete. Keep the old login.
 
 After the new review helper is deployed, run in a **host terminal**:
 

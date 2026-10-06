@@ -5,8 +5,8 @@ feature branch**, per the revised PI-14 choice. The initial restricted policy
 passed macOS tests; the user-approved Gondolin-parity correction is now applied
 and passes the revised host enforcement suite and doctor.
 Appearance is unchanged. OpenAI OAuth is authenticated; the requested cloud
-model/high defaults are tracked, with user-deferred task/image checks and host
-settings activation still pending. Codemode `on` is validated
+model/high defaults are tracked and activated on the host, with task/image
+checks explicitly deferred by the user. Codemode `on` is validated
 and enabled in the template and host runtime; fresh default startup is verified.
 
 ## Method
@@ -140,8 +140,9 @@ The requested PI-07 model is a preference, not a claim of provider availability.
   user OpenAI OAuth succeeds and the exact model is authenticated/available.
   User explicitly deferred task/image/provider-extension checks and requested
   defaults now. Template defaults and minimal host-delta instructions are added;
-  host activation/fresh-start confirmation remain pending. No loaded local chat
-  model available; no old credentials removed or local-model state changed.
+  host provider/model/high and exact-model thinking override are read-only
+  verified; user reports activation/fresh-start procedure complete. No loaded
+  local chat model available; no old credentials removed or model state changed.
 - User requested continuing all accepted TODO items after this correction;
   enable codemode only after routing/failure checks, then structured results,
   review checkpoints and `/answer` maintenance. Provider/model changes still
@@ -213,10 +214,11 @@ The requested PI-07 model is a preference, not a claim of provider availability.
   - Credentials remain host-local, never in Git or chat. Update intentional
     provider/model references and docs. Depends on: PI-01; coordinate with PI-07.
 
-- [ ] **PI-07 — Set the requested model/thinking default**
+- [x] **PI-07 — Set the requested model/thinking default**
   - Template updated to `openai/gpt-6.1-sol/high`, preserving the local shortlist.
     User explicitly deferred task/image checks. Minimal host settings delta
-    documented; activation/fresh-start confirmation pending.
+    applied and read-only verified; user reports activation/fresh-start procedure
+    complete. Deferred real-task/image/provider-extension checks remain separate.
   - Scope: template and host runtime settings. Done when `openai` /
     `gpt-6.1-sol` / `high` defaults survive fresh sessions and restarts. Real-task,
     image and provider-extension checks deferred by user, not claimed as passed. If unavailable, ask rather than substitute; keep unrelated settings
