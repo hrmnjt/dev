@@ -217,7 +217,7 @@ pi -c
 
 This preserves other tool selections, codemode options, models, authentication,
 theme and display preferences. Confirm direct tools and `codemode` are available
-without `--tools`. Host runtime activation/fresh-default startup is still pending.
+without `--tools`. Host runtime activation and fresh-default startup are verified.
 For a custom agent directory, use its `settings.json` instead.
 
 To roll back activation, quit Pi and apply the same `defaultTools` expression
