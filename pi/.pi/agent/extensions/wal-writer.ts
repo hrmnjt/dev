@@ -89,6 +89,20 @@ type WalAppendDetails = {
   appendedBytes: number;
 };
 
+const WalAppendOutput = Type.Object({
+  displayPath: Type.String(), date: Type.String(), compactDate: Type.String(),
+  created: Type.Boolean(), templateUsed: Type.Boolean(), appendedBytes: Type.Integer({ minimum: 1 }),
+});
+
+export function walAppendResult(details: WalAppendDetails) {
+  const { displayPath, date, compactDate, created, templateUsed, appendedBytes } = details;
+  return {
+    content: [{ type: "text" as const, text: formatAppendSummary(details) }],
+    details,
+    structuredContent: { displayPath, date, compactDate, created, templateUsed, appendedBytes },
+  };
+}
+
 function isNodeError(err: unknown, code: string): boolean {
   return Boolean(
     err &&
@@ -405,13 +419,11 @@ export default function (pi: ExtensionAPI) {
       "wal_append appends exactly the Markdown text you pass at the end of the daily note; include any desired heading or bullet structure in the text itself.",
     ],
     parameters: WalAppendParams,
+    outputSchema: WalAppendOutput,
 
     async execute(_toolCallId, params, signal) {
       const details = await appendWal(params as WalAppendInput, signal);
-      return {
-        content: [{ type: "text", text: formatAppendSummary(details) }],
-        details,
-      };
+      return walAppendResult(details);
     },
   });
 

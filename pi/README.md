@@ -416,6 +416,11 @@ Model-facing tool:
 wal_append(text, date?)
 ```
 
+Direct calls retain the readable append summary and existing details. Codemode
+receives `{ displayPath, date, compactDate, created, templateUsed, appendedBytes }`.
+Internal absolute target/template paths remain renderer details, not script
+output; no arbitrary target-path argument is added. Errors still reject calls.
+
 Commands:
 
 ```text
@@ -457,6 +462,27 @@ context; avoid capturing private boards with an untrusted provider. The bridge
 still does not support durable board-script workspace edits; don't use the
 installed skill's host-only shell commands as a workaround. Keep `.tldraw`
 archives out of direct edits while open.
+
+Search/exec now declare an output schema for arbitrary JSON and return the
+parsed API response to scripts, preserving its full shape and direct JSON text.
+A normal response's data stays under `response.result`; script authors no longer
+need to parse tool text. Guide output remains text. Names/arguments, credential
+handling, request bounds, screenshot file checks and failures are unchanged.
+
+Screenshots return metadata plus an image block to scripts, with no file path.
+Direct calls still receive the same metadata text and JPEG image attachment.
+In codemode, forward the image explicitly and return only metadata:
+
+```js
+const shot = await tools.tldraw_screenshot({ docId: selectedDocId, size: "medium" });
+image(shot.image);
+return { docId: shot.docId, pageName: shot.pageName, width: shot.width, height: shot.height };
+```
+
+Never return/log `shot.image.data` or the whole screenshot object: that prints
+base64 as text rather than showing the image. Six schema/serializer/validation
+and SDK QuickJS transport tests pass; these use fixtures, not a real canvas,
+vision decoder or WAL append. Live bridge verification remains pending.
 
 First interactive trial (after `just stowall` and `/reload`): open and save
 `scratch.tldraw`, then ask Pi:
