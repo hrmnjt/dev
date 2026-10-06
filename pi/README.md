@@ -134,7 +134,9 @@ images, overflow and cleanup. The final combined host suite reports
 **24 passed, 0 failed, 0 warnings**, including Stow, Pi deployment/settings,
 personal/work/unknown/linked Git identity, Herdr and GitHub CLI authentication.
 The current outer sandbox denies nested `sandbox_apply`, so enforcement trials
-run on the host. No new semantic TypeScript check has been run.
+run on the host. All tracked TypeScript extensions now pass strict semantic
+checking against the installed Pi 1.0.0 declarations (`skipLibCheck` for installed
+dependencies); compiler/Node typings are installed only in private scratch.
 
 A fresh-process `/sandbox` confirms the revised launch boundary, scratch, Git
 metadata exception and unrestricted network/IPC profile are loaded. Codemode
@@ -291,10 +293,24 @@ in the [Herdr package guide](../herdr/README.md).
 Sometimes the assistant ends with a list of questions. `/answer` turns that into
 a focused interactive Q&A flow.
 
-It finds the most recent complete assistant message, asks the current model to
-extract questions as structured JSON, then opens a terminal UI with one answer
-box per question. When submitted, the collected answers are sent back into the
-conversation as a normal user message.
+It uses the latest successful final assistant message on the active branch,
+asks the selected model to extract questions as validated JSON, then opens the
+same terminal Q&A flow. Submitted answers become a normal user message. Tab,
+Shift+Tab, navigation, multiline input, submit confirmation and cancellation are
+preserved; focus forwards to the editor and narrow rendering stays bounded.
+
+Extraction uses `ctx.modelRegistry.streamSimple()` with the selected model;
+provider authentication/headers stay internal, and local models do not need an
+artificial nonempty API key in this extension. No model fallback or automatic
+local/cloud routing. The command rejects non-TUI modes (including RPC), missing
+models, busy turns and incomplete/empty/oversized assistant responses. It validates
+up to 64 questions, each question/context at most 8192 characters, within 128 KiB
+of JSON; malformed/unsafe output and provider failures are reported as errors,
+not cancellation. Only user/provider aborts are cancellation. Late results after
+cancel are ignored, and branch/model changes block stale submissions.
+
+Seven isolated extraction/UI tests pass; actual local/cloud extraction and
+interactive submit/cancel still need host verification.
 
 Command:
 
@@ -350,7 +366,11 @@ buffers. Multiline comments use an `acwrite` scratch buffer, so `:w`, `:wq`,
 `--tui` opens the previous self-contained pi review UI instead. It retains its
 keyboard and mouse navigation for environments where host Neovim is unavailable.
 If `nvim` is missing, the command reports the error and suggests `/review --tui`
-rather than silently changing interfaces.
+rather than silently changing interfaces. The TUI follows Pi 1.0's editor theme
+and normalized component-local mouse contracts; legacy SGR input stays supported.
+Fullscreen owns its mouse modes, so exiting review does not disable them. Editor
+focus and idempotent mouse cleanup are covered by two component tests; actual
+Neovim/TUI submit/cancel remains a host check.
 
 Submitted comments from either UI include an anchor snapshot: file path, hunk,
 selected line, line kind, and nearby diff context. The generated message tells pi

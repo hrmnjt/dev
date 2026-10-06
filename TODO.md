@@ -89,8 +89,9 @@ The requested PI-07 model is a preference, not a claim of provider availability.
   `core.hooksPath=.` to absolute `.git/hooks` (no policy change). Kernel file
   confinement/editable source, Git/hooks, loopback/Unix sockets, narrow launches,
   linked-worktree commits, images, overflow and cleanup pass. Final combined host
-  suite: **23 passed, 0 failed, 1 expected skip**. Semantic type-check remains
-  pending. The current outer sandbox denies nested `sandbox_apply`, so enforcement
+  suite: **23 passed, 0 failed, 1 expected skip**. All tracked TypeScript
+  extensions now pass strict semantic checking against Pi 1.0.0 declarations
+  (installed dependency checking skipped); compiler tooling is private scratch. The current outer sandbox denies nested `sandbox_apply`, so enforcement
   trials run on the host.
 - Tests now cover editable Pi source, narrow launch subdirectories, direct Git
   file-tool guards, bash Git/config/hooks, linked metadata writes, ordinary reads,
@@ -215,6 +216,11 @@ The requested PI-07 model is a preference, not a claim of provider availability.
     coordinate worktree paths with PI-14.
 
 - [ ] **PI-12 — Refresh APIs and `/answer` handling**
+  - Implemented official imports, provider-neutral extraction, validation/bounds,
+    distinct error/cancel outcomes, non-TUI rejection and stale-session/model
+    guards. Fixed editor themes/focus and review fullscreen mouse contracts.
+    Nine regression tests and all-extension strict semantic checking pass.
+    Pending: real local/cloud extraction, interactive submit/cancel and review.
   - Update legacy imports to current supported APIs; preserve the interactive
     workflow and handle unavailable models, cancellation/provider errors,
     malformed extraction, and non-TUI invocation clearly. Update related docs.
