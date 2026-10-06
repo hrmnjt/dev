@@ -31,7 +31,7 @@ primary repository.
 
 ## Changelog
 
-For every change, check whether an entry in the root `README.md` changelog
+For every change, check whether an entry in the root `CHANGELOG.md`
 already exists. If it does, make sure the entry matches what the change
 actually does. If it does not, add one.
 
