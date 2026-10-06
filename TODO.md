@@ -158,6 +158,12 @@ The requested PI-07 model is a preference, not a claim of provider availability.
     use; script failures do not undo writes. Depends on: PI-01; retest after PI-14.
 
 - [ ] **PI-05 — Add structured custom-tool outputs**
+  - Implemented schemas/structured results for WAL, tldraw search/exec and
+    screenshots; guide stays text-based with read-only discovery hints. Six
+    schema/serializer/validation/SDK QuickJS tests pass (mocked outcomes are not
+    live bridge/vision proof). Pending: reload, connect saved scratch canvas,
+    verify live scripted fields/save/screenshot and an explicitly approved WAL
+    test append. No live WAL note or canvas edits made yet.
   - Scope: tldraw search/exec, WAL results, screenshot handling, and useful
     discovery metadata; no namespace overhaul. Use supported `outputSchema` /
     `structuredContent`, not renderer-only `details`; preserve direct contracts.
