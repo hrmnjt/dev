@@ -257,6 +257,41 @@ check_git_identities() {
   rm -rf "$identity_tmp"
 }
 
+check_claude_uv_guard() {
+  if ! command_exists jq; then
+    warn "Claude uv guard skipped (jq unavailable)"
+    return
+  fi
+
+  guard="$ROOT/claude/.claude/hooks/uv-guard.sh"
+  guard_failed=false
+  # Format: expected exit status, then the Bash command Claude would run.
+  while IFS='|' read -r expected guard_command; do
+    jq -n --arg command "$guard_command" '{tool_input: {command: $command}}' |
+      /bin/sh "$guard" >/dev/null 2>&1
+    guard_status=$?
+    debug "uv guard: $guard_command -> $guard_status (expected $expected)"
+    [ "$guard_status" = "$expected" ] || guard_failed=true
+  done <<'EOF'
+2|pip install requests
+2|cd app && .venv/bin/pip3 list
+2|poetry add httpx
+2|python3 -m venv .venv
+2|python -u -m pip install x
+2|python -m py_compile app.py
+0|uv pip install requests
+0|uv run python -m pytest
+0|pipx run cowsay
+0|rg pip
+EOF
+
+  if [ "$guard_failed" = true ]; then
+    fail "Claude uv guard decisions"
+  else
+    pass "Claude uv guard decisions"
+  fi
+}
+
 check_justfile() {
   if command_exists just; then
     just_output=$(just --justfile "$ROOT/Justfile" --list 2>&1)
@@ -283,12 +318,13 @@ run_repository_checks() {
   check_toml
   check_git_configs
   check_git_identities
+  check_claude_uv_guard
   check_justfile
 }
 
 check_expected_commands() {
   missing_commands=""
-  for name in aerospace borders brew fzf gh git herdr jq just lazygit nvim node npm pi rg starship stow uv zsh; do
+  for name in aerospace borders brew claude fzf gh git herdr jq just lazygit nvim node npm pi rg starship stow uv zsh; do
     if ! command_exists "$name"; then
       missing_commands="$missing_commands $name"
     fi

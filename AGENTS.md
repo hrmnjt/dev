@@ -6,9 +6,14 @@ on instructions that add to those guides rather than repeating them.
 
 ## Execution environment
 
-Assistant tools run in Gondolin at `/workspace`; `!` and `!!` run on the host,
-so leave Homebrew, Stow deployment, launchd, VPN, and local-LLM operations to the
-user. See the **Gondolin sandbox** section in `pi/README.md`.
+- **Pi:** assistant tools run in Gondolin at `/workspace`; `!` and `!!` run on
+  the host. See the **Gondolin sandbox** section in `pi/README.md`.
+- **Claude Code:** tools run on the host at the real checkout path, and Bash runs
+  inside Claude Code's macOS sandbox. Use host paths, not `/workspace`. See
+  `claude/README.md`.
+
+With either agent, leave Homebrew, Stow deployment, launchd, VPN, and local-LLM
+operations to the user.
 
 ## Git workflow
 

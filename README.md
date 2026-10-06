@@ -63,6 +63,10 @@ if [[ ! -f ~/.pi/agent/settings.json ]]; then
 fi
 # 9.4. Build the Pi sandbox
 just gondolin-image
+# 9.5. Sign in to Claude Code (installed by brew, configured by stow);
+# see claude/README.md
+claude
+claude doctor
 # Restart the login shell, then continue with step 10
 exec zsh -l
 
@@ -117,6 +121,7 @@ herdr plugin list --plugin hrmnjt.default-tabs
 - [TODO and decision backlog](TODO.md)
 - [Gruvbox Dark Hard palette and application map](GRUVBOX.md)
 - [AeroSpace](aerospace/README.md)
+- [Claude Code](claude/README.md)
 - [Ghostty](ghostty/README.md)
 - [Glow](glow/README.md)
 - [Gh](gh/README.md)
@@ -244,6 +249,11 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261006: Added the Claude Code cask and a Stow-tracked `claude` package with
+  user instructions, a fail-closed macOS sandbox with Homebrew/Stow/launchd
+  prompts and credential denies, and a uv guard hook ported from Pi; the root
+  `CLAUDE.md` imports `AGENTS.md`, which now covers both agents' execution
+  environments, and doctor checks the `claude` command and uv guard decisions.
 - 20261001: Added a concise decision-first TODO backlog for Pi compatibility,
   native sandboxing with Gondolin rollback, codemode, provider/model defaults,
   and extension maintenance; recorded deferred topics and local-first trials.

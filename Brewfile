@@ -2,6 +2,7 @@
 
 # things that I don't install via brew
 # - pi - check https://pi.dev/docs/latest/quickstart#install
+# Claude Code is the claude-code cask below; brew owns its upgrades.
 
 # --- CLI Tools ---
 
@@ -73,6 +74,8 @@ brew "container"
 brew "herdr"
 # OpenAI coding agent CLI
 cask "codex"
+# Anthropic coding agent CLI (stable channel; config in claude/)
+cask "claude-code"
 # Terminal
 cask "ghostty"
 

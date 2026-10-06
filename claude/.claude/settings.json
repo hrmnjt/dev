@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "DISABLE_TELEMETRY": "1",
+    "DISABLE_ERROR_REPORTING": "1"
+  },
+  "permissions": {
+    "defaultMode": "default",
+    "deny": [
+      "Read(~/.ssh/**)",
+      "Read(~/.config/gh/hosts.yml)",
+      "Read(~/.pi/agent/auth.json)",
+      "Read(~/.cache/huggingface/token)",
+      "Read(~/Library/Application Support/tldraw/server.json)",
+      "Read(./.env)",
+      "Read(./.env.*)"
+    ],
+    "ask": [
+      "Bash(git push *)",
+      "Bash(brew *)",
+      "Bash(stow *)",
+      "Bash(just stowall *)",
+      "Bash(just unstowall *)",
+      "Bash(launchctl *)",
+      "Bash(defaults write *)",
+      "Bash(defaults delete *)",
+      "Bash(sudo *)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "autoAllowBashIfSandboxed": true,
+    "excludedCommands": ["git fetch *", "git pull *", "git push *"],
+    "credentials": {
+      "files": [
+        { "path": "~/.ssh", "mode": "deny" },
+        { "path": "~/.config/gh/hosts.yml", "mode": "deny" },
+        { "path": "~/.pi/agent/auth.json", "mode": "deny" },
+        { "path": "~/.cache/huggingface/token", "mode": "deny" }
+      ]
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/sh \"$HOME/.claude/hooks/uv-guard.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}
