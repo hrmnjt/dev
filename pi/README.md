@@ -139,7 +139,7 @@ run on the host. No new semantic TypeScript check has been run.
 A fresh-process `/sandbox` confirms the revised launch boundary, scratch, Git
 metadata exception and unrestricted network/IPC profile are loaded. Codemode
 and reloaded tldraw structured calls/save/JPEG forwarding are verified below.
-Interactive commands, clipboard images, WAL, Herdr workflow and complete
+Other interactive commands, clipboard images, Herdr workflow and complete
 reload/cleanup checks remain pending. Doctor validates installation
 and configuration, not those interactive behaviors.
 
@@ -422,6 +422,12 @@ receives `{ displayPath, date, compactDate, created, templateUsed, appendedBytes
 Internal absolute target/template paths remain renderer details, not script
 output; no arbitrary target-path argument is added. Errors still reject calls.
 
+Live verification on 20261006 appended one explicitly approved test line to the
+existing daily note. Codemode consumed structured fields directly (68 appended
+bytes reported), and a read-only exact-tail check verified the approved line
+without returning the rest of the note. No duplicate append or arbitrary
+external write.
+
 Commands:
 
 ```text
@@ -488,7 +494,8 @@ structured search/exec fields, direct exec output, local scratch-canvas save,
 visible JPEG forwarding and app-error rejection. The labeled rectangle rendered
 correctly with no lints; its disposable shape was removed and `scratch.tldraw`
 restored to zero shapes/bindings with no unsaved changes. No other canvas was
-touched. The controlled WAL append still awaits explicit approval.
+touched. The separate explicitly approved WAL append and exact-tail verification
+also pass on 20261006; structured-result verification (PI-05) is complete.
 
 First interactive trial (after `just stowall` and `/reload`): open and save
 `scratch.tldraw`, then ask Pi:
