@@ -107,7 +107,9 @@ The requested PI-07 model is a preference, not a claim of provider availability.
   app-error rejection. No new lints; the disposable probe was removed and
   `scratch.tldraw` restored to zero shapes/bindings with no unsaved changes.
   No other canvas touched; no credentials or image bytes printed as text.
-  WAL test append awaits explicit approval; no WAL note written.
+- Approved WAL test append passes on 20261006: scripts consume typed fields
+  without parsing text, 68 appended bytes reported for the existing daily note,
+  and a read-only exact-tail check verifies the approved line. PI-05 complete.
 - Fresh-process `/sandbox` confirms the revised launch boundary, private scratch,
   bash Git metadata exception and unrestricted network/IPC profile are loaded.
 - Pending: remaining interactive flows, actual GitHub network/SSH operations,
@@ -161,14 +163,15 @@ The requested PI-07 model is a preference, not a claim of provider availability.
   - Verify direct/scripted results and scratch-worktree mutations before heavier
     use; script failures do not undo writes. Depends on: PI-01; retest after PI-14.
 
-- [ ] **PI-05 — Add structured custom-tool outputs**
+- [x] **PI-05 — Add structured custom-tool outputs**
   - Implemented schemas/structured results for WAL, tldraw search/exec and
     screenshots; guide stays text-based with read-only discovery hints. Six
     schema/serializer/validation/SDK QuickJS tests pass. Reloaded live tools also
     pass scripted search/exec fields, direct exec output, scratch-canvas save,
     visible JPEG forwarding and app-error rejection. Probe removed, empty canvas
-    saved, no new lints. Pending: explicitly approved WAL test append; no live
-    WAL note written.
+    saved, no new lints. Explicitly approved WAL append passes on 20261006:
+    structured fields consumed without text parsing and approved line verified
+    at the note's end; no duplicate append or arbitrary external write.
   - Scope: tldraw search/exec, WAL results, screenshot handling, and useful
     discovery metadata; no namespace overhaul. Use supported `outputSchema` /
     `structuredContent`, not renderer-only `details`; preserve direct contracts.
