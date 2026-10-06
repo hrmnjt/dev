@@ -247,8 +247,9 @@ expanded month by month. Full history lives in `git log`.
 - 20261005: Added validated codemode `on` defaults alongside direct tools. Live
   scripted reads/writes/edits, uv rejection, nonzero exits, overflow-log access,
   external write rejection and partial-write failure behavior pass. Keep models,
-  auth and appearance unchanged; host runtime settings/fresh default startup
-  confirmation remain pending. Settings-delta regression tests pass.
+  auth and appearance unchanged. Host runtime settings and fresh default startup
+  are verified: direct tools + codemode remain available in `on` mode.
+  Settings-delta regression tests pass.
 - 20261005: Applied a host-approved correction to Pi's native policy: preserve
   Gondolin's launch-directory write boundary, normal bash Git/network/SSH, and
   editable Pi source. Use Seatbelt directly instead of sandbox-runtime's extra
