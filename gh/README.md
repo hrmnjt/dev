@@ -40,12 +40,15 @@ gh auth status
 
 `gh` is part of the custom Gondolin image
 ([pi/README.md](../pi/README.md)), so the assistant can raise PRs and inspect
-checks from inside the VM. The guest cannot run `gh auth login`, so share the
-host token through the environment before starting pi:
+checks from inside the VM. The guest cannot run `gh auth login`, so the `pi`
+shell function in `zsh/.zshrc` passes the host token to Pi alone:
 
-```bash
-export GH_TOKEN="$(gh auth token)"   # already exported by zsh/.zshrc
+```zsh
+GH_TOKEN="$(gh auth token)" command pi   # what the pi function runs
 ```
+
+Other commands started from the shell do not inherit `GH_TOKEN`; host-side
+`gh` reads its credentials from the Keychain as usual.
 
 Host-side operations (interactive `gh auth login`, browser-based reviews) run
 with `!` / `!!` from pi, which stay on the host.

@@ -92,6 +92,7 @@ Notable commands and aliases include:
 | `gbclean` | Remove merged local branches whose upstream is gone |
 | `histedit` | Edit and reload shell history after closing other shells |
 | `llm` | Manage and inspect the host llama.cpp router service |
+| `pi` | Start Pi with the GitHub CLI token scoped to it for Gondolin |
 
 `GLOW_STYLE` points Glow to the Stow-deployed Gruvbox Markdown stylesheet using
 `$HOME`; see [the Glow package](../glow/README.md). Homebrew is initialized once
