@@ -244,6 +244,12 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261006: Persisted branch-aware review-summary requests and explicitly
+  confirmed completion in Pi session entries. Pin Git ranges; unfinished/failed
+  reviews never advance checkpoints. Reconstruct only the active session branch;
+  isolate repository/worktree/branch/base/history scopes, with reset support.
+  Six real-Git/SDK session regression tests and strict semantic type-check pass;
+  interactive reload/tree verification remains pending.
 - 20261005: Added structured WAL/tldraw results using Pi output schemas. Preserve
   direct text, arguments, permissions and screenshot images; scripts consume
   API JSON/WAL fields and forward screenshots with `image(result.image)` without
