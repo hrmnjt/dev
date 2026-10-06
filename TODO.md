@@ -203,6 +203,10 @@ The requested PI-07 model is a preference, not a claim of provider availability.
     Depends on: PI-01; use PI-06/PI-07's verified cloud model for comparison.
 
 - [ ] **PI-10 — Persist review checkpoints**
+  - Implemented branch-aware custom-entry requests/completions, pinned ranges,
+    explicit `complete [base]` and scoped `reset [base]`. Six real-Git/SDK tests
+    and strict semantic type-check pass. Pending: host Stow for the new helper,
+    reload/restart, interactive completion and tree-navigation verification.
   - Scope: `review-summary.ts`, supported session entries, and docs. Done when
     restart/reload restores the active session branch's state, with explicit
     completion confirmation; only confirmed completion advances the checkpoint.

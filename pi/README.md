@@ -372,11 +372,32 @@ Commands:
 ```text
 /review-summary
 /review-summary develop
+/review-summary complete [base]
+/review-summary reset [base]
+/review-summary help
 ```
 
-It compares the current branch against `main` by default, tracks the last
-reviewed HEAD SHA within the pi process, and on repeated runs asks the model to
-verify whether previous comments were addressed before reviewing new commits.
+It compares against `main` by default and pins the exact Git range in the review
+prompt. Requests and confirmed completions live in non-context Pi session custom
+entries, scoped by canonical repository/worktree, Git branch, resolved base and
+merge-base. Every command reconstructs only the active session branch: restart,
+reload, compaction and tree navigation do not leak abandoned-branch checkpoints.
+A changed scope or rewritten history falls back to a full review.
+
+A request **does not** advance the checkpoint. After a successful final review,
+explicitly run `/review-summary complete` (or `complete develop` for that base).
+It rejects completion without a successful final assistant response and records
+only the requested HEAD, never newer commits. This is your confirmation that the
+review finished, not an automatic claim about review quality. Repeated requests
+for unfinished reviews cover the unconfirmed range again. Confirmed reviews ask
+the model to check previous findings before reviewing new commits. `reset [base]`
+clears only that active scope so it can be reviewed in full again.
+
+Six real-Git/SDK session regression tests and strict semantic type-check pass:
+reload/reconstruction, navigation, compaction, failed/cancelled/truncated reviews,
+scoped isolation, history rewrites, reset and setup failure/races. Interactive
+verification remains pending. The new `lib/review-state.ts` needs `just stowall`
+from the host before `/reload`; do not reload while its deployed link is missing.
 
 ### uv guard — `extensions/uv.ts`
 
