@@ -129,8 +129,10 @@ loader loads all five changed extension factories without warnings. After fixing
 corrected-policy host kernel rerun reports **1 passed, 0 failed**. It verifies
 startup self-test, file operations/confinement, editable Pi source, Git commands
 and hooks, loopback/Unix sockets, narrow launches, linked-worktree commits,
-images, overflow and cleanup. The final combined host suite reports
-**23 passed, 0 failed, 1 expected skip**. Full host doctor reports
+images, overflow and cleanup. The initial combined host suite reports
+**23 passed, 0 failed, 1 expected skip**; the updated full host rerun reports
+**46 passed, 0 failed, 1 expected skip**, including real Seatbelt enforcement.
+Host Stow succeeds. Full host doctor rerun reports
 **24 passed, 0 failed, 0 warnings**, including Stow, Pi deployment/settings,
 personal/work/unknown/linked Git identity, Herdr and GitHub CLI authentication.
 The current outer sandbox denies nested `sandbox_apply`, so enforcement trials
@@ -681,8 +683,11 @@ Seatbelt confinement before merging. Nothing is pushed or merged automatically.
 
 Current automated evidence: all ten tracked factories load without errors via
 Pi's official loader; all TypeScript extensions pass strict semantic checking;
-non-kernel regressions report **45 passed, 0 failed, 1 expected skip**.
-Repository doctor reports **12 passed, 0 failed, 0 warnings** in-session, with an
+non-kernel regressions report **45 passed, 0 failed, 1 expected skip**. The
+subsequent full host rerun reports **46 passed, 0 failed, 1 expected skip**;
+full host doctor rerun: **24 passed, 0 failed, 0 warnings**. User Stow succeeds.
+Earlier repository doctor reports **12 passed, 0 failed, 0 warnings** in-session,
+with an
 expected denied `_models` traversal diagnostic from filesystem confinement.
 `git ls-remote origin HEAD` succeeds against the SSH GitHub remote without
 fetching, pushing or altering local refs. These are not live TUI/kernel proofs.

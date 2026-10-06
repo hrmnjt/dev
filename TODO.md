@@ -88,8 +88,9 @@ The requested PI-07 model is a preference, not a claim of provider availability.
   Corrected host kernel rerun: **1 passed, 0 failed**, after changing the fixture's
   `core.hooksPath=.` to absolute `.git/hooks` (no policy change). Kernel file
   confinement/editable source, Git/hooks, loopback/Unix sockets, narrow launches,
-  linked-worktree commits, images, overflow and cleanup pass. Final combined host
-  suite: **23 passed, 0 failed, 1 expected skip**. All tracked TypeScript
+  linked-worktree commits, images, overflow and cleanup pass. Initial combined
+  host suite: **23 passed, 0 failed, 1 expected skip**; updated full host suite:
+  **46 passed, 0 failed, 1 expected skip**, including real Seatbelt enforcement. All tracked TypeScript
   extensions now pass strict semantic checking against Pi 1.0.0 declarations
   (installed dependency checking skipped); compiler tooling is private scratch. The current outer sandbox denies nested `sandbox_apply`, so enforcement
   trials run on the host.
@@ -113,8 +114,8 @@ The requested PI-07 model is a preference, not a claim of provider availability.
   and a read-only exact-tail check verifies the approved line. PI-05 complete.
 - Fresh-process `/sandbox` confirms the revised launch boundary, private scratch,
   bash Git metadata exception and unrestricted network/IPC profile are loaded.
-- Pending: remaining interactive flows, actual GitHub network/SSH operations,
-  Herdr workflow and complete reload/cleanup checks. Npm cleanup/audit confirmation is complete: the
+- Pending: remaining interactive flows, Herdr workflow and complete
+  reload/cleanup checks. Read-only GitHub SSH access is verified below. Npm cleanup/audit confirmation is complete: the
   sandbox-runtime/node-forge dependency is removed, not patched.
   See `pi/README.md`; this is not yet merge-verified.
 - Live codemode trial passes nested read/write/edit and direct-read comparison,
@@ -129,8 +130,10 @@ The requested PI-07 model is a preference, not a claim of provider availability.
   all tracked TypeScript extensions pass strict semantic checking. In-session
   repository doctor: **12 passed, 0 failed, 0 warnings**, with expected `_models`
   traversal denial. GitHub SSH `git ls-remote origin HEAD` succeeds; no fetch,
-  push or local-ref mutation performed. Updated full kernel/host doctor and live
-  command checks remain pending.
+  push or local-ref mutation performed. Subsequent user host Stow succeeds;
+  updated full suite: **46 passed, 0 failed, 1 expected skip**, including real
+  Seatbelt enforcement. Full doctor rerun: **24 passed, 0 failed, 0 warnings**.
+  Live command checks remain.
 - Live catalog confirms `openai/gpt-6.1-sol` text/image/reasoning metadata;
   requested provider is not authenticated. No loaded local chat model available.
   Defaults and authentication unchanged; staged host/login and privacy-safe
@@ -148,7 +151,10 @@ The requested PI-07 model is a preference, not a claim of provider availability.
     `/answer`, `/review`, `/review-summary`, images, WAL, tldraw, and Herdr.
     Record results. Depends on: none.
 
-- [ ] **PI-14 — Verify the native-only backend**
+- [x] **PI-14 — Verify the native-only backend**
+  - Core kernel enforcement, direct/codemode routing and failure/uv checks pass;
+    updated full host suite and doctor are green. Remaining interactive migration
+    and compatibility checks are tracked separately below.
   - Implementation/removal complete; done when the contract above is verified
     on macOS with one mandatory set of tools and no host fallback.
   - Verify workspace edits; blocked external writes/deletes; symlinks/new parents;
@@ -224,8 +230,9 @@ The requested PI-07 model is a preference, not a claim of provider availability.
 - [ ] **PI-10 — Persist review checkpoints**
   - Implemented branch-aware custom-entry requests/completions, pinned ranges,
     explicit `complete [base]` and scoped `reset [base]`. Six real-Git/SDK tests
-    and strict semantic type-check pass. Pending: host Stow for the new helper,
-    reload/restart, interactive completion and tree-navigation verification.
+    and strict semantic type-check pass. Host Stow/new-helper deployment and
+    updated full tests pass. Pending: interactive reload/restart, completion
+    and tree-navigation verification.
   - Scope: `review-summary.ts`, supported session entries, and docs. Done when
     restart/reload restores the active session branch's state, with explicit
     completion confirmation; only confirmed completion advances the checkpoint.

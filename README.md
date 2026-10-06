@@ -245,8 +245,10 @@ expanded month by month. Full history lives in `git log`.
 ### 202610
 
 - 20261006: Verified all ten tracked extensions with Pi's official loader,
-  all-extension strict semantic checking, 45 non-kernel regression passes
-  (one expected skip), and 12 repository doctor checks. Native Git SSH
+  all-extension strict semantic checking and 45 non-kernel regression passes
+  (one expected skip). Subsequent host Stow and the updated full suite pass:
+  46 passed, 0 failed, 1 expected skip, including real Seatbelt enforcement;
+  full doctor: 24 passed, 0 failed, 0 warnings. Native Git SSH
   `ls-remote` succeeds. Requested OpenAI model exists in the live catalog with
   image/reasoning support, but its provider is not authenticated; no loaded
   local model is available. Documented staged host checks/login and bounded
