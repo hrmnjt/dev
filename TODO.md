@@ -124,6 +124,17 @@ The requested PI-07 model is a preference, not a claim of provider availability.
   Template and host runtime enable `codemode` with mode `on`; fresh startup
   without `--tools` confirms codemode and direct tools are available.
   No classifiers or image-generation models used.
+- Latest non-kernel suite: **45 passed, 0 failed, 1 expected skip**. All ten
+  tracked extension factories load via Pi's official loader without errors, and
+  all tracked TypeScript extensions pass strict semantic checking. In-session
+  repository doctor: **12 passed, 0 failed, 0 warnings**, with expected `_models`
+  traversal denial. GitHub SSH `git ls-remote origin HEAD` succeeds; no fetch,
+  push or local-ref mutation performed. Updated full kernel/host doctor and live
+  command checks remain pending.
+- Live catalog confirms `openai/gpt-6.1-sol` text/image/reasoning metadata;
+  requested provider is not authenticated. No loaded local chat model available.
+  Defaults and authentication unchanged; staged host/login and privacy-safe
+  local-first trial instructions are in `pi/README.md`.
 - User requested continuing all accepted TODO items after this correction;
   enable codemode only after routing/failure checks, then structured results,
   review checkpoints and `/answer` maintenance. Provider/model changes still
@@ -183,6 +194,9 @@ The requested PI-07 model is a preference, not a claim of provider availability.
     use PI-02 trial tooling for verification.
 
 - [ ] **PI-06 — Migrate OpenAI login**
+  - Version-correct `/login openai` host instructions documented. Live catalog
+    contains the exact requested model, but authentication is missing; retain
+    the working connection until real requests/provider checks pass.
   - Provide version-correct host instructions during implementation. The user
     logs in; verify model availability/limits, a real task, supported image input,
     and provider-dependent extensions before replacing the working connection.
@@ -196,6 +210,10 @@ The requested PI-07 model is a preference, not a claim of provider availability.
     and local models. Depends on: PI-01 and PI-06.
 
 - [ ] **PI-09 — Investigate a local-first workflow**
+  - Bounded nonprivate fixture comparison/privacy policy documented; no loaded
+    local model currently available. Pending deliberate user router/model setup
+    and verified cloud login/default, then real correctness/latency/memory trials.
+    No routing or local-service/model state changes made.
   - Compare local/cloud exploration, summaries, and straightforward tasks for
     correctness, quality, latency, loading/memory cost, and context limits.
   - Done when useful local task choices and a privacy/handoff policy are recorded.
