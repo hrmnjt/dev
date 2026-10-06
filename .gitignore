@@ -10,9 +10,5 @@ zed/.config/zed/prompts/**
 zed/.config/zed/themes/**
 
 
-# pi
-pi/.pi/agent/usage-data/
-
-
 # claude code: per-user project overrides
 .claude/settings.local.json

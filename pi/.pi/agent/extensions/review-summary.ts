@@ -13,7 +13,7 @@
  * and returns a concise summary, findings, and reviewer callouts.
  */
 
-import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 // Tracks the HEAD commit SHA from the last summary review in this pi session so
 // repeated runs only show newly-added commits and ask pi to verify previous

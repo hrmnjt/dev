@@ -58,9 +58,13 @@
 #
 # Usage
 # -----
-# vpn.sh {connect|c|disconnect|d|suspend|s|resume|r|status|st}
+# vpn {connect|c|disconnect|d|suspend|s|resume|r|status|st}
 #
-# Setup — add to ~/.zshrc:
+# In this repository, Stow deploys vpn plus vc, vd, vs, vr, and vst symlinks to
+# ~/.local/bin; each symlink runs the matching action from its name, and
+# zsh/.zshenv sets IVANTI_VPN_NAME.
+#
+# Standalone setup — add to ~/.zshrc:
 #   export IVANTI_VPN_NAME="My VPN"
 #   alias vc="bash /path/to/vpn.sh connect"
 #   alias vd="bash /path/to/vpn.sh disconnect"

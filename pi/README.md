@@ -458,7 +458,6 @@ The custom VM image adds the tools I expect to have available during agent work:
 - `python3`
 - `uv`
 - `openssh`
-- `git`
 - `gh`
 - `hugo`
 
