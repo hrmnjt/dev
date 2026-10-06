@@ -4,7 +4,9 @@ Decisions and future work for this setup. **Native is the only sandbox on this
 feature branch**, per the revised PI-14 choice. The initial restricted policy
 passed macOS tests; the user-approved Gondolin-parity correction is now applied
 and passes the revised host enforcement suite and doctor.
-Authentication, models and appearance are unchanged. Codemode `on` is validated
+Appearance is unchanged. OpenAI OAuth is authenticated; the requested cloud
+model/high defaults are tracked, with user-deferred task/image checks and host
+settings activation still pending. Codemode `on` is validated
 and enabled in the template and host runtime; fresh default startup is verified.
 
 ## Method
@@ -135,9 +137,11 @@ The requested PI-07 model is a preference, not a claim of provider availability.
   Seatbelt enforcement. Full doctor rerun: **24 passed, 0 failed, 0 warnings**.
   Live command checks remain.
 - Live catalog confirms `openai/gpt-6.1-sol` text/image/reasoning metadata;
-  requested provider is not authenticated. No loaded local chat model available.
-  Defaults and authentication unchanged; staged host/login and privacy-safe
-  local-first trial instructions are in `pi/README.md`.
+  user OpenAI OAuth succeeds and the exact model is authenticated/available.
+  User explicitly deferred task/image/provider-extension checks and requested
+  defaults now. Template defaults and minimal host-delta instructions are added;
+  host activation/fresh-start confirmation remain pending. No loaded local chat
+  model available; no old credentials removed or local-model state changed.
 - User requested continuing all accepted TODO items after this correction;
   enable codemode only after routing/failure checks, then structured results,
   review checkpoints and `/answer` maintenance. Provider/model changes still
@@ -200,9 +204,9 @@ The requested PI-07 model is a preference, not a claim of provider availability.
     use PI-02 trial tooling for verification.
 
 - [ ] **PI-06 — Migrate OpenAI login**
-  - Version-correct `/login openai` host instructions documented. Live catalog
-    contains the exact requested model, but authentication is missing; retain
-    the working connection until real requests/provider checks pass.
+  - User OpenAI OAuth login succeeds; live registry confirms the exact requested
+    model authenticated/available. User deferred real-task/image/provider checks;
+    retain old credentials. No secret values inspected or copied.
   - Provide version-correct host instructions during implementation. The user
     logs in; verify model availability/limits, a real task, supported image input,
     and provider-dependent extensions before replacing the working connection.
@@ -210,9 +214,12 @@ The requested PI-07 model is a preference, not a claim of provider availability.
     provider/model references and docs. Depends on: PI-01; coordinate with PI-07.
 
 - [ ] **PI-07 — Set the requested model/thinking default**
-  - Scope: template and host runtime settings. Done when verified `openai` /
-    `gpt-6.1-sol` / `high` defaults survive fresh sessions and restarts and pass a
-    real task. If unavailable, ask rather than substitute; keep unrelated settings
+  - Template updated to `openai/gpt-6.1-sol/high`, preserving the local shortlist.
+    User explicitly deferred task/image checks. Minimal host settings delta
+    documented; activation/fresh-start confirmation pending.
+  - Scope: template and host runtime settings. Done when `openai` /
+    `gpt-6.1-sol` / `high` defaults survive fresh sessions and restarts. Real-task,
+    image and provider-extension checks deferred by user, not claimed as passed. If unavailable, ask rather than substitute; keep unrelated settings
     and local models. Depends on: PI-01 and PI-06.
 
 - [ ] **PI-09 — Investigate a local-first workflow**

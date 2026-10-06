@@ -618,7 +618,8 @@ the launch directory; it is not specially locked against development.
 ## First-time settings setup
 
 `settings.template.json` tracks intentional defaults, including the minimal
-direct tool set (`read`, `write`, `edit`, and `bash`) plus codemode `on`.
+direct tool set (`read`, `write`, `edit`, and `bash`) plus codemode `on`, and
+`openai/gpt-6.1-sol` with `high` thinking. The local-model shortlist stays intact.
 Pi owns `settings.json`
 and may update volatile keys such as `defaultModel`, `defaultProvider`, and
 `lastChangelogVersion`.
@@ -647,8 +648,11 @@ the tracked package source, while Pi should write to the real host directory.
 
 The live catalog lists `openai/gpt-6.1-sol` with text/image input and reasoning,
 272,000-token context. This is catalog metadata, not a successful authenticated
-request or a verified account limit. OpenAI authentication is not yet available
-in this session; the existing connection/defaults remain unchanged.
+request or a verified account limit. User OpenAI OAuth login succeeded and the
+exact model is authenticated/available. The user chose to defer real-task, image
+and provider-extension checks and apply defaults now; do not claim those checks
+passed. The tracked template defaults to `openai/gpt-6.1-sol/high`; host settings
+activation and fresh-start confirmation remain pending. Keep the old login.
 
 After the new review helper is deployed, run in a **host terminal**:
 
@@ -668,11 +672,29 @@ Then in Pi:
 Use the ChatGPT/OAuth method if offered for your subscription. Keep the working
 `openai-codex` connection; do not logout or copy credential values. Once login
 succeeds, verify `openai/gpt-6.1-sol` appears in `/model`, select it for the current
-session, then choose `high` in `/thinking`. Do not save defaults until a real task,
-image input, `/answer`, and fresh-session behavior have been checked. If the
-exact model or thinking level is unavailable, stop and report it—no substitute.
-Only then update intentional template/runtime defaults while retaining the
-local shortlist and unrelated preferences.
+session, then choose `high` in `/thinking`. If the exact model or thinking level
+is unavailable, stop and report it—no substitute. The user has explicitly deferred
+real-task/image checks; to apply only the approved defaults, quit Pi and run in a
+host terminal (use your custom agent directory if applicable):
+
+```bash
+settings="$HOME/.pi/agent/settings.json"
+jq '.defaultProvider = "openai"
+  | .defaultModel = "gpt-6.1-sol"
+  | .defaultThinkingLevel = "high"
+  | .modelThinkingLevels = ((.modelThinkingLevels // {}) + {"openai/gpt-6.1-sol":"high"})
+  | if (.enabledModels | type) == "array" then
+      .enabledModels |= (. + ["openai/gpt-6.1-sol"] | unique)
+    else . end' "$settings" > "$settings.tmp" && mv "$settings.tmp" "$settings"
+pi
+```
+
+This preserves tools, codemode, authentication, appearance, local models and
+other model-specific thinking choices. An existing enabled-model list retains
+its choices and gains the exact requested model; an absent list remains absent
+(all available models). `pi -c` resumes the session's model, so use plain `pi` to
+check defaults in a fresh session. Task/image/extension checks remain deferred,
+not passed; no old credentials are removed.
 
 Remaining manual checks: `/review` Neovim submit/cancel, `/review --tui` mouse and
 keyboard submit/cancel, `/review-summary` unfinished/reload/tree/explicit completion,
