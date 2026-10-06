@@ -18,6 +18,10 @@ import { fileURLToPath } from "node:url";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
   type Component,
+  type Focusable,
+  isViewportTUI,
+  type TuiMouseEvent,
+  type TuiMouseEventResult,
   Editor,
   type EditorTheme,
   Key,
@@ -717,7 +721,9 @@ class HelpComponent implements Component {
   }
 }
 
-class ReviewComponent implements Component {
+export class ReviewComponent implements Component, Focusable {
+  get focused(): boolean { return this.editor.focused; }
+  set focused(value: boolean) { this.editor.focused = value; this.invalidate(); }
   private files: DiffFile[];
   private target: ReviewTarget;
   private tui: TUI;
@@ -761,9 +767,11 @@ class ReviewComponent implements Component {
     const editorTheme: EditorTheme = {
       borderColor: this.dim,
       selectList: {
-        selectedBg: this.inverse,
-        matchHighlight: this.cyan,
-        itemSecondary: this.gray,
+        selectedPrefix: this.cyan,
+        selectedText: this.inverse,
+        description: this.gray,
+        scrollInfo: this.dim,
+        noMatch: this.dim,
       },
     };
     this.editor = new Editor(tui, editorTheme);
@@ -782,7 +790,8 @@ class ReviewComponent implements Component {
   }
 
   private enableMouse(): void {
-    if (this.mouseEnabled) return;
+    if (this.mouseEnabled || isViewportTUI(this.tui)) return;
+    // Fullscreen owns its terminal modes; do not disable them when review exits.
     // Enable xterm button events + SGR extended coordinates. We disable these
     // before leaving the custom UI via finish().
     this.tui.terminal.write("\x1b[?1000h\x1b[?1006h");
@@ -794,6 +803,8 @@ class ReviewComponent implements Component {
     this.tui.terminal.write("\x1b[?1000l\x1b[?1006l");
     this.mouseEnabled = false;
   }
+
+  dispose(): void { this.disableMouse(); }
 
   private finish(result: ReviewResult | null): void {
     this.disableMouse();
@@ -1042,7 +1053,20 @@ class ReviewComponent implements Component {
     return y - this.lastRenderTopRow;
   }
 
-  private handleMouse(mouse: MouseEvent): boolean {
+  handleMouse(event: TuiMouseEvent): TuiMouseEventResult | undefined {
+    if (event.type !== "press" && event.type !== "wheel") return undefined;
+    if (event.type === "wheel" && !event.wheelDelta) return undefined;
+    const handled = this.handleLegacyMouse({
+      kind: event.type === "wheel" ? (event.wheelDelta! < 0 ? "wheel-up" : "wheel-down") : "press",
+      button: event.button === "none" ? "unknown" : event.button,
+      // Normalized events are component-local and zero-based; legacy hitboxes
+      // use one-based columns and an absolute render origin for rows.
+      x: event.x + 1, y: event.y + this.lastRenderTopRow,
+    });
+    return handled ? { handled: true, focus: true, render: true } : undefined;
+  }
+
+  private handleLegacyMouse(mouse: MouseEvent): boolean {
     if (this.mode !== "navigate") return false;
 
     const row = this.toRelativeMouseRow(mouse.y);
@@ -1085,7 +1109,7 @@ class ReviewComponent implements Component {
 
   handleInput(data: string): void {
     const mouse = parseMouseEvent(data);
-    if (mouse && this.handleMouse(mouse)) {
+    if (mouse && this.handleLegacyMouse(mouse)) {
       this.tui.requestRender();
       return;
     }

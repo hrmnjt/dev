@@ -244,6 +244,12 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261006: Refreshed official Pi imports and hardened `/answer` with
+  provider-neutral authenticated extraction, validated/bounded question JSON,
+  distinct cancellation/errors and session/model guards. Updated editor theme
+  contracts, focus forwarding and review fullscreen mouse handling/cleanup.
+  Nine UI/extraction regression tests and strict semantic checking of all
+  tracked TypeScript extensions pass; real interactive/provider checks remain.
 - 20261006: Persisted branch-aware review-summary requests and explicitly
   confirmed completion in Pi session entries. Pin Git ranges; unfinished/failed
   reviews never advance checkpoints. Reconstruct only the active session branch;
