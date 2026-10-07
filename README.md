@@ -113,7 +113,6 @@ herdr plugin list --plugin hrmnjt.default-tabs
 
 #### Setup references
 
-- [TODO and decision backlog](TODO.md)
 - [Gruvbox Dark Hard palette and application map](GRUVBOX.md)
 - [AeroSpace](aerospace/README.md)
 - [Ghostty](ghostty/README.md)
@@ -253,6 +252,10 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261007: Retired the native-migration planning backlog and its setup link.
+  Implementation and host enforcement are verified; remaining manual checks
+  and deferred provider/local-first work stay documented in `pi/README.md`,
+  without marking those checks as passed.
 - 20261007: Replaced the doctor Stow regression's JavaScript harness with a
   standalone shell script under `_scripts/tests/`; removed `_tests/meta/`.
   Preserve all six link-layout checks without adding a framework or dependency.
