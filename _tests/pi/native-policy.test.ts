@@ -107,7 +107,13 @@ test("filesystem startup self-test rejects a no-op executor and keeps that failu
   const platform = Object.getOwnPropertyDescriptor(process, "platform")!;
   const launcher = NativeRuntime.prototype.checkLauncher;
   let calls = 0;
-  const runtime = new NativeRuntime(workspace, { exec: async () => { calls++; return { exitCode: 0 }; } });
+  const runtime = new NativeRuntime(workspace, { exec: async () => {
+    calls++;
+    // Simulate a wrapper that permits every write but falsely reports success.
+    await fs.writeFile(path.join(runtime.scratch!, "probe"), "ok");
+    await fs.writeFile(path.join(runtime.scratch!, ".pi-native-policy"), "bad");
+    return { exitCode: 0 };
+  } });
   try {
     Object.defineProperty(process, "platform", { value: "darwin" });
     NativeRuntime.prototype.checkLauncher = async () => {};
@@ -121,6 +127,50 @@ test("filesystem startup self-test rejects a no-op executor and keeps that failu
     Object.defineProperty(process, "platform", platform);
   }
 });
+// These executor mocks check the real self-test command/profile and lifecycle,
+// not Seatbelt enforcement; native-kernel.test.mjs covers the same launch cases.
+for (const launchAtTempRoot of [false, true]) {
+  test(`startup probes remain denied with ${launchAtTempRoot ? "a temp-root launch" : "project-local TMPDIR"}`, async () => {
+    const platform = Object.getOwnPropertyDescriptor(process, "platform")!;
+    const launcher = NativeRuntime.prototype.checkLauncher;
+    const previousTmpdir = process.env.TMPDIR;
+    const tmpdir = path.join(workspace, launchAtTempRoot ? "temp-root" : "project-temp");
+    await fs.mkdir(tmpdir);
+    const cwd = launchAtTempRoot ? tmpdir : workspace;
+    let calls = 0;
+    const runtime = new NativeRuntime(cwd, { exec: async (command, directory) => {
+      calls++;
+      const ownedScratch = runtime.scratch!;
+      const marker = path.join(ownedScratch, ".pi-native-policy");
+      assert.equal(directory, cwd);
+      assert.ok(isInside(tmpdir, ownedScratch));
+      assert.ok(command.includes(`(deny file-write* (subpath ${JSON.stringify(marker)}))`));
+      assert.ok(command.includes(`fs.writeFileSync(${JSON.stringify(marker)},`));
+      await fs.writeFile(path.join(ownedScratch, "probe"), "ok");
+      // Leave the marker unchanged, simulating the profile denying its write.
+      return { exitCode: 0 };
+    } });
+    let ownedScratch: string | undefined;
+    try {
+      process.env.TMPDIR = tmpdir;
+      Object.defineProperty(process, "platform", { value: "darwin" });
+      NativeRuntime.prototype.checkLauncher = async () => {};
+      const p = await runtime.ensureReady(); ownedScratch = p.scratch;
+      assert.equal(p.root, cwd);
+      assert.equal(await runtime.ensureReady(), p);
+      assert.equal(calls, 1);
+      await assert.rejects(p.assertWrite(path.join(p.scratch, ".pi-native-policy")), /write denied/);
+      await assert.rejects(p.assertWrite(path.join(base, "outside")), /write denied/);
+    } finally {
+      await runtime.dispose();
+      NativeRuntime.prototype.checkLauncher = launcher;
+      Object.defineProperty(process, "platform", platform);
+      if (previousTmpdir === undefined) delete process.env.TMPDIR;
+      else process.env.TMPDIR = previousTmpdir;
+    }
+    if (ownedScratch) await assert.rejects(fs.stat(ownedScratch), { code: "ENOENT" });
+  });
+}
 test("unsupported native platforms block all operations and retain a failed initialization", { skip: process.platform === "darwin" }, async () => {
   let calls = 0;
   const runtime = new NativeRuntime(workspace, { exec: async () => { calls++; return { exitCode: 0 }; } });

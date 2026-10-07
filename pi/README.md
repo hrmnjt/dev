@@ -56,8 +56,10 @@ missing launcher, or failed initialization blocks model tools.
 Uses macOS Seatbelt directly through `/usr/bin/sandbox-exec`, with Pi's supported
 tool factories and no npm sandbox/proxy dependency. The profile confines filesystem
 writes, without the previous runtime's mandatory source/Git/shell-file locks or
-network policy. An allowed-write/blocked-external-write startup self-test must
-pass before model-controlled input is accepted.
+network policy. A permitted scratch write and denied scratch-marker write must
+pass the startup self-test before model-controlled input is accepted. The marker
+is already protected by the real session profile, so this check also works when
+`TMPDIR` is inside the launch directory or Pi starts in the temp-directory root.
 Failure stays blocked until a fresh process/reload. This setup requires macOS.
 
 The model uses real host paths and installed Pi documentation/example paths.
@@ -139,6 +141,14 @@ The current outer sandbox denies nested `sandbox_apply`, so enforcement trials
 run on the host. All tracked TypeScript extensions now pass strict semantic
 checking against the installed Pi 1.0.0 declarations (`skipLibCheck` for installed
 dependencies); compiler/Node typings are installed only in private scratch.
+
+The startup-probe review finding is fixed without changing policy permissions.
+Two new mock regressions cover project-local `TMPDIR` and temp-root launches;
+both fail against the old source and pass with the protected-marker probe.
+The no-op executor test now simulates a successful permitted write plus marker
+corruption and still fails closed. Policy tests: **14 passed, 1 expected skip**.
+The real Seatbelt suite includes both launch cases and marker/cleanup checks,
+but those additions still need a host-terminal rerun; mocks are not kernel proof.
 
 A fresh-process `/sandbox` confirms the revised launch boundary, scratch, Git
 metadata exception and unrestricted network/IPC profile are loaded. Codemode
