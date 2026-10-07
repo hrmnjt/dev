@@ -164,7 +164,8 @@ Follow [deployment](#deploy-on-the-host-mac), then run in a host terminal on the
 Mac with Node 24+ (not through already-sandboxed model tools):
 
 ```bash
-node --test _tests/pi/*.test.* _tests/meta/*.test.*
+node --test _tests/pi/*.test.*
+./_scripts/tests/doctor-stow.sh
 ./_scripts/doctor.sh
 pi
 ```
@@ -683,7 +684,8 @@ After the new review helper is deployed, run in a **host terminal**:
 
 ```bash
 just stowall
-node --test _tests/pi/*.test.* _tests/meta/*.test.*
+node --test _tests/pi/*.test.*
+./_scripts/tests/doctor-stow.sh
 ./_scripts/doctor.sh
 ```
 
@@ -730,14 +732,16 @@ native kernel suite and updated full host suite pass. Rerun outside nested
 Seatbelt confinement after any further code changes before merging. Nothing is
 pushed or merged automatically.
 
-Current automated evidence after the startup-probe/repeat-completion fixes:
-all ten tracked factories load without errors via Pi's official loader; all
-TypeScript extensions pass strict semantic checking; non-kernel regressions
-report **52 passed, 0 failed, 1 expected skip**. Repository doctor reports
+Current automated evidence: all ten tracked factories load without errors via
+Pi's official loader; all TypeScript extensions pass strict semantic checking.
+After separating doctor fixtures into `_scripts/tests/doctor-stow.sh`, Pi-only
+non-kernel regressions report **46 passed, 0 failed, 1 expected skip**, and all
+six shell fixture checks pass. Pi test bodies are unchanged. Repository doctor reports
 **12 passed, 0 failed, 0 warnings**. Existing runtime/review command deployment
 symlinks match the checkout; `/reload` or restart loads the fixes, without a new
-Stow step. The updated user host rerun reports **53 passed, 0 failed, 1 expected
-skip**, including real Seatbelt enforcement and the new TMPDIR cases. Full host
+Stow step. The user host rerun before separating the doctor fixtures reported
+**53 passed, 0 failed, 1 expected skip**, including real Seatbelt enforcement
+and the new TMPDIR cases. Full host
 doctor rerun: **24 passed, 0 failed, 0 warnings**. The earlier full host run had
 46 passes and one expected skip. User Stow succeeds.
 Earlier repository doctor reports **12 passed, 0 failed, 0 warnings** in-session,

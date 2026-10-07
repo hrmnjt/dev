@@ -165,6 +165,15 @@ just doctor --verbose
 just doctor --only-check --verbose
 ```
 
+When changing the Stow diagnostic, run its small shell regression check:
+
+```bash
+./_scripts/tests/doctor-stow.sh
+```
+
+It tests six disposable healthy/broken link layouts without Node, Homebrew, or
+changes to your real home directory. Normal doctor runs do not run these fixtures.
+
 #### Managing macOS defaults
 
 Preview the tracked behavioral defaults before changing the host:
@@ -244,6 +253,11 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261007: Replaced the doctor Stow regression's JavaScript harness with a
+  standalone shell script under `_scripts/tests/`; removed `_tests/meta/`.
+  Preserve all six link-layout checks without adding a framework or dependency.
+  Pi tests stay unchanged; documented their separate command. Shell cases pass,
+  Pi-only non-kernel suite: 46 passed, 1 expected skip.
 - 20261007: Verified live `/answer` extraction/submission with the selected
   `openai/gpt-6.1-sol`: four synthetic questions remain ordered, optional context
   and multiline answers survive normal-message submission, and form cancellation
