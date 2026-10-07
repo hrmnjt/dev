@@ -250,13 +250,15 @@ expanded month by month. Full history lives in `git log`.
   absent/reset/rewritten/other-scope and unfinished reviews still reject it.
   Eight review regression tests pass; updated non-kernel suite: 52 passed,
   0 failed, 1 expected skip. All ten extensions load and strict semantic checks
-  pass; repository doctor: 12 passed, no failures/warnings. Live reload/tree,
-  other interactive checks and the updated host kernel/doctor rerun remain.
+  pass; repository doctor: 12 passed, no failures/warnings. Live reload/tree
+  and other interactive checks remain; updated host verification is below.
 - 20261007: Fixed Pi startup denial probes for project-local `TMPDIR` and
   temp-root launches by testing the already-protected scratch marker under the
   unchanged session profile. Both new mock regressions fail against the old
   source and pass after the fix; policy tests report 14 passes and one expected
-  skip. Expanded the real Seatbelt test; its host rerun remains pending.
+  skip. User host rerun: 53 passed, 0 failed, 1 expected skip, including the
+  expanded real Seatbelt launch/marker/cleanup cases; full doctor: 24 passed,
+  0 failed, 0 warnings. Interactive closeout remains pending.
 - 20261006: Confirmed user OpenAI OAuth and exact `gpt-6.1-sol` availability;
   set tracked `openai/gpt-6.1-sol/high` defaults and update the cloud shortlist,
   preserving both local models, codemode and appearance. User deferred real-task,

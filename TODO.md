@@ -79,16 +79,18 @@ The requested PI-07 model is a preference, not a claim of provider availability.
   review regression tests pass. Updated non-kernel suite: **52 passed, 0 failed,
   1 expected skip**; all ten factories load and strict semantic checks pass;
   repository doctor: **12 passed, 0 failed, 0 warnings**. Existing source
-  deployment symlinks match the checkout. User will test interactive elements
-  later; fresh/reloaded runtime and updated full host/kernel/doctor remain
-  pending, not claimed as passed.
+  deployment symlinks match the checkout. Subsequent user host rerun: **53 passed,
+  0 failed, 1 expected skip** (54 total), including the updated Seatbelt cases;
+  full doctor: **24 passed, 0 failed, 0 warnings**. User will test interactive
+  elements later; fresh/reloaded UI and interactive migration remain pending.
 - PR startup-probe finding fixed: the denial test uses the already-protected
   scratch marker under the unchanged session profile, not an arbitrary temp
   sibling that can be inside cwd. Project-local `TMPDIR` and temp-root mock
   regressions fail against old source and pass after the fix; policy tests:
   **14 passed, 0 failed, 1 expected skip**. The no-op executor test also rejects
-  marker corruption despite a successful permitted write. Real Seatbelt coverage
-  for both launch cases is added; its host-terminal rerun remains pending.
+  marker corruption despite a successful permitted write. The user host rerun
+  passes real Seatbelt coverage for both launch cases, protected marker writes,
+  permitted workspace writes and scratch cleanup. The startup finding is closed.
 - Host reports Pi **1.0.0**; no upgrade needed. Historical VM package versions
   were **0.12.0**; those dependencies are removed, not upgraded.
 - Native-only tools, backend-free host paths, private scratch, shared uv guard,
