@@ -72,6 +72,13 @@ The requested PI-07 model is a preference, not a claim of provider availability.
 
 ## Verification snapshot
 
+- PR startup-probe finding fixed: the denial test uses the already-protected
+  scratch marker under the unchanged session profile, not an arbitrary temp
+  sibling that can be inside cwd. Project-local `TMPDIR` and temp-root mock
+  regressions fail against old source and pass after the fix; policy tests:
+  **14 passed, 0 failed, 1 expected skip**. The no-op executor test also rejects
+  marker corruption despite a successful permitted write. Real Seatbelt coverage
+  for both launch cases is added; its host-terminal rerun remains pending.
 - Host reports Pi **1.0.0**; no upgrade needed. Historical VM package versions
   were **0.12.0**; those dependencies are removed, not upgraded.
 - Native-only tools, backend-free host paths, private scratch, shared uv guard,

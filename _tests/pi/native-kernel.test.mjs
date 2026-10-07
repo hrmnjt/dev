@@ -140,6 +140,30 @@ test("real macOS Seatbelt enforcement, file tools, overflow, and cleanup", { ski
     await succeed(linkedRuntime, "Linked-worktree Git commit", "git add linked.txt && git -c commit.gpgSign=false -c user.name='Test fixture' -c user.email=fixture@example.invalid commit -m linked-fixture", linked);
     assert.notEqual((await linkedRuntime.exec(`printf bad > ${q(path.join(workspace, "root.txt"))}`, linked, { onData: () => {} })).exitCode, 0);
     assert.equal(await fs.readFile(path.join(workspace, "root.txt"), "utf8"), "after\n");
+    // TMPDIR may be inside cwd, or cwd may be the temp root itself. The startup
+    // denial probe must still fail to write under the unchanged session profile.
+    const projectTemp = path.join(workspace, "project-temp"); await fs.mkdir(projectTemp);
+    const previousTmpdir = process.env.TMPDIR;
+    try {
+      process.env.TMPDIR = projectTemp;
+      for (const directory of [workspace, projectTemp]) {
+        const localTempRuntime = new NativeRuntime(directory, operations); extraRuntimes.push(localTempRuntime);
+        const p = await localTempRuntime.ensureReady();
+        assert.equal(p.root, directory);
+        assert.equal(path.dirname(p.scratch), projectTemp);
+        const marker = path.join(p.scratch, ".pi-native-policy");
+        const unchanged = await fs.readFile(marker, "utf8");
+        assert.notEqual((await localTempRuntime.exec(`printf bad > ${q(marker)}`, directory, { onData: () => {} })).exitCode, 0);
+        assert.equal(await fs.readFile(marker, "utf8"), unchanged);
+        await succeed(localTempRuntime, "Local-TMPDIR workspace write", "printf ok > tmpdir-write.txt", directory);
+        assert.equal(await fs.readFile(path.join(directory, "tmpdir-write.txt"), "utf8"), "ok");
+        await localTempRuntime.dispose();
+        await assert.rejects(fs.stat(p.scratch), { code: "ENOENT" });
+      }
+    } finally {
+      if (previousTmpdir === undefined) delete process.env.TMPDIR;
+      else process.env.TMPDIR = previousTmpdir;
+    }
   } finally {
     for (const server of servers) if (server.listening) await new Promise(resolve => server.close(resolve));
     for (const extra of extraRuntimes) {

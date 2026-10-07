@@ -244,6 +244,11 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261007: Fixed Pi startup denial probes for project-local `TMPDIR` and
+  temp-root launches by testing the already-protected scratch marker under the
+  unchanged session profile. Both new mock regressions fail against the old
+  source and pass after the fix; policy tests report 14 passes and one expected
+  skip. Expanded the real Seatbelt test; its host rerun remains pending.
 - 20261006: Confirmed user OpenAI OAuth and exact `gpt-6.1-sol` availability;
   set tracked `openai/gpt-6.1-sol/high` defaults and update the cloud shortlist,
   preserving both local models, codemode and appearance. User deferred real-task,

@@ -74,22 +74,19 @@ export class NativeRuntime {
     this.scratch = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), "pi-native-")));
     await fs.chmod(this.scratch, 0o700);
     // Ownership marker; the profile pins both it and the scratch root.
-    await fs.writeFile(path.join(this.scratch, ".pi-native-policy"), "Owned by Pi native sandbox\n", { mode: 0o600 });
+    const sentinel = path.join(this.scratch, ".pi-native-policy");
+    const markerContent = "Owned by Pi native sandbox\n";
+    await fs.writeFile(sentinel, markerContent, { mode: 0o600 });
     const policy = await createNativePolicy(this.cwd, this.scratch);
-    // Prove the wrapper is not a no-op before accepting any model-controlled input.
-    const outside = await fs.mkdtemp(path.join(os.tmpdir(), "pi-native-probe-"));
-    const sentinel = path.join(outside, "sentinel");
-    await fs.writeFile(sentinel, "unchanged");
-    try {
-      const script = `const fs=require('node:fs'); fs.writeFileSync(${JSON.stringify(path.join(policy.scratch, "probe"))},'ok'); try { fs.writeFileSync(${JSON.stringify(sentinel)},'bad'); process.exitCode=31; } catch(e) { if (!['EPERM','EACCES'].includes(e.code)) throw e; }`;
-      let diagnostic = "";
-      const result = await this.localBash.exec(await this.wrap(`${shellQuote(process.execPath)} -e ${shellQuote(script)}`, policy, process.env), policy.cwd, {
-        onData: data => { diagnostic = (diagnostic + data.toString()).slice(-4096); }, timeout: 10, env: safeShellEnv(process.env),
-      });
-      if (result.exitCode !== 0 || await fs.readFile(sentinel, "utf8") !== "unchanged" || await fs.readFile(path.join(policy.scratch, "probe"), "utf8") !== "ok") throw new Error(`Native sandbox filesystem self-test failed; tools remain blocked.${diagnostic.trim() ? `\n${diagnostic.trim()}` : ""}`);
-    } finally {
-      await fs.rm(outside, { recursive: true, force: true });
-    }
+    // Probe the existing marker deny rule: an arbitrary os.tmpdir() sibling
+    // can be writable when TMPDIR is inside the launch directory. Use the real
+    // session profile unchanged, and prove both permitted writes and denial.
+    const script = `const fs=require('node:fs'); fs.writeFileSync(${JSON.stringify(path.join(policy.scratch, "probe"))},'ok'); try { fs.writeFileSync(${JSON.stringify(sentinel)},'bad'); process.exitCode=31; } catch(e) { if (!['EPERM','EACCES'].includes(e.code)) throw e; }`;
+    let diagnostic = "";
+    const result = await this.localBash.exec(await this.wrap(`${shellQuote(process.execPath)} -e ${shellQuote(script)}`, policy, process.env), policy.cwd, {
+      onData: data => { diagnostic = (diagnostic + data.toString()).slice(-4096); }, timeout: 10, env: safeShellEnv(process.env),
+    });
+    if (result.exitCode !== 0 || await fs.readFile(sentinel, "utf8") !== markerContent || await fs.readFile(path.join(policy.scratch, "probe"), "utf8") !== "ok") throw new Error(`Native sandbox filesystem self-test failed; tools remain blocked.${diagnostic.trim() ? `\n${diagnostic.trim()}` : ""}`);
     this.policy = policy;
     return policy;
   }
