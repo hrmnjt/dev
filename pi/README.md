@@ -420,15 +420,22 @@ A request **does not** advance the checkpoint. After a successful final review,
 explicitly run `/review-summary complete` (or `complete develop` for that base).
 It rejects completion without a successful final assistant response and records
 only the requested HEAD, never newer commits. This is your confirmation that the
-review finished, not an automatic claim about review quality. Repeated requests
+review finished, not an automatic claim about review quality. Repeating `complete`
+after confirmation reports the existing checkpoint without appending entries or
+covering newer commits; run a new review request to review those commits. It
+still rejects absent/reset/invalid checkpoints and unfinished pending requests.
+Do not issue another kickoff just before `complete`: that creates a new pending
+request requiring its own final response. Repeated requests
 for unfinished reviews cover the unconfirmed range again. Confirmed reviews ask
 the model to check previous findings before reviewing new commits. `reset [base]`
 clears only that active scope so it can be reviewed in full again.
 
-Six real-Git/SDK session regression tests and strict semantic type-check pass:
+Eight real-Git/SDK session regression tests and strict semantic type-check pass:
 reload/reconstruction, navigation, compaction, failed/cancelled/truncated reviews,
-scoped isolation, history rewrites, reset and setup failure/races. Interactive
-verification remains pending. The new `lib/review-state.ts` needs `just stowall`
+scoped isolation, history rewrites, reset, repeated completion and setup races.
+Live session entries confirm aborted-request rejection and explicit completion
+through `b2dadb3`; repeating completion originally errored because no request
+remained pending. Interactive reload/restart and tree checks remain pending. The new `lib/review-state.ts` needs `just stowall`
 from the host before `/reload`; do not reload while its deployed link is missing.
 
 ### uv guard — `extensions/uv.ts`
@@ -714,10 +721,14 @@ Herdr linked worktrees and clean reload/shutdown scratch/log removal. The core
 native kernel suite already passed; rerun the updated full suite outside nested
 Seatbelt confinement before merging. Nothing is pushed or merged automatically.
 
-Current automated evidence: all ten tracked factories load without errors via
-Pi's official loader; all TypeScript extensions pass strict semantic checking;
-non-kernel regressions report **45 passed, 0 failed, 1 expected skip**. The
-subsequent full host rerun reports **46 passed, 0 failed, 1 expected skip**;
+Current automated evidence after the startup-probe/repeat-completion fixes:
+all ten tracked factories load without errors via Pi's official loader; all
+TypeScript extensions pass strict semantic checking; non-kernel regressions
+report **52 passed, 0 failed, 1 expected skip**. Repository doctor reports
+**12 passed, 0 failed, 0 warnings**. Existing runtime/review command deployment
+symlinks match the checkout; `/reload` or restart loads the fixes, without a new
+Stow step. The updated kernel cases and full host doctor still need a terminal
+rerun. The earlier full host run reported **46 passed, 0 failed, 1 expected skip**;
 full host doctor rerun: **24 passed, 0 failed, 0 warnings**. User Stow succeeds.
 Earlier repository doctor reports **12 passed, 0 failed, 0 warnings** in-session,
 with an

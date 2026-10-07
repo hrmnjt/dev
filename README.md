@@ -244,6 +244,14 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261007: Diagnosed repeat review completion from the active session entries:
+  the review was already confirmed through `b2dadb3`. Repeated `complete` now
+  reports that checkpoint without appending state or covering newer commits;
+  absent/reset/rewritten/other-scope and unfinished reviews still reject it.
+  Eight review regression tests pass; updated non-kernel suite: 52 passed,
+  0 failed, 1 expected skip. All ten extensions load and strict semantic checks
+  pass; repository doctor: 12 passed, no failures/warnings. Live reload/tree,
+  other interactive checks and the updated host kernel/doctor rerun remain.
 - 20261007: Fixed Pi startup denial probes for project-local `TMPDIR` and
   temp-root launches by testing the already-protected scratch marker under the
   unchanged session profile. Both new mock regressions fail against the old
