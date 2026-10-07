@@ -72,6 +72,16 @@ The requested PI-07 model is a preference, not a claim of provider availability.
 
 ## Verification snapshot
 
+- Active session entries confirm the review through `b2dadb3` is completed;
+  earlier repeated kickoffs followed by aborted turns correctly blocked
+  completion. Repeating completion now reports the existing valid checkpoint
+  informationally without appending state or covering newer commits. Eight
+  review regression tests pass. Updated non-kernel suite: **52 passed, 0 failed,
+  1 expected skip**; all ten factories load and strict semantic checks pass;
+  repository doctor: **12 passed, 0 failed, 0 warnings**. Existing source
+  deployment symlinks match the checkout. User will test interactive elements
+  later; fresh/reloaded runtime and updated full host/kernel/doctor remain
+  pending, not claimed as passed.
 - PR startup-probe finding fixed: the denial test uses the already-protected
   scratch marker under the unchanged session profile, not an arbitrary temp
   sibling that can be inside cwd. Project-local `TMPDIR` and temp-root mock
@@ -245,10 +255,11 @@ The requested PI-07 model is a preference, not a claim of provider availability.
 
 - [ ] **PI-10 — Persist review checkpoints**
   - Implemented branch-aware custom-entry requests/completions, pinned ranges,
-    explicit `complete [base]` and scoped `reset [base]`. Six real-Git/SDK tests
-    and strict semantic type-check pass. Host Stow/new-helper deployment and
-    updated full tests pass. Pending: interactive reload/restart, completion
-    and tree-navigation verification.
+    explicit `complete [base]` and scoped `reset [base]`. Eight real-Git/SDK tests
+    and strict semantic type-check pass. Helper deployment is verified. Live
+    aborted-request rejection and explicit completion through `b2dadb3` are
+    observed; repeated completion now reports that checkpoint without advancing
+    it. Pending: interactive reload/restart and tree-navigation verification.
   - Scope: `review-summary.ts`, supported session entries, and docs. Done when
     restart/reload restores the active session branch's state, with explicit
     completion confirmation; only confirmed completion advances the checkpoint.

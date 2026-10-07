@@ -193,7 +193,15 @@ export default function (pi: ExtensionAPI) {
     }
     if (action === "completed") {
       const pending = state.pending;
-      if (!pending) throw new Error("No pending review in this scope. Run /review-summary first.");
+      if (!pending) {
+        if (state.completed && await gitOk(["merge-base", "--is-ancestor", mergeBase, state.completed], ctx) &&
+            await gitOk(["merge-base", "--is-ancestor", state.completed, currentHead], ctx)) {
+          await assertStable();
+          ctx.ui.notify(`Review already confirmed through ${state.completed.substring(0, 8)}. No pending review to complete.${state.completed !== currentHead ? ` Run /review-summary ${baseBranch} to review newer commits.` : ""}`, "info");
+          return;
+        }
+        throw new Error("No pending review in this scope. Run /review-summary first.");
+      }
       if (!hasFinishedResponse(entries, pending.index)) throw new Error("No successful final assistant response after the request; unfinished or failed reviews cannot be completed.");
       if (!(await gitOk(["merge-base", "--is-ancestor", pending.data.head, currentHead], ctx)))
         throw new Error("Requested HEAD is no longer an ancestor; rerun the review after the history rewrite.");

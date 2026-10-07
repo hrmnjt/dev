@@ -63,6 +63,50 @@ test("unfinished requests do not advance; explicit completion survives factory r
   assert.match(f.messages.at(-1), new RegExp(`${first.data.head}\\.\\.`));
 });
 
+test("repeated completion is informational and never advances an existing checkpoint", async t => {
+  const f = await fixture(t);
+  await f.run("main"); const requested = f.request().data.head;
+  f.manager.appendMessage(assistant()); await f.run("complete main");
+  const completed = f.request(), entries = f.manager.getBranch().length, messages = f.messages.length;
+  extension(f.api); // The already-confirmed state is reconstructed after reload.
+  await f.run("complete main");
+  assert.equal(f.notices.at(-1).level, "info");
+  assert.match(f.notices.at(-1).message, /already confirmed.*No pending review/);
+  assert.equal(f.request(), completed);
+  assert.equal(f.manager.getBranch().length, entries);
+  assert.equal(f.messages.length, messages);
+  f.git(["commit", "--allow-empty", "-m", "newer"]);
+  await f.run("complete main");
+  assert.equal(f.notices.at(-1).level, "info");
+  assert.match(f.notices.at(-1).message, /review newer commits/);
+  assert.equal(f.request().data.head, requested);
+  assert.equal(f.manager.getBranch().length, entries);
+  await f.run("main");
+  assert.match(f.messages.at(-1), new RegExp(`${requested}\\.\\.`));
+  await f.run("complete main");
+  assert.equal(f.notices.at(-1).level, "error"); // A newer pending request still needs its own final response.
+  assert.match(f.notices.at(-1).message, /No successful final/);
+});
+
+test("absent, reset, rewritten and other-scope reviews are not reported as already completed", async t => {
+  const f = await fixture(t);
+  await f.run("complete"); assert.equal(f.notices.at(-1).level, "error");
+  await f.run(""); f.manager.appendMessage(assistant()); await f.run("complete");
+  await f.run("reset"); await f.run("complete");
+  assert.equal(f.notices.at(-1).level, "error");
+  assert.match(f.notices.at(-1).message, /No pending review/);
+  await f.run(""); f.manager.appendMessage(assistant()); await f.run("complete");
+  const completed = f.request();
+  f.git(["checkout", "-b", "other-scope"]); await f.run("complete");
+  assert.equal(f.notices.at(-1).level, "error");
+  f.git(["checkout", "feature"]);
+  f.git(["reset", "--hard", "main"]); f.git(["commit", "--allow-empty", "-m", "rewritten"]);
+  await f.run("complete");
+  assert.equal(f.notices.at(-1).level, "error");
+  assert.match(f.notices.at(-1).message, /No pending review/);
+  assert.equal(f.request(), completed);
+});
+
 test("completion checkpoints requested HEAD, not newer commits; reset allows a full rerun", async t => {
   const f = await fixture(t);
   await f.run(""); const requested = f.request().data.head;
