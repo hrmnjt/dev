@@ -72,6 +72,12 @@ The requested PI-07 model is a preference, not a claim of provider availability.
 
 ## Verification snapshot
 
+- Doctor's six Stow regression fixtures now run in plain shell at
+  `_scripts/tests/doctor-stow.sh`; the JS harness and `_tests/meta/` are removed.
+  Pi tests/layout remain unchanged. Shell fixtures: **6 passed**; Pi-only
+  non-kernel suite: **46 passed, 0 failed, 1 expected skip**. Earlier combined
+  Node totals below included those six doctor cases. No new framework,
+  dependency, deployment rule or normal-doctor fixture execution is added.
 - Live `/answer` with the selected `openai/gpt-6.1-sol` extracts four synthetic
   questions in order and submits a normal user message preserving optional
   context and a three-line answer. Separate form cancellation sends no answers,
