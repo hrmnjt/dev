@@ -74,8 +74,10 @@ The requested PI-07 model is a preference, not a claim of provider availability.
 
 - Doctor's six Stow regression fixtures now run in plain shell at
   `_scripts/tests/doctor-stow.sh`; the JS harness and `_tests/meta/` are removed.
-  Pi tests/layout remain unchanged. Shell fixtures: **6 passed**; Pi-only
-  non-kernel suite: **46 passed, 0 failed, 1 expected skip**. Earlier combined
+  Pi tests/layout remain unchanged. Fixture roots use physical `pwd -P` paths
+  to avoid mistaking macOS `/var` or custom TMPDIR symlinks for deployment links.
+  Shell fixtures: **6 passed** with normal and symlinked/trailing-slash TMPDIR;
+  cleanup verified. Pi-only non-kernel suite: **46 passed, 0 failed, 1 expected skip**. Earlier combined
   Node totals below included those six doctor cases. No new framework,
   dependency, deployment rule or normal-doctor fixture execution is added.
 - Live `/answer` with the selected `openai/gpt-6.1-sol` extracts four synthetic

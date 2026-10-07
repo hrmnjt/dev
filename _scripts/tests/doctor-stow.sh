@@ -3,10 +3,13 @@
 set -eu
 
 repo=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-tmp=$(mktemp -d "${TMPDIR:-/tmp}/doctor-stow-test.XXXXXX")
-trap 'rm -rf "$tmp"' EXIT
+created_tmp=$(mktemp -d "${TMPDIR:-/tmp}/doctor-stow-test.XXXXXX")
+trap 'rm -rf "$created_tmp"' EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
+# /var and custom TMPDIR paths can be symlinks. Keep those ancestors out of
+# fixture HOME paths, so they cannot be mistaken for Stow deployment links.
+tmp=$(CDPATH= cd -- "$created_tmp" && pwd -P)
 
 # Load only the real function, not the rest of the host diagnostics.
 awk '
