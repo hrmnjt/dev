@@ -324,8 +324,12 @@ of JSON; malformed/unsafe output and provider failures are reported as errors,
 not cancellation. Only user/provider aborts are cancellation. Late results after
 cancel are ignored, and branch/model changes block stale submissions.
 
-Seven isolated extraction/UI tests pass; actual local/cloud extraction and
-interactive submit/cancel still need host verification.
+Seven isolated extraction/UI tests pass. Live testing with the selected
+`openai/gpt-6.1-sol` extracts four synthetic questions in order and submits a
+normal user message preserving optional context and a three-line answer.
+The user confirms separate form cancellation sends no answers. No sample project
+was created. Navigation/answer retention, local-model extraction and cancellation
+during extraction remain unverified.
 
 Command:
 
@@ -719,7 +723,8 @@ not passed; no old credentials are removed.
 
 Remaining manual checks: `/review` Neovim submit/cancel, `/review --tui` mouse and
 keyboard submit/cancel, `/review-summary` unfinished/reload/tree/explicit completion,
-`/answer` extraction/submit/cancel with cloud and local models, clipboard images,
+`/answer` navigation/answer retention, local-model extraction and loader cancel,
+clipboard images,
 Herdr linked worktrees and clean reload/shutdown scratch/log removal. The core
 native kernel suite and updated full host suite pass. Rerun outside nested
 Seatbelt confinement after any further code changes before merging. Nothing is

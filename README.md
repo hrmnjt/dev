@@ -244,6 +244,11 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261007: Verified live `/answer` extraction/submission with the selected
+  `openai/gpt-6.1-sol`: four synthetic questions remain ordered, optional context
+  and multiline answers survive normal-message submission, and form cancellation
+  sends no answers (user confirmed). No sample project created. Navigation/answer
+  retention, local-model extraction and the review UI checks remain pending.
 - 20261007: Diagnosed repeat review completion from the active session entries:
   the review was already confirmed through `b2dadb3`. Repeated `complete` now
   reports that checkpoint without appending state or covering newer commits;
