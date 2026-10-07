@@ -72,6 +72,12 @@ The requested PI-07 model is a preference, not a claim of provider availability.
 
 ## Verification snapshot
 
+- Live `/answer` with the selected `openai/gpt-6.1-sol` extracts four synthetic
+  questions in order and submits a normal user message preserving optional
+  context and a three-line answer. Separate form cancellation sends no answers,
+  as confirmed by the user. No project created or model/service state changed.
+  Navigation/answer retention and local-model extraction remain unverified;
+  broader provider task/image checks stay deferred.
 - Active session entries confirm the review through `b2dadb3` is completed;
   earlier repeated kickoffs followed by aborted turns correctly blocked
   completion. Repeating completion now reports the existing valid checkpoint
@@ -225,8 +231,9 @@ The requested PI-07 model is a preference, not a claim of provider availability.
 
 - [ ] **PI-06 — Migrate OpenAI login**
   - User OpenAI OAuth login succeeds; live registry confirms the exact requested
-    model authenticated/available. User deferred real-task/image/provider checks;
-    retain old credentials. No secret values inspected or copied.
+    model authenticated/available. Live cloud `/answer` extraction now passes;
+    broader real-task/image/provider checks remain deferred. Retain old
+    credentials. No secret values inspected or copied.
   - Provide version-correct host instructions during implementation. The user
     logs in; verify model availability/limits, a real task, supported image input,
     and provider-dependent extensions before replacing the working connection.
@@ -274,7 +281,9 @@ The requested PI-07 model is a preference, not a claim of provider availability.
     distinct error/cancel outcomes, non-TUI rejection and stale-session/model
     guards. Fixed editor themes/focus and review fullscreen mouse contracts.
     Nine regression tests and all-extension strict semantic checking pass.
-    Pending: real local/cloud extraction, interactive submit/cancel and review.
+    Live cloud `/answer` extraction, normal-message submission, multiline
+    preservation and form cancellation pass. Pending: navigation/answer retention,
+    local-model extraction and interactive Neovim/TUI review.
   - Update legacy imports to current supported APIs; preserve the interactive
     workflow and handle unavailable models, cancellation/provider errors,
     malformed extraction, and non-TUI invocation clearly. Update related docs.
