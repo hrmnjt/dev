@@ -6,19 +6,103 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
-- 20261006: Fixed `/review` so it no longer marks untracked files
-  intent-to-add in the real Git index, and made `--base` diff from the merge
-  base; scoped `GH_TOKEN` to a `pi` shell function; pinned the Gondolin image
-  builder to the `package.json` version; added `UseKeychain` to SSH setup;
-  extended doctor's syntax check to extensionless scripts and ran it in GitHub
-  Actions; started tracking `lazy-lock.json`; moved the changelog out of the
-  README; moved two type-only Pi imports to `@earendil-works`.
-- 20261006: Added the Claude Code cask and a Stow-tracked `claude` package with
-  user instructions, a fail-closed macOS sandbox with Homebrew/Stow/launchd
-  prompts and credential denies, a uv guard hook ported from Pi, and disabled
-  commit/PR attribution; the root `CLAUDE.md` imports `AGENTS.md`, which now
-  covers both agents' execution environments, and doctor checks the `claude`
-  command and uv guard decisions.
+- 20261007: Retired the native-migration planning backlog and its setup link.
+  Implementation and host enforcement are verified; remaining manual checks
+  and deferred provider/local-first work stay documented in `pi/README.md`,
+  without marking those checks as passed.
+- 20261007: Replaced the doctor Stow regression's JavaScript harness with a
+  standalone shell script under `_scripts/tests/`; removed `_tests/meta/`.
+  Preserve all six link-layout checks without adding a framework or dependency.
+  Pi tests stay unchanged; documented their separate command. Canonicalize fixture
+  temp roots with `pwd -P` so macOS `/var` and custom TMPDIR symlinks are not
+  mistaken for deployment links. Six cases pass with normal and symlinked,
+  trailing-slash TMPDIR paths; cleanup verified. Pi-only non-kernel suite:
+  46 passed, 1 expected skip.
+- 20261007: Verified live `/answer` extraction/submission with the selected
+  `openai/gpt-6.1-sol`: four synthetic questions remain ordered, optional context
+  and multiline answers survive normal-message submission, and form cancellation
+  sends no answers (user confirmed). No sample project created. Navigation/answer
+  retention, local-model extraction and the review UI checks remain pending.
+- 20261007: Diagnosed repeat review completion from the active session entries:
+  the review was already confirmed through `b2dadb3`. Repeated `complete` now
+  reports that checkpoint without appending state or covering newer commits;
+  absent/reset/rewritten/other-scope and unfinished reviews still reject it.
+  Eight review regression tests pass; updated non-kernel suite: 52 passed,
+  0 failed, 1 expected skip. All ten extensions load and strict semantic checks
+  pass; repository doctor: 12 passed, no failures/warnings. Live reload/tree
+  and other interactive checks remain; updated host verification is below.
+- 20261007: Fixed Pi startup denial probes for project-local `TMPDIR` and
+  temp-root launches by testing the already-protected scratch marker under the
+  unchanged session profile. Both new mock regressions fail against the old
+  source and pass after the fix; policy tests report 14 passes and one expected
+  skip. User host rerun: 53 passed, 0 failed, 1 expected skip, including the
+  expanded real Seatbelt launch/marker/cleanup cases; full doctor: 24 passed,
+  0 failed, 0 warnings. Interactive closeout remains pending.
+- 20261006: Confirmed user OpenAI OAuth and exact `gpt-6.1-sol` availability;
+  set tracked `openai/gpt-6.1-sol/high` defaults and update the cloud shortlist,
+  preserving both local models, codemode and appearance. User deferred real-task,
+  image and provider checks. User applied the minimal host settings delta;
+  runtime provider/model/high and exact-model thinking override are verified.
+  Fresh-start procedure reported complete; old login retained.
+- 20261006: Verified all ten tracked extensions with Pi's official loader,
+  all-extension strict semantic checking and 45 non-kernel regression passes
+  (one expected skip). Subsequent host Stow and the updated full suite pass:
+  46 passed, 0 failed, 1 expected skip, including real Seatbelt enforcement;
+  full doctor: 24 passed, 0 failed, 0 warnings. Native Git SSH
+  `ls-remote` succeeds. Requested OpenAI model exists in the live catalog with
+  image/reasoning support, but its provider is not authenticated; no loaded
+  local model is available. Documented staged host checks/login and bounded
+  privacy-safe local-first trials; defaults/auth/service state remain unchanged.
+- 20261006: Refreshed official Pi imports and hardened `/answer` with
+  provider-neutral authenticated extraction, validated/bounded question JSON,
+  distinct cancellation/errors and session/model guards. Updated editor theme
+  contracts, focus forwarding and review fullscreen mouse handling/cleanup.
+  Nine UI/extraction regression tests and strict semantic checking of all
+  tracked TypeScript extensions pass; real interactive/provider checks remain.
+- 20261006: Persisted branch-aware review-summary requests and explicitly
+  confirmed completion in Pi session entries. Pin Git ranges; unfinished/failed
+  reviews never advance checkpoints. Reconstruct only the active session branch;
+  isolate repository/worktree/branch/base/history scopes, with reset support.
+  Six real-Git/SDK session regression tests and strict semantic type-check pass;
+  interactive reload/tree verification remains pending.
+- 20261005: Added structured WAL/tldraw results using Pi output schemas. Preserve
+  direct text, arguments, permissions and screenshot images; scripts consume
+  API JSON/WAL fields and forward screenshots with `image(result.image)` without
+  returning internal paths or printing image bytes. Six serializer/schema,
+  validation and SDK QuickJS transport tests pass. Live scratch-canvas structured
+  search/exec, save, JPEG forwarding and app-error rejection pass; the disposable
+  probe was removed and the original empty canvas saved. Approved WAL append,
+  structured fields and exact-tail verification pass on 20261006; PI-05 is complete.
+- 20261005: Added validated codemode `on` defaults alongside direct tools. Live
+  scripted reads/writes/edits, uv rejection, nonzero exits, overflow-log access,
+  external write rejection and partial-write failure behavior pass. Keep models,
+  auth and appearance unchanged. Host runtime settings and fresh default startup
+  are verified: direct tools + codemode remain available in `on` mode.
+  Settings-delta regression tests pass.
+- 20261005: Applied a host-approved correction to Pi's native policy: preserve
+  Gondolin's launch-directory write boundary, normal bash Git/network/SSH, and
+  editable Pi source. Use Seatbelt directly instead of sandbox-runtime's extra
+  mandatory locks/proxies; remove that dependency and the native footer. Preserve
+  private scratch, linked Git metadata, model-cache exclusion, uv routing, and
+  fail-closed startup/identity. Candidate policy/registry and Stow tests pass
+  (22 passed, 1 expected skip). Host npm cleanup reports zero vulnerabilities;
+  corrected the fixture hook path to absolute `.git/hooks` without policy changes.
+  The host Seatbelt kernel rerun passes, including hooks, loopback/Unix sockets,
+  linked-worktree commits, images, overflow and cleanup. Full host suite:
+  23 passed, 0 failed, 1 expected skip; doctor: 24 passed, 0 failed, 0 warnings.
+  A fresh-process `/sandbox` confirms the corrected policy is loaded;
+  codemode and interactive verification remain pending.
+- 20261002: Fixed doctor's Stow check to accept valid folded directory links
+  and reject links to the wrong checkout file; six regression cases pass.
+- 20261002: Replaced Gondolin with native-only macOS Pi sandboxing for
+  bash/read/write/edit, initially protected worktree/policy/Git paths, private scratch and
+  overflow logs, and shared uv routing. Removed VM/runner dependencies, image
+  configuration/recipe, VM-only Brew entries, and shell exports; updated review,
+  bridge, doctor, deployment, and migration tests (canonical macOS temp paths
+  and a valid PNG fixture). The macOS suite passes (16 passed, 1 expected skip),
+  including real Seatbelt enforcement, images, overflow access, and cleanup;
+  interactive verification remains pending. Authentication, models, appearance,
+  and codemode settings are unchanged.
 - 20261001: Added a concise decision-first TODO backlog for Pi compatibility,
   native sandboxing with Gondolin rollback, codemode, provider/model defaults,
   and extension maintenance; recorded deferred topics and local-first trials.

@@ -55,14 +55,13 @@ just stowall
 
 # 9. Install and configure Pi
 # 9.1. Pi - https://pi.dev/docs/latest/quickstart#install
-# 9.2. Install dependencies for pi
+# 9.2. Reconcile Pi package metadata and remove retired backend dependencies
 npm install --prefix ~/.pi/agent
 # 9.3. Initialize Pi's intentional settings
 if [[ ! -f ~/.pi/agent/settings.json ]]; then
   cp ~/.pi/agent/settings.template.json ~/.pi/agent/settings.json
 fi
-# 9.4. Build the Pi sandbox
-just gondolin-image
+# 9.4. Pi uses the native macOS sandbox; see pi/README.md for migration and checks
 # 9.5. Sign in to Claude Code (installed by brew, configured by stow);
 # see claude/README.md
 claude
@@ -119,7 +118,6 @@ herdr plugin list --plugin hrmnjt.default-tabs
 #### Setup references
 
 - [Changelog](CHANGELOG.md)
-- [TODO and decision backlog](TODO.md)
 - [Gruvbox Dark Hard palette and application map](GRUVBOX.md)
 - [AeroSpace](aerospace/README.md)
 - [Claude Code](claude/README.md)
@@ -150,7 +148,7 @@ just doctor --only-check
 
 This validates shell syntax, strict JSON, TOML, Git and Just configuration,
 whitespace, conflict markers, and fail-closed Git identity selection in isolated
-temporary repositories. Tools unavailable inside Gondolin are reported as
+temporary repositories. Tools unavailable in the development sandbox are reported as
 warnings rather than hiding the checks that did run.
 
 Run the complete diagnostic on the host Mac:
@@ -161,7 +159,8 @@ just doctor
 
 The full mode runs the same repository checks, then inspects Brew packages,
 expected commands, Stow links, the deployed Git identity, Pi dependencies and
-settings, the Gondolin image, AeroSpace, Herdr, and GitHub CLI authentication.
+settings, native Seatbelt prerequisites, AeroSpace, Herdr, and GitHub CLI
+authentication.
 It reports remediation commands but never installs, rewrites, reloads, or
 repairs the setup. Add `--verbose` (or `-v`) to either mode to show the commands
 and captured output behind integration checks:
@@ -170,6 +169,15 @@ and captured output behind integration checks:
 just doctor --verbose
 just doctor --only-check --verbose
 ```
+
+When changing the Stow diagnostic, run its small shell regression check:
+
+```bash
+./_scripts/tests/doctor-stow.sh
+```
+
+It tests six disposable healthy/broken link layouts without Node, Homebrew, or
+changes to your real home directory. Normal doctor runs do not run these fixtures.
 
 #### Managing macOS defaults
 

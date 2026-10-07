@@ -22,23 +22,6 @@ setopt share_history
 autoload -Uz compinit
 compinit
 
-# Gondolin custom VM image (built with `just gondolin-image`)
-export GONDOLIN_GUEST_DIR="$HOME/.gondolin/custom-image"
-
-# Share GitHub CLI auth with the Gondolin sandbox only when starting Pi; the
-# guest env inherits it so the agent can raise PRs (see gh/README.md). Scoping
-# the token to Pi keeps it out of every other process this shell starts, and
-# Pi still starts normally when gh is missing or unauthenticated.
-pi() {
-  local token
-  token="$(command -v gh >/dev/null 2>&1 && gh auth token 2>/dev/null)"
-  if [[ -n "$token" ]]; then
-    GH_TOKEN="$token" command pi "$@"
-  else
-    command pi "$@"
-  fi
-}
-
 # starship.rs prompt
 # https://starship.rs/guide/
 eval "$(starship init zsh)"

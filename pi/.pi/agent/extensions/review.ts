@@ -18,6 +18,10 @@ import { fileURLToPath } from "node:url";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
   type Component,
+  type Focusable,
+  isViewportTUI,
+  type TuiMouseEvent,
+  type TuiMouseEventResult,
   Editor,
   type EditorTheme,
   Key,
@@ -27,6 +31,7 @@ import {
   visibleWidth,
   wrapTextWithAnsi,
 } from "@earendil-works/pi-tui";
+
 
 type ReviewTarget =
   | { kind: "head" }
@@ -126,7 +131,6 @@ type Hitbox =
   | { kind: "file"; row: number; colStart: number; colEnd: number; fileIndex: number }
   | { kind: "diff-line"; row: number; colStart: number; colEnd: number; fileIndex: number; hunkIndex: number; lineIndex: number };
 
-const GUEST_WORKSPACE = "/workspace";
 const NVIM_REVIEW_SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "review-nvim.lua");
 
 function runText(command: string, args: string[], cwd: string, env?: NodeJS.ProcessEnv): string | null {
@@ -504,14 +508,15 @@ function formatReviewCommentForPrompt(comment: ReviewComment, index: number): st
   return parts.join("\n\n");
 }
 
-function buildReviewMessage(result: ReviewResult, context: GitContext): string {
+function buildReviewMessage(result: ReviewResult, context: GitContext, hostRoot: string): string {
+  const workspace = hostRoot;
   const comments = result.comments.map(formatReviewCommentForPrompt).join("\n\n---\n\n");
 
   return `I reviewed the current changes in pi's review UI.
 
 <review-context>
 Generated: ${new Date().toISOString()}
-Repo: ${GUEST_WORKSPACE}
+Repo: ${workspace}
 Branch: ${context.branch}
 HEAD: ${context.head}
 Upstream: ${context.upstream}
@@ -529,7 +534,7 @@ ${context.diffStat || "(none)"}
 </review-context>
 
 Please address every actionable review comment. Rules:
-- Treat paths as relative to the current repository under /workspace.
+- Treat paths as relative to the current repository under ${workspace}.
 - Read each "Reviewer feedback" block as the authoritative human request; the selected diff context is only an anchor to help find the relevant code.
 - Inspect the relevant files/diffs before editing. Do not rely solely on the embedded snippet.
 - Preserve unrelated changes.
@@ -734,7 +739,9 @@ class HelpComponent implements Component {
   }
 }
 
-class ReviewComponent implements Component {
+export class ReviewComponent implements Component, Focusable {
+  get focused(): boolean { return this.editor.focused; }
+  set focused(value: boolean) { this.editor.focused = value; this.invalidate(); }
   private files: DiffFile[];
   private target: ReviewTarget;
   private tui: TUI;
@@ -778,9 +785,11 @@ class ReviewComponent implements Component {
     const editorTheme: EditorTheme = {
       borderColor: this.dim,
       selectList: {
-        selectedBg: this.inverse,
-        matchHighlight: this.cyan,
-        itemSecondary: this.gray,
+        selectedPrefix: this.cyan,
+        selectedText: this.inverse,
+        description: this.gray,
+        scrollInfo: this.dim,
+        noMatch: this.dim,
       },
     };
     this.editor = new Editor(tui, editorTheme);
@@ -799,7 +808,8 @@ class ReviewComponent implements Component {
   }
 
   private enableMouse(): void {
-    if (this.mouseEnabled) return;
+    if (this.mouseEnabled || isViewportTUI(this.tui)) return;
+    // Fullscreen owns its terminal modes; do not disable them when review exits.
     // Enable xterm button events + SGR extended coordinates. We disable these
     // before leaving the custom UI via finish().
     this.tui.terminal.write("\x1b[?1000h\x1b[?1006h");
@@ -811,6 +821,8 @@ class ReviewComponent implements Component {
     this.tui.terminal.write("\x1b[?1000l\x1b[?1006l");
     this.mouseEnabled = false;
   }
+
+  dispose(): void { this.disableMouse(); }
 
   private finish(result: ReviewResult | null): void {
     this.disableMouse();
@@ -1059,7 +1071,20 @@ class ReviewComponent implements Component {
     return y - this.lastRenderTopRow;
   }
 
-  private handleMouse(mouse: MouseEvent): boolean {
+  handleMouse(event: TuiMouseEvent): TuiMouseEventResult | undefined {
+    if (event.type !== "press" && event.type !== "wheel") return undefined;
+    if (event.type === "wheel" && !event.wheelDelta) return undefined;
+    const handled = this.handleLegacyMouse({
+      kind: event.type === "wheel" ? (event.wheelDelta! < 0 ? "wheel-up" : "wheel-down") : "press",
+      button: event.button === "none" ? "unknown" : event.button,
+      // Normalized events are component-local and zero-based; legacy hitboxes
+      // use one-based columns and an absolute render origin for rows.
+      x: event.x + 1, y: event.y + this.lastRenderTopRow,
+    });
+    return handled ? { handled: true, focus: true, render: true } : undefined;
+  }
+
+  private handleLegacyMouse(mouse: MouseEvent): boolean {
     if (this.mode !== "navigate") return false;
 
     const row = this.toRelativeMouseRow(mouse.y);
@@ -1102,7 +1127,7 @@ class ReviewComponent implements Component {
 
   handleInput(data: string): void {
     const mouse = parseMouseEvent(data);
-    if (mouse && this.handleMouse(mouse)) {
+    if (mouse && this.handleLegacyMouse(mouse)) {
       this.tui.requestRender();
       return;
     }
@@ -1642,7 +1667,7 @@ async function review(pi: ExtensionAPI, args: string, ctx: ExtensionContext) {
     return;
   }
 
-  pi.sendUserMessage(buildReviewMessage(result, context));
+  pi.sendUserMessage(buildReviewMessage(result, context, root));
   ctx.ui.notify(`Sent ${result.comments.length} review comment(s) to pi.`, "info");
 }
 

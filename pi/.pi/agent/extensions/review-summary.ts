@@ -13,12 +13,10 @@
  * and returns a concise summary, findings, and reviewer callouts.
  */
 
+import { randomUUID } from "node:crypto";
+import { realpath } from "node:fs/promises";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-
-// Tracks the HEAD commit SHA from the last summary review in this pi session so
-// repeated runs only show newly-added commits and ask pi to verify previous
-// comments were addressed.
-let lastReviewedSha: string | null = null;
+import { hasFinishedResponse, readReviewState, REVIEW_ENTRY, type ReviewCheckpoint } from "./lib/review-state.ts";
 
 const REVIEW_RUBRIC = `## Review Guidelines
 
@@ -99,56 +97,47 @@ Do not repeat a callout as a finding unless it is independently defective.
 
 If none apply, write: *(none)*`;
 
-type ExecResult = {
-  code: number;
-  stdout?: string | null;
-  stderr?: string | null;
-};
-
 function notifyError(ctx: ExtensionContext, message: string): void {
   ctx.ui.notify(message, "error");
 }
 
 export default function (pi: ExtensionAPI) {
-  async function git(args: string[]): Promise<string> {
-    const result = await pi.exec("git", args) as ExecResult;
+  async function git(args: string[], ctx: ExtensionContext): Promise<string> {
+    const result = await pi.exec("git", args, { cwd: ctx.cwd, timeout: 10000 });
     if (result.code !== 0) {
       throw new Error(result.stderr?.trim() || `git ${args.join(" ")} exited with code ${result.code}`);
     }
     return (result.stdout ?? "").trim();
   }
 
-  async function gitOk(args: string[]): Promise<boolean> {
-    const result = await pi.exec("git", args) as ExecResult;
+  async function gitOk(args: string[], ctx: ExtensionContext): Promise<boolean> {
+    const result = await pi.exec("git", args, { cwd: ctx.cwd, timeout: 10000 });
     return result.code === 0;
   }
 
-  async function isGitRepo(): Promise<boolean> {
-    return gitOk(["rev-parse", "--git-dir"]);
-  }
-
-  async function resolveBaseBranch(baseBranch: string): Promise<string | null> {
-    if (await gitOk(["rev-parse", "--verify", baseBranch])) {
-      return baseBranch;
+  async function resolveBaseBranch(baseBranch: string, ctx: ExtensionContext): Promise<string | null> {
+    for (const ref of [baseBranch, `origin/${baseBranch}`]) {
+      if (await gitOk(["rev-parse", "--verify", "--end-of-options", `${ref}^{commit}`], ctx)) return ref;
     }
-
-    const remote = `origin/${baseBranch}`;
-    if (await gitOk(["rev-parse", "--verify", remote])) {
-      return remote;
-    }
-
     return null;
   }
 
-  async function runReviewSummary(baseBranch: string, ctx: ExtensionContext): Promise<void> {
-    if (!(await isGitRepo())) {
+  async function runReviewSummary(baseBranch: string, action: "requested" | "completed" | "reset", ctx: ExtensionContext): Promise<void> {
+    if (!ctx.isIdle()) throw new Error("Wait for the current turn to finish before changing review checkpoints.");
+    const sessionId = ctx.sessionManager.getSessionId();
+    const leafId = ctx.sessionManager.getLeafId();
+    const assertSession = () => {
+      if (ctx.sessionManager.getSessionId() !== sessionId || ctx.sessionManager.getLeafId() !== leafId)
+        throw new Error("Session branch changed during review setup; rerun the command.");
+    };
+    if (!(await gitOk(["rev-parse", "--git-dir"], ctx))) {
       notifyError(ctx, "Not in a git repository");
       return;
     }
 
     let currentBranch: string;
     try {
-      currentBranch = await git(["rev-parse", "--abbrev-ref", "HEAD"]);
+      currentBranch = await git(["rev-parse", "--abbrev-ref", "HEAD"], ctx);
     } catch {
       notifyError(ctx, "Failed to determine current branch");
       return;
@@ -159,7 +148,7 @@ export default function (pi: ExtensionAPI) {
       return;
     }
 
-    const resolvedBase = await resolveBaseBranch(baseBranch);
+    const resolvedBase = await resolveBaseBranch(baseBranch, ctx);
     if (!resolvedBase) {
       notifyError(
         ctx,
@@ -173,15 +162,54 @@ export default function (pi: ExtensionAPI) {
       return;
     }
 
+    const currentHead = await git(["rev-parse", "HEAD"], ctx);
     let mergeBase: string;
     try {
-      mergeBase = await git(["merge-base", resolvedBase, "HEAD"]);
+      mergeBase = await git(["merge-base", resolvedBase, currentHead], ctx);
     } catch {
       notifyError(ctx, `No common ancestor found between ${currentBranch} and ${resolvedBase}. Are they related?`);
       return;
     }
 
-    const currentHead = await git(["rev-parse", "HEAD"]);
+    const scope = {
+      root: await realpath(await git(["rev-parse", "--show-toplevel"], ctx)),
+      gitDir: await realpath(await git(["rev-parse", "--absolute-git-dir"], ctx)),
+      branch: currentBranch, base: resolvedBase, mergeBase,
+    };
+    const assertStable = async () => {
+      if (!ctx.isIdle() || await git(["rev-parse", "--abbrev-ref", "HEAD"], ctx) !== currentBranch ||
+          await git(["rev-parse", "HEAD"], ctx) !== currentHead ||
+          await git(["merge-base", resolvedBase, currentHead], ctx) !== mergeBase)
+        throw new Error("Git/session state changed during review setup; rerun the command.");
+      assertSession();
+    };
+    const entries = ctx.sessionManager.getBranch();
+    const state = readReviewState(entries, scope);
+    if (action === "reset") {
+      await assertStable();
+      pi.appendEntry<ReviewCheckpoint>(REVIEW_ENTRY, { version: 1, action, scope, head: currentHead, requestId: randomUUID() });
+      ctx.ui.notify("Review checkpoint reset for this repository/branch/base scope.", "info");
+      return;
+    }
+    if (action === "completed") {
+      const pending = state.pending;
+      if (!pending) {
+        if (state.completed && await gitOk(["merge-base", "--is-ancestor", mergeBase, state.completed], ctx) &&
+            await gitOk(["merge-base", "--is-ancestor", state.completed, currentHead], ctx)) {
+          await assertStable();
+          ctx.ui.notify(`Review already confirmed through ${state.completed.substring(0, 8)}. No pending review to complete.${state.completed !== currentHead ? ` Run /review-summary ${baseBranch} to review newer commits.` : ""}`, "info");
+          return;
+        }
+        throw new Error("No pending review in this scope. Run /review-summary first.");
+      }
+      if (!hasFinishedResponse(entries, pending.index)) throw new Error("No successful final assistant response after the request; unfinished or failed reviews cannot be completed.");
+      if (!(await gitOk(["merge-base", "--is-ancestor", pending.data.head, currentHead], ctx)))
+        throw new Error("Requested HEAD is no longer an ancestor; rerun the review after the history rewrite.");
+      await assertStable();
+      pi.appendEntry<ReviewCheckpoint>(REVIEW_ENTRY, { ...pending.data, action });
+      ctx.ui.notify(`Confirmed review through ${pending.data.head.substring(0, 8)} (not any newer commits).`, "info");
+      return;
+    }
     if (mergeBase === currentHead) {
       ctx.ui.notify(`No new commits on ${currentBranch} compared to ${resolvedBase}`, "info");
       return;
@@ -190,23 +218,23 @@ export default function (pi: ExtensionAPI) {
     let reviewStart = mergeBase;
     let isIterative = false;
 
-    if (lastReviewedSha) {
-      if (await gitOk(["merge-base", "--is-ancestor", lastReviewedSha, "HEAD"])) {
-        reviewStart = lastReviewedSha;
-        isIterative = true;
-      } else {
-        lastReviewedSha = null;
-      }
+    if (state.completed && await gitOk(["merge-base", "--is-ancestor", mergeBase, state.completed], ctx) &&
+        await gitOk(["merge-base", "--is-ancestor", state.completed, currentHead], ctx)) {
+      reviewStart = state.completed;
+      isIterative = true;
     }
-
-    lastReviewedSha = currentHead;
+    if (reviewStart === currentHead) {
+      ctx.ui.notify("No new commits since the confirmed review. Use /review-summary reset [base] to review again.", "info");
+      return;
+    }
 
     // Gather lightweight context only. The model should inspect files and diffs
     // itself with tools so its reasoning stays visible in the conversation.
-    const commitDetail = await git(["log", "--format=%h %an: %s", `${reviewStart}..HEAD`]);
+    const range = `${reviewStart}..${currentHead}`;
+    const commitDetail = await git(["log", "--format=%h %an: %s", range], ctx);
     const commitCount = commitDetail ? commitDetail.split("\n").length : 0;
-    const changedFiles = await git(["diff", "--name-status", `${reviewStart}..HEAD`]);
-    const diffStat = await git(["diff", "--stat", `${reviewStart}..HEAD`]);
+    const changedFiles = await git(["diff", "--name-status", range], ctx);
+    const diffStat = await git(["diff", "--stat", range], ctx);
 
     const header = isIterative
       ? `🔄 **Updated review** — \`${currentBranch}\` → \`${resolvedBase}\`\n` +
@@ -218,6 +246,10 @@ export default function (pi: ExtensionAPI) {
         `${commitCount} commit(s)`;
 
     const message = `${header}
+
+Review the pinned range \`${range}\`, not a later moving HEAD.
+After the final review, the user must run \`/review-summary complete ${baseBranch}\`
+to confirm completion. This request alone does not advance the checkpoint.
 
 ## Commits
 \`\`\`
@@ -238,13 +270,30 @@ ${diffStat || "(no changes)"}
 
 ${REVIEW_RUBRIC}`;
 
+    await assertStable();
+    pi.appendEntry<ReviewCheckpoint>(REVIEW_ENTRY, {
+      version: 1, action: "requested", scope, head: currentHead, requestId: randomUUID(),
+    });
     pi.sendUserMessage(message);
   }
 
   pi.registerCommand("review-summary", {
     description: "PR review summary with rubric and model-driven code inspection",
     handler: async (args, ctx) => {
-      await runReviewSummary(args.trim() || "main", ctx);
+      const parts = args.trim().split(/\s+/).filter(Boolean);
+      if (parts[0] === "help") {
+        ctx.ui.notify("/review-summary [base] | complete [base] | reset [base]. Only explicit completion after a successful final review advances the active branch's checkpoint.", "info");
+        return;
+      }
+      const action = parts[0] === "complete" ? "completed" : parts[0] === "reset" ? "reset" : "requested";
+      if (action !== "requested") parts.shift();
+      const base = parts[0] || "main";
+      try {
+        if (parts.length > 1 || base.startsWith("-")) throw new Error("Expected one base branch/ref; see /review-summary help.");
+        await runReviewSummary(base, action, ctx);
+      } catch (error) {
+        notifyError(ctx, error instanceof Error ? error.message : String(error));
+      }
     },
   });
 }

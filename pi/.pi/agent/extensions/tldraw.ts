@@ -1,6 +1,6 @@
 /**
  * Narrow host bridge to tldraw offline's authenticated local canvas API.
- * Model-facing shell and files remain in Gondolin; the token never enters the VM.
+ * The bridge handles credentials internally; never request or print its API token.
  */
 import fs from "node:fs/promises";
 import { constants } from "node:fs";
@@ -100,6 +100,32 @@ function result(text: string) {
   return { content: [{ type: "text" as const, text }], details: undefined };
 }
 
+// /search and /exec return arbitrary JSON envelopes; preserve their complete
+// shape rather than imposing a new response wrapper or stripping app metadata.
+export function apiResult(text: string) {
+  return { ...result(text), structuredContent: JSON.parse(text) };
+}
+
+const ScreenshotOutput = Type.Object({
+  docId: Type.String(),
+  pageName: Type.Optional(Type.String()),
+  width: Type.Optional(Type.Number()),
+  height: Type.Optional(Type.Number()),
+  captureMode: Type.Optional(Type.String()),
+  image: Type.Object({
+    type: Type.Literal("image"), data: Type.String(), mimeType: Type.Literal("image/jpeg"),
+  }),
+});
+
+export function screenshotResult(docId: string, shot: { pageName?: string; width?: number; height?: number; captureMode?: string }, bytes: Buffer) {
+  const text = JSON.stringify({ docId, pageName: shot.pageName, width: shot.width,
+    height: shot.height, captureMode: shot.captureMode });
+  const metadata = JSON.parse(text); // Omit undefined fields; structured data must be JSON.
+  const image = { type: "image" as const, data: bytes.toString("base64"), mimeType: "image/jpeg" as const };
+  return { content: [{ type: "text" as const, text }, image], details: undefined,
+    structuredContent: { ...metadata, image } };
+}
+
 function validateDocId(docId: string): void {
   if (!docId || docId.length > 2048 || /[\x00-\x1f]/.test(docId)) {
     throw new Error("Invalid document id");
@@ -153,8 +179,9 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "tldraw_guide",
     label: "tldraw guide",
-    description: "Read the app-installed tldraw-offline skill from the host. Call this before using tldraw. Its curl/tq and temp-file instructions are HOST-only; use tldraw_search, tldraw_exec, and tldraw_screenshot instead because bash runs in Gondolin.",
+    description: "Read the app-installed tldraw-offline skill from the host. Call this before using tldraw. Use tldraw_search, tldraw_exec, and tldraw_screenshot instead of its host curl/tq examples: these narrow tools handle credentials internally and return screenshots as images. Never request or print the bearer token.",
     parameters: Type.Object({}),
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     async execute() {
       // A fixed file, not a user-supplied path; never expose the host filesystem generally.
       const text = await fs.readFile(SKILL_FILE, "utf8");
@@ -168,9 +195,10 @@ export default function (pi: ExtensionAPI) {
     label: "tldraw search",
     description: "Run JavaScript in tldraw's /api/search with the `api` object to discover documents, inspect shapes/bindings, and read recipes. Read tldraw_guide first. Never print or request the bearer token. Select the intended doc by name, not the first open doc.",
     parameters: Type.Object({ code: Type.String({ description: "JavaScript using `api`; return a JSON-serializable result." }) }),
+    outputSchema: Type.Unknown(),
     async execute(_id, { code }, signal) {
       validateCode(code);
-      return result(await request("/api/search", code, signal));
+      return apiResult(await request("/api/search", code, signal));
     },
   });
 
@@ -182,20 +210,21 @@ export default function (pi: ExtensionAPI) {
       docId: Type.String({ description: "Exact opaque id returned by api.getDocs() for the intended document." }),
       code: Type.String({ description: "JavaScript using `editor` and `helpers`; return a JSON-serializable result." }),
     }),
+    outputSchema: Type.Unknown(),
     async execute(_id, { docId, code }, signal) {
       validateDocId(docId);
       validateCode(code);
       // The app matches the literal colon-separated id in the URL path rather
       // than decoding %3A. Encode other URL-unsafe characters, but keep colons.
       const pathId = encodeURIComponent(docId).replace(/%3A/gi, ":");
-      return result(await request(`/api/doc/${pathId}/exec`, code, signal));
+      return apiResult(await request(`/api/doc/${pathId}/exec`, code, signal));
     },
   });
 
   pi.registerTool({
     name: "tldraw_screenshot",
     label: "tldraw screenshot",
-    description: "Capture a JPEG of ONE explicitly selected open tldraw canvas and return it as an image (not a host path). Select the doc by name with tldraw_search first. Use for visual checks; shape records remain better for exact geometry. Requires a model with image input. Canvas mode fits shapes; window mode includes app chrome.",
+    description: "Capture a JPEG of ONE explicitly selected open tldraw canvas and return it as an image (not a host path). Select the doc by name with tldraw_search first. Use for visual checks; shape records remain better for exact geometry. Requires a model with image input. Canvas mode fits shapes; window mode includes app chrome. In codemode use image(result.image) to forward the image; return metadata only, never print image.data.",
     parameters: Type.Object({
       docId: Type.String({ description: "Exact opaque id from api.getDocs() for the intended document." }),
       size: Type.Optional(Type.Union([
@@ -208,6 +237,7 @@ export default function (pi: ExtensionAPI) {
         x: Type.Number(), y: Type.Number(), w: Type.Number(), h: Type.Number(),
       }, { description: "Optional page-coordinate crop; canvas mode only." })),
     }),
+    outputSchema: ScreenshotOutput,
     async execute(_id, { docId, size = "medium", mode = "canvas", bounds }, signal, _onUpdate, ctx) {
       validateDocId(docId);
       if (ctx.model && !ctx.model.input.includes("image")) {
@@ -226,16 +256,7 @@ export default function (pi: ExtensionAPI) {
         throw new Error("tldraw did not return a screenshot file");
       }
       const bytes = await readScreenshot(shot.filePath, docId);
-      return {
-        content: [
-          { type: "text" as const, text: JSON.stringify({
-            docId, pageName: shot.pageName, width: shot.width, height: shot.height,
-            captureMode: shot.captureMode,
-          }) },
-          { type: "image" as const, data: bytes.toString("base64"), mimeType: "image/jpeg" },
-        ],
-        details: undefined,
-      };
+      return screenshotResult(docId, shot, bytes);
     },
   });
 }

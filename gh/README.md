@@ -1,7 +1,7 @@
 # Gh
 
 Preferences for the [GitHub CLI](https://cli.github.com/), used for PRs,
-issues, and reviews from both the host terminal and the pi Gondolin sandbox.
+issues, and reviews from the host terminal.
 The tracked config only carries non-secret preferences, matching the SSH-based
 Git workflow in [Git](../git/README.md).
 
@@ -36,19 +36,15 @@ gh config set git_protocol ssh   # default comes from config.yml after stow
 gh auth status
 ```
 
-## Pi / Gondolin usage
+## Pi usage
 
-`gh` is part of the custom Gondolin image
-([pi/README.md](../pi/README.md)), so the assistant can raise PRs and inspect
-checks from inside the VM. The guest cannot run `gh auth login`, so the `pi`
-shell function in `zsh/.zshrc` passes the host token to Pi alone:
+Pi's native bash tool can use normal networking and the existing CLI login for
+requested PR creation, checks, and reviews. Its filesystem writes remain confined
+to the launch directory, private scratch, and Git metadata. Initial authentication
+and changes to host-global configuration still need a host terminal because those
+files are outside the write boundary. Do not print tokens or authentication state.
+See [the Pi package guide](../pi/README.md#native-sandbox).
 
-```zsh
-GH_TOKEN="$(gh auth token)" command pi   # what the pi function runs
-```
-
-Other commands started from the shell do not inherit `GH_TOKEN`; host-side
-`gh` reads its credentials from the Keychain as usual.
-
-Host-side operations (interactive `gh auth login`, browser-based reviews) run
-with `!` / `!!` from pi, which stay on the host.
+Zsh no longer exports `GH_TOKEN` for a VM. Host `gh` uses its stored login;
+no new authentication is required. If a current shell inherited a token solely
+from the retired export, unset `GH_TOKEN` there to stop passing it to children.

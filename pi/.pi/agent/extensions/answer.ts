@@ -10,11 +10,12 @@
  * - Submit with Enter on the last question, cancel with Esc
  */
 
-import { complete, type UserMessage } from "@mariozechner/pi-ai";
-import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
-import { BorderedLoader } from "@mariozechner/pi-coding-agent";
+import type { UserMessage } from "@earendil-works/pi-ai";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { BorderedLoader } from "@earendil-works/pi-coding-agent";
 import {
 	type Component,
+	type Focusable,
 	Editor,
 	type EditorTheme,
 	Key,
@@ -23,7 +24,7 @@ import {
 	type TUI,
 	visibleWidth,
 	wrapTextWithAnsi,
-} from "@mariozechner/pi-tui";
+} from "@earendil-works/pi-tui";
 
 // Structured output format for question extraction
 interface ExtractedQuestion {
@@ -67,7 +68,8 @@ Example output:
   ]
 }`;
 
-function parseExtractionResult(text: string): ExtractionResult | null {
+export function parseExtractionResult(text: string): ExtractionResult | null {
+	if (text.length > 128 * 1024) return null;
 	try {
 		let jsonStr = text;
 		const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -75,8 +77,15 @@ function parseExtractionResult(text: string): ExtractionResult | null {
 			jsonStr = jsonMatch[1].trim();
 		}
 		const parsed = JSON.parse(jsonStr);
-		if (parsed && Array.isArray(parsed.questions)) {
-			return parsed as ExtractionResult;
+		if (parsed && Array.isArray(parsed.questions) && parsed.questions.length <= 64) {
+			const safeText = (s: unknown): s is string => typeof s === "string" &&
+				s.trim().length > 0 && s.length <= 8192 && !/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(s);
+			if (!parsed.questions.every((q: unknown) => q && typeof q === "object" &&
+				safeText((q as ExtractedQuestion).question) &&
+				((q as ExtractedQuestion).context === undefined || safeText((q as ExtractedQuestion).context)))) return null;
+			return { questions: parsed.questions.map((q: ExtractedQuestion) => ({
+				question: q.question.trim(), ...(q.context === undefined ? {} : { context: q.context.trim() }),
+			})) };
 		}
 		return null;
 	} catch {
@@ -84,7 +93,32 @@ function parseExtractionResult(text: string): ExtractionResult | null {
 	}
 }
 
-class QnAComponent implements Component {
+type ExtractionOutcome = { kind: "success"; result: ExtractionResult } | { kind: "cancelled" } | { kind: "error"; message: string };
+
+export async function extractQuestions(
+	registry: ExtensionContext["modelRegistry"], model: NonNullable<ExtensionContext["model"]>,
+	text: string, signal: AbortSignal,
+): Promise<ExtractionOutcome> {
+	try {
+		if (signal.aborted) return { kind: "cancelled" };
+		const user: UserMessage = { role: "user", content: [{ type: "text", text }], timestamp: Date.now() };
+		// The supported runtime resolves provider authentication/headers internally;
+		// it supports local models without requiring a nonempty API key here.
+		const response = await registry.streamSimple(model, { systemPrompt: SYSTEM_PROMPT, messages: [user] }, { signal }).result();
+		if (signal.aborted || response.stopReason === "aborted") return { kind: "cancelled" };
+		if (response.stopReason !== "stop") return { kind: "error", message: `Question extraction failed (${response.stopReason}) for ${model.provider}/${model.id}; check model availability, /login and provider connectivity.` };
+		const responseText = response.content.filter(c => c.type === "text").map(c => c.text).join("\n");
+		const result = parseExtractionResult(responseText);
+		return result ? { kind: "success", result } : { kind: "error", message: "Question extraction returned malformed or oversized question JSON; retry /answer." };
+	} catch {
+		// Do not expose provider exception payloads, which can include credentials.
+		return signal.aborted ? { kind: "cancelled" } : { kind: "error", message: `Question extraction failed for ${model.provider}/${model.id}; check model availability, /login and provider connectivity.` };
+	}
+}
+
+export class QnAComponent implements Component, Focusable {
+	get focused(): boolean { return this.editor.focused; }
+	set focused(value: boolean) { this.editor.focused = value; this.invalidate(); }
 	private questions: ExtractedQuestion[];
 	private answers: string[];
 	private currentIndex = 0;
@@ -111,9 +145,11 @@ class QnAComponent implements Component {
 		const editorTheme: EditorTheme = {
 			borderColor: this.dim,
 			selectList: {
-				selectedBg: (s: string) => `\x1b[44m${s}\x1b[0m`,
-				matchHighlight: this.cyan,
-				itemSecondary: this.gray,
+				selectedPrefix: this.cyan,
+				selectedText: this.cyan,
+				description: this.gray,
+				scrollInfo: this.dim,
+				noMatch: this.dim,
 			},
 		};
 
@@ -234,6 +270,10 @@ class QnAComponent implements Component {
 			return this.cachedLines;
 		}
 
+		if (width < 24) {
+			return [truncateToWidth("Questions — widen terminal", Math.max(0, width)),
+				...this.editor.render(Math.max(1, width)).map(line => truncateToWidth(line, Math.max(0, width)))];
+		}
 		const lines: string[] = [];
 		const boxWidth = Math.min(width - 4, 120);
 		const contentWidth = boxWidth - 4;
@@ -241,7 +281,7 @@ class QnAComponent implements Component {
 		const horizontalLine = (count: number) => "─".repeat(count);
 
 		const boxLine = (content: string, leftPad = 2): string => {
-			const paddedContent = " ".repeat(leftPad) + content;
+			const paddedContent = truncateToWidth(" ".repeat(leftPad) + content, boxWidth - 2);
 			const contentLen = visibleWidth(paddedContent);
 			const rightPad = Math.max(0, boxWidth - contentLen - 2);
 			return this.dim("│") + paddedContent + " ".repeat(rightPad) + this.dim("│");
@@ -325,8 +365,9 @@ class QnAComponent implements Component {
 }
 
 export default function (pi: ExtensionAPI) {
+	let running = false;
 	const answerHandler = async (ctx: ExtensionContext) => {
-		if (!ctx.hasUI) {
+		if (ctx.mode !== "tui" || !ctx.hasUI) {
 			ctx.ui.notify("answer requires interactive mode", "error");
 			return;
 		}
@@ -336,6 +377,18 @@ export default function (pi: ExtensionAPI) {
 			return;
 		}
 
+		if (!ctx.isIdle()) {
+			ctx.ui.notify("Wait for the current turn to finish before /answer", "error");
+			return;
+		}
+		const model = ctx.model;
+		const sessionId = ctx.sessionManager.getSessionId();
+		const leafId = ctx.sessionManager.getLeafId();
+		const assertCurrent = () => {
+			if (ctx.sessionManager.getSessionId() !== sessionId || ctx.sessionManager.getLeafId() !== leafId ||
+				ctx.model?.provider !== model.provider || ctx.model?.id !== model.id || !ctx.isIdle())
+				throw new Error("Session branch or model changed during /answer; rerun it before submitting.");
+		};
 		const branch = ctx.sessionManager.getBranch();
 		let lastAssistantText: string | undefined;
 
@@ -351,64 +404,37 @@ export default function (pi: ExtensionAPI) {
 					const textParts = msg.content
 						.filter((c): c is { type: "text"; text: string } => c.type === "text")
 						.map((c) => c.text);
-					if (textParts.length > 0) {
-						lastAssistantText = textParts.join("\n");
-						break;
-					}
+					lastAssistantText = textParts.join("\n");
+					break; // Never fall back to older questions after an empty final response.
 				}
 			}
 		}
 
-		if (!lastAssistantText) {
-			ctx.ui.notify("No assistant messages found", "error");
+		if (!lastAssistantText?.trim() || lastAssistantText.length > 128 * 1024) {
+			ctx.ui.notify("Latest assistant response has no text or is too large to extract safely", "error");
 			return;
 		}
 
-		const extractionResult = await ctx.ui.custom<ExtractionResult | null>((tui, theme, _kb, done) => {
-			const loader = new BorderedLoader(tui, theme, `Extracting questions...`);
-			loader.onAbort = () => done(null);
-
-			const doExtract = async () => {
-				const auth = await ctx.modelRegistry.getApiKeyAndHeaders(ctx.model!);
-				if (!auth.ok || !auth.apiKey) {
-					throw new Error(auth.ok ? `No API key for ${ctx.model!.provider}` : auth.error);
-				}
-				const userMessage: UserMessage = {
-					role: "user",
-					content: [{ type: "text", text: lastAssistantText! }],
-					timestamp: Date.now(),
-				};
-
-				const response = await complete(
-					ctx.model!,
-					{ systemPrompt: SYSTEM_PROMPT, messages: [userMessage] },
-					{ apiKey: auth.apiKey, headers: auth.headers, signal: loader.signal },
-				);
-
-				if (response.stopReason === "aborted") {
-					return null;
-				}
-
-				const responseText = response.content
-					.filter((c): c is { type: "text"; text: string } => c.type === "text")
-					.map((c) => c.text)
-					.join("\n");
-
-				return parseExtractionResult(responseText);
-			};
-
-			doExtract()
-				.then(done)
-				.catch(() => done(null));
-
+		const outcome = await ctx.ui.custom<ExtractionOutcome>((tui, theme, _kb, done) => {
+			const loader = new BorderedLoader(tui, theme, `Extracting questions using ${model.id}...`);
+			let finished = false;
+			const finish = (value: ExtractionOutcome) => { if (!finished) { finished = true; done(value); } };
+			loader.onAbort = () => finish({ kind: "cancelled" });
+			void extractQuestions(ctx.modelRegistry, model, lastAssistantText!, loader.signal).then(finish);
 			return loader;
 		});
 
-		if (extractionResult === null) {
+		if (outcome.kind === "error") {
+			ctx.ui.notify(outcome.message, "error");
+			return;
+		}
+		if (outcome.kind === "cancelled") {
 			ctx.ui.notify("Cancelled", "info");
 			return;
 		}
 
+		assertCurrent();
+		const extractionResult = outcome.result;
 		if (extractionResult.questions.length === 0) {
 			ctx.ui.notify("No questions found in the last message", "info");
 			return;
@@ -423,11 +449,22 @@ export default function (pi: ExtensionAPI) {
 			return;
 		}
 
+		assertCurrent();
 		pi.sendUserMessage(`I answered your questions:\n\n${answersResult}`);
 	};
 
 	pi.registerCommand("answer", {
 		description: "Extract questions from last assistant message into interactive Q&A",
-		handler: (_args, ctx) => answerHandler(ctx),
+		handler: async (_args, ctx) => {
+			if (running) { ctx.ui.notify("/answer is already running", "info"); return; }
+			running = true;
+			try { await answerHandler(ctx); }
+			catch (error) {
+				// Our own state-guard failures are safe to report; other UI/provider
+				// exception payloads may contain sensitive data.
+				ctx.ui.notify(error instanceof Error && error.message.startsWith("Session branch or model changed")
+					? error.message : "/answer failed; retry after checking the selected model and interactive UI.", "error");
+			} finally { running = false; }
+		},
 	});
 }

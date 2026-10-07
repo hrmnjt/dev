@@ -135,6 +135,9 @@ check_json() {
 
   json_failed=false
   for file in $(git -C "$ROOT" ls-files '*.json'); do
+    # Unstaged deletions remain in ls-files; validate the working tree. Keep
+    # dangling tracked symlinks visible as failures rather than skipping them.
+    if [ ! -e "$ROOT/$file" ] && [ ! -L "$ROOT/$file" ]; then continue; fi
     # Zed uses JSON with comments and trailing commas rather than strict JSON.
     case "$file" in zed/*) continue ;; esac
     jq empty "$ROOT/$file" >/dev/null 2>&1 || {
@@ -388,11 +391,21 @@ check_stow_links() {
     relative=${source#"$ROOT/$package/"}
     target="$HOME/$relative"
 
-    if [ ! -L "$target" ]; then
+    # Older Stow deployments may link a parent directory (tree folding).
+    # Accept either form, but require the target to be this checkout's file.
+    link_path=$target
+    while [ ! -L "$link_path" ] && [ "$link_path" != / ]; do
+      link_path=${link_path%/*}
+      [ -n "$link_path" ] || link_path=/
+    done
+    if [ ! -L "$link_path" ]; then
       printf '      missing link: %s\n' "$target"
       stow_missing=$((stow_missing + 1))
     elif [ ! -e "$target" ]; then
       printf '      dangling link: %s\n' "$target"
+      stow_missing=$((stow_missing + 1))
+    elif [ ! "$target" -ef "$source" ]; then
+      printf '      wrong link target: %s\n' "$target"
       stow_missing=$((stow_missing + 1))
     fi
   done < "$stow_tmp"
@@ -438,12 +451,23 @@ check_pi() {
     fail "Pi extension dependencies (npm unavailable)"
   fi
 
-  image_dir=${GONDOLIN_GUEST_DIR:-"$HOME/.gondolin/custom-image"}
-  if [ -d "$image_dir" ]; then
-    pass "Gondolin custom image"
+  if [ "$(uname -s)" = Darwin ] && [ -x /usr/bin/sandbox-exec ]; then
+    pass "Pi native Seatbelt launcher (enforcement needs Pi trial)"
   else
-    fail "Gondolin custom image (run: just gondolin-image)"
+    fail "Pi native sandbox requires macOS sandbox-exec"
   fi
+  if [ -e "$HOME/.pi/agent/extensions/gondolin.ts" ] || [ -L "$HOME/.pi/agent/extensions/gondolin.ts" ]; then
+    fail "Retired Pi extension remains (see pi/README.md deployment)"
+  elif [ -e "$HOME/.pi/agent/extensions/sandbox.ts" ] &&
+      [ -e "$HOME/.pi/agent/extensions/lib/native-policy.ts" ] &&
+      [ -e "$HOME/.pi/agent/extensions/lib/native-runtime.ts" ]; then
+    pass "Pi native-only extension deployment"
+  else
+    fail "Pi native extension files missing (run: just stowall)"
+  fi
+  # Native write confinement uses sandbox-exec directly, with no npm runtime or
+  # proxies. Node and the Seatbelt launcher are checked above; test OS enforcement
+  # with the host trial rather than treating dependency checks as proof.
 }
 
 check_aerospace() {
