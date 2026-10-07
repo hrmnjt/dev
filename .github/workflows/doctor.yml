@@ -1,9 +1,10 @@
-# Run the portable repository checks on every push and pull request. Host checks
-# need the Mac, so CI runs `doctor --only-check` only.
+# Run the portable repository checks on pull requests and on main. Host checks
+# need the Mac, so CI runs `doctor --only-check` and the Stow regression only.
 name: doctor
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -22,3 +23,5 @@ jobs:
           tool: just
       - name: Repository checks
         run: just doctor --only-check --verbose
+      - name: Stow diagnostic regression
+        run: sh ./_scripts/tests/doctor-stow.sh

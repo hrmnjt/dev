@@ -148,7 +148,8 @@ just doctor --only-check
 
 This validates shell syntax, strict JSON, TOML, Git and Just configuration,
 whitespace, conflict markers, and fail-closed Git identity selection in isolated
-temporary repositories. Tools unavailable in the development sandbox are reported as
+temporary repositories, plus the Claude Code uv guard and Git identity settings.
+Tools unavailable in the development sandbox are reported as
 warnings rather than hiding the checks that did run.
 
 Run the complete diagnostic on the host Mac:
@@ -178,6 +179,8 @@ When changing the Stow diagnostic, run its small shell regression check:
 
 It tests six disposable healthy/broken link layouts without Node, Homebrew, or
 changes to your real home directory. Normal doctor runs do not run these fixtures.
+GitHub Actions runs `just doctor --only-check` and this regression check on pull
+requests and on `main`.
 
 #### Managing macOS defaults
 
