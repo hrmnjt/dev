@@ -147,8 +147,11 @@ Two new mock regressions cover project-local `TMPDIR` and temp-root launches;
 both fail against the old source and pass with the protected-marker probe.
 The no-op executor test now simulates a successful permitted write plus marker
 corruption and still fails closed. Policy tests: **14 passed, 1 expected skip**.
-The real Seatbelt suite includes both launch cases and marker/cleanup checks,
-but those additions still need a host-terminal rerun; mocks are not kernel proof.
+The user host rerun passes the real Seatbelt suite, including both launch cases,
+marker denial, permitted workspace writes and scratch cleanup. Full host suite:
+**53 passed, 0 failed, 1 expected skip** (54 total); full doctor: **24 passed,
+0 failed, 0 warnings**. The startup finding is closed; mocks alone were not kernel
+proof.
 
 A fresh-process `/sandbox` confirms the revised launch boundary, scratch, Git
 metadata exception and unrestricted network/IPC profile are loaded. Codemode
@@ -718,8 +721,9 @@ Remaining manual checks: `/review` Neovim submit/cancel, `/review --tui` mouse a
 keyboard submit/cancel, `/review-summary` unfinished/reload/tree/explicit completion,
 `/answer` extraction/submit/cancel with cloud and local models, clipboard images,
 Herdr linked worktrees and clean reload/shutdown scratch/log removal. The core
-native kernel suite already passed; rerun the updated full suite outside nested
-Seatbelt confinement before merging. Nothing is pushed or merged automatically.
+native kernel suite and updated full host suite pass. Rerun outside nested
+Seatbelt confinement after any further code changes before merging. Nothing is
+pushed or merged automatically.
 
 Current automated evidence after the startup-probe/repeat-completion fixes:
 all ten tracked factories load without errors via Pi's official loader; all
@@ -727,14 +731,16 @@ TypeScript extensions pass strict semantic checking; non-kernel regressions
 report **52 passed, 0 failed, 1 expected skip**. Repository doctor reports
 **12 passed, 0 failed, 0 warnings**. Existing runtime/review command deployment
 symlinks match the checkout; `/reload` or restart loads the fixes, without a new
-Stow step. The updated kernel cases and full host doctor still need a terminal
-rerun. The earlier full host run reported **46 passed, 0 failed, 1 expected skip**;
-full host doctor rerun: **24 passed, 0 failed, 0 warnings**. User Stow succeeds.
+Stow step. The updated user host rerun reports **53 passed, 0 failed, 1 expected
+skip**, including real Seatbelt enforcement and the new TMPDIR cases. Full host
+doctor rerun: **24 passed, 0 failed, 0 warnings**. The earlier full host run had
+46 passes and one expected skip. User Stow succeeds.
 Earlier repository doctor reports **12 passed, 0 failed, 0 warnings** in-session,
 with an
 expected denied `_models` traversal diagnostic from filesystem confinement.
 `git ls-remote origin HEAD` succeeds against the SSH GitHub remote without
-fetching, pushing or altering local refs. These are not live TUI/kernel proofs.
+fetching, pushing or altering local refs. Automated checks do not prove the
+remaining live TUI workflows.
 
 ### Bounded local-first investigation
 
