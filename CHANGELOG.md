@@ -6,6 +6,23 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261007: Added the Claude Code cask and a Stow-tracked `claude` package:
+  personal instructions, a uv guard hook ported from Pi, and settings for a
+  fail-closed macOS sandbox on Pi's native boundary. Sessions start in auto
+  mode; Homebrew, Stow, launchd, `defaults` and `sudo` still prompt. GitHub,
+  npm and PyPI hosts are pre-allowed; `gh` and Git network commands run outside
+  the sandbox (Seatbelt TLS and SSH limits); credential reads are denied; Git
+  cannot invent an identity (`user.useConfigOnly`); error reporting is off
+  without disabling feature flags; commit and PR attribution is off. The root
+  `CLAUDE.md` imports `AGENTS.md`. Doctor checks the `claude` command, uv guard
+  decisions and Claude's fail-closed Git identity. Documented Herdr's Claude
+  integration, which edits the Stow-linked settings.
+- 20261007: Fixed `/review` so untracked files are marked intent-to-add only in
+  a private copy of the index, and `--base` diffs from the merge base. Added
+  `UseKeychain` to SSH setup, extended doctor's syntax check to extensionless
+  scripts, ran doctor and the Stow regression in GitHub Actions, started
+  tracking `lazy-lock.json`, moved the changelog to `CHANGELOG.md`, and removed
+  a stale ignore entry.
 - 20261007: Retired the native-migration planning backlog and its setup link.
   Implementation and host enforcement are verified; remaining manual checks
   and deferred provider/local-first work stay documented in `pi/README.md`,
