@@ -59,22 +59,59 @@ Edits made by `/config` or `/permissions` to the symlinked user settings can
 change tracked files. Review `git diff` before keeping them. If Claude replaces
 a link with a regular file, merge the changes back and restow.
 
-## Mac sandbox and Git identity
+## Autonomous work inside a selected worktree
 
-Claude runs on the host with its native macOS sandbox. User settings enable
-sandboxing, require sandbox availability, and automatically allow sandboxed Bash
-commands. Permission mode stays `default`; this setup does not enable auto mode
-or bypass permissions. Homebrew, Stow, launchd, defaults mutations, sudo, and
-Git pushes have explicit ask rules.
+Launch from one narrow feature worktree, not home or a directory containing
+several projects. The global policy contains no repo-specific paths or command
+ask lists:
 
-Git fetch/pull/push are excluded from the native sandbox for SSH authentication;
-permission checks still apply. Review any request to run other commands
-unsandboxed. Hooks and built-in file tools are not confined by the Bash sandbox.
-`failIfUnavailable` prevents startup without sandbox support, but does not forbid
-unsandboxed exclusions or retries. We do not set `allowUnsandboxedCommands: false`
-or secret-file deny rules. Ask patterns cover matching command text, not every
-possible invocation of a program (for example, `git -C . push` is a different
-form from `git push`). These settings are not a full-process isolation boundary.
+- `acceptEdits` approves ordinary workspace file edits without routine prompts.
+- `autoAllowBashIfSandboxed` approves shell work inside the native sandbox.
+- `blockReadsOutsideWorkingDirectories` blocks file-tool reads outside the
+  working directories and restricts sandboxed reads of home/user-data roots.
+  Claude runtime files, system dependencies, temp, and Git configuration/metadata
+  have documented exceptions; this is not a deny-all external-read policy.
+- `enabled` and `failIfUnavailable` require sandbox support at startup.
+- `allowUnsandboxedCommands: false` disables unsandboxed retries, and an empty
+  `excludedCommands` list provides no global command escape hatches.
+
+To apply the same tracked policy above project/local settings, launch with:
+
+```bash
+cd /path/to/feature-worktree
+claude --settings "$HOME/.claude/settings.json"
+```
+
+This still uses one global file, not a per-repo config. On Claude v2.1.285+,
+`allowUnsandboxedCommands: false` supplied through `--settings` also activates
+admin-required sandbox handling, ignoring repository settings that loosen the
+shell sandbox. Plain `claude` loads user settings too, but they are defaults:
+project settings have higher precedence and can add sandbox exclusions or write
+access. Inspect effective `/sandbox` and `/permissions`; do not add broad
+`/add-dir`, exclusions, or bypass flags to make a blocked command succeed.
+
+Local implementation, tests, staging, and commits should proceed autonomously.
+A linked worktree automatically gets the shared Git metadata access required
+for commits. Worktrees still share refs/objects, and an agent can damage its own
+writable files; a feature branch is recovery context, not complete isolation.
+Use an independent disposable clone when shared Git state must be protected.
+Remote publication and destructive shared-state operations still require explicit
+user authorization in the personal instructions, not command-pattern enforcement.
+
+Git-over-SSH operations currently fail inside Claude's macOS sandbox. Fetch,
+pull, and push remain deliberate user terminal operations for now; no Git
+commands are excluded to work around that failure. HTTPS requires separately
+reviewed credential access. Network-domain approvals may still interrupt work;
+filesystem confinement does not prevent remote-service side effects.
+
+Claude's mandatory protected paths (including its own configuration and Git
+hooks/config) can block even in-worktree changes, notably dotfiles development.
+Do not disable filesystem isolation to fix that. Provide the user with the
+blocked operation instead. Hooks/MCP and built-in file tools are not enclosed
+by the Bash sandbox; file tools have separate permission checks. This is not a
+whole-process isolation guarantee.
+
+## Git identity on the Mac
 
 On the Mac, Git continues using the existing personal/work `includeIf` rules
 and linked worktrees inherit their primary repository's identity. The user
@@ -107,16 +144,18 @@ Gondolin. See [Pi's native sandbox](../pi/README.md#native-sandbox) and its
 |---|---|---|
 | Covered tools | `read`, `write`, `edit`, `bash`, including nested/codemode calls | Bash commands/children; file tools have separate permission checks |
 | Writes | Fixed canonical launch directory, private scratch, discovered Git metadata | Working directory, sandbox temp, additional permitted directories |
-| Approvals | No general per-tool prompts inside the boundary | Default/manual mode; sandboxed Bash auto-approved, file edits can prompt |
+| Approvals | No general per-tool prompts inside the boundary | `acceptEdits` and sandboxed Bash auto-allow; network/protected actions can still prompt |
 | Network/IPC | Not restricted by Pi's profile; normal SSH-agent/loopback access | Sandboxed shell network uses Claude's proxy/domain controls |
-| Git remote commands | Run inside the native profile, with Git metadata writes allowed | Matching fetch/pull/push commands run unsandboxed; matching pushes prompt |
-| Sandbox failure/escape | Startup self-test; failed initialization blocks model tools; no unsandboxed fallback | Missing sandbox blocks startup; exclusions and permission-controlled retries remain |
+| Git remote commands | Run inside the native profile, with Git metadata writes allowed | No exclusions; SSH remote operations stay with the user |
+| Sandbox failure/escape | Startup self-test; failed initialization blocks model tools; no unsandboxed fallback | Missing sandbox blocks startup; unsandboxed retries disabled; no global exclusions |
 | Git identity | Host config; appends `user.useConfigOnly=true` to existing Git env entries | Host config; static Git env slot 0 requires merging any pre-existing entries |
-| Python tooling | Recognized pip/poetry/venv commands blocked by uv guard | uv-first personal instructions, not a technical guard |
+| Outside reads | Ordinary host reads allowed, except the dev model-cache exclusion | Working-directory read block, with documented runtime/system/Git exceptions |
+| Python tooling | Recognized pip/poetry/venv commands blocked by uv guard | Repository conventions, not a global tooling guard |
 
 Neither configuration provides complete credential/read isolation. Pi allows
 ordinary host reads, including CLI credentials, and unrestricted networking.
-Claude's current configuration has no explicit credential-file deny rules.
+Claude restricts outside reads but keeps runtime/Git/system exceptions; it does
+not protect secrets present inside the chosen workspace.
 Pi's user `!`/`!!` commands and trusted extensions remain outside the model-tool
 boundary; Claude hooks and non-Bash tools are outside its Bash sandbox.
 Both setups enforce configured Git identity rather than guessing, but neither
@@ -165,7 +204,9 @@ cat > "$HOME/.claude/CLAUDE.md" <<'EOF'
 Use the configured Git author and committer; do not override them or use --author.
 Verify git var GIT_AUTHOR_IDENT and git var GIT_COMMITTER_IDENT before committing.
 If either identity is missing or unexpected, stop and ask the user.
-Use Conventional Commits and do not push or open PRs unless asked.
+Follow repository instructions and conventions; complete requested local work autonomously.
+Do not bypass confinement, broaden access, or route blocked work through another service.
+Do not publish, modify other worktrees/branches, or perform destructive shared-state actions unless authorized.
 Do not add Claude co-author, generated-by, or session-link attribution.
 EOF
 ```
@@ -209,8 +250,14 @@ and force push.
 
 Run `just doctor --only-check` for JSON, Git configuration, and isolated Git
 identity checks. Host `just doctor` also checks expected commands and Stow links.
-Test the interactive sandbox and web identity using the steps above after
-deployment; there is no custom hook requiring a dedicated regression suite.
+After deployment, start a fresh feature-worktree session with the explicit
+`--settings` command above. Verify ordinary source edits/tests, Git identity,
+and a local commit. Using only disposable fixtures you created, verify a
+sibling-directory write and an unrelated home-file read are denied, and no
+unsandboxed retry is offered. Confirm shared-worktree Git behavior separately.
+Protected dotfile edits and SSH remote operations are expected limitations, not
+reasons to weaken confinement. Verify real web identity separately; local checks
+cannot prove hosted behavior. There is no custom hook requiring a dedicated suite.
 
 References: [settings](https://code.claude.com/docs/en/settings),
 [native AGENTS.md support](https://code.claude.com/docs/en/memory#agents-md),
