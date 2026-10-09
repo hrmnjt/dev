@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "env": {
+    "GIT_CONFIG_COUNT": "1",
+    "GIT_CONFIG_KEY_0": "user.useConfigOnly",
+    "GIT_CONFIG_VALUE_0": "true"
+  },
+  "permissions": {
+    "defaultMode": "default",
+    "ask": [
+      "Bash(git push *)",
+      "Bash(brew *)",
+      "Bash(stow *)",
+      "Bash(just stowall *)",
+      "Bash(just unstowall *)",
+      "Bash(launchctl *)",
+      "Bash(defaults write *)",
+      "Bash(defaults delete *)",
+      "Bash(sudo *)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "autoAllowBashIfSandboxed": true,
+    "excludedCommands": [
+      "git fetch *",
+      "git pull *",
+      "git push *"
+    ]
+  }
+}

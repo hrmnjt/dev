@@ -260,6 +260,24 @@ check_git_identities() {
   rm -rf "$identity_tmp"
 }
 
+check_claude_configuration() {
+  if ! command_exists python3; then
+    warn "Claude configuration tests skipped (Python unavailable)"
+    return
+  fi
+
+  claude_output=$(python3 "$ROOT/_scripts/tests/test_claude.py" 2>&1)
+  claude_status=$?
+  debug "command: python3 $ROOT/_scripts/tests/test_claude.py"
+  debug_output "$claude_output"
+  if [ "$claude_status" -eq 0 ]; then
+    pass "Claude settings, Git identity, and Stow tests"
+  else
+    printf '%s\n' "$claude_output"
+    fail "Claude settings, Git identity, and Stow tests"
+  fi
+}
+
 check_justfile() {
   if command_exists just; then
     just_output=$(just --justfile "$ROOT/Justfile" --list 2>&1)
@@ -286,12 +304,13 @@ run_repository_checks() {
   check_toml
   check_git_configs
   check_git_identities
+  check_claude_configuration
   check_justfile
 }
 
 check_expected_commands() {
   missing_commands=""
-  for name in aerospace borders brew fzf gh git herdr jq just lazygit nvim node npm pi rg starship stow uv zsh; do
+  for name in aerospace borders brew claude fzf gh git herdr jq just lazygit nvim node npm pi rg starship stow uv zsh; do
     if ! command_exists "$name"; then
       missing_commands="$missing_commands $name"
     fi
