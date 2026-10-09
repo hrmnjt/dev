@@ -8,9 +8,6 @@
   },
   "theme": "custom:gruvbox-dark-hard",
   "agentPushNotifEnabled": true,
-  "enabledPlugins": {
-    "frontend-design@claude-plugins-official": true
-  },
   "hooks": {
     "SessionStart": [
       {

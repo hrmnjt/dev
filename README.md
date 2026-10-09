@@ -260,7 +260,8 @@ expanded month by month. Full history lives in `git log`.
 ### 202610
 
 - 20261009: Preserved Claude's Opus/xhigh preferences, mobile push notifications,
-  frontend-design plugin, and existing Herdr session hook during settings migration.
+  and existing Herdr session hook during settings migration; left Claude plugin
+  enablement unmanaged.
   Added a native Gruvbox Dark Hard custom theme; shortened the package guide to
   setup, preferences, safety checks, and web identity. Plain `claude` is the
   default, with optional CLI policy priority. The workspace
