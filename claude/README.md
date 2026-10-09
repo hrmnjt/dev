@@ -35,8 +35,7 @@ organization-managed settings still take precedence.
 
 - **Opus**, with saved `xhigh` effort for `claude-opus-5-5`.
 - Native **Gruvbox Dark Hard**; Ghostty owns the terminal background.
-- Frontend-design plugin, Remote Control mobile notifications, and the existing
-  Herdr `SessionStart` hook.
+- Remote Control mobile notifications and the existing Herdr `SessionStart` hook.
 - Host personal/work Git identity, fail-closed if missing; no Mac attribution.
   Existing `GIT_CONFIG_*` injections must be merged with the configured entries.
 
@@ -55,7 +54,7 @@ secrets are not isolated.
 
 Run `just doctor --only-check` here and `just doctor` on the Mac. In a fresh
 session inspect `/sandbox`, `/permissions`, `/memory`, `/theme`, `/model`, `/effort`,
-`/plugin`, and Herdr state. Restart once after creating the themes folder.
+and Herdr state. Restart once after creating the themes folder.
 Verify Git author/committer, linked-worktree commits, and disposable outside-read/
 write denials. Configuration checks do not prove live behavior.
 
