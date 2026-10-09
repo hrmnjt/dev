@@ -122,7 +122,7 @@ cask "dbeaver-community"
 # =============================================================================
 
 # CLI Tools that I need at work
-brew "azure-cli"
+cask "azure-cli"
 brew "databricks/tap/databricks"
 brew "telnet"
 # Java 17 for local Spark in seha_crm ingestion tests (keg-only; JAVA_HOME set in zsh/.zshrc)

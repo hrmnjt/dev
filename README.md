@@ -259,6 +259,8 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261009: Changed Azure CLI from a Homebrew formula to a cask to follow its
+  upstream migration and correct the Brewfile dependency check.
 - 20261009: Preserved Claude's Opus/xhigh preferences, mobile push notifications,
   and existing Herdr session hook during settings migration; left Claude plugin
   enablement unmanaged.
