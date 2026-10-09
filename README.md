@@ -76,6 +76,11 @@ git remote set-url origin git@github.com:hrmnjt/dev.git
 # 10.1. Authenticate the GitHub CLI over SSH; see gh/README.md
 gh auth login
 
+# 10.2. Configure Claude Code (installed by brew bundle; see claude/README.md)
+# Review existing ~/.claude files before Stow deployment, then sign in:
+claude
+claude doctor
+
 # 11. Complete required app permissions
 # 11.1. Grant AeroSpace Accessibility permission; see the aerospace/README.md
 # 11.2. Grant Ghostty or the active terminal Accessibility and Automation
@@ -117,6 +122,7 @@ herdr plugin list --plugin hrmnjt.default-tabs
 - [AeroSpace](aerospace/README.md)
 - [Ghostty](ghostty/README.md)
 - [Glow](glow/README.md)
+- [Claude Code (Mac and web sessions)](claude/README.md)
 - [Gh](gh/README.md)
 - [Git](git/README.md)
 - [Herdr](herdr/README.md)
@@ -252,6 +258,11 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261009: Added the Claude Code cask and Stow-managed Mac settings, with
+  native sandboxing and fail-closed Git identity; added project settings and a
+  web-only startup hook using the tracked personal author/committer identity.
+  Disabled Claude attribution with valid string settings and added isolated
+  setup tests. Existing PR commits are not rewritten.
 - 20261007: Retired the native-migration planning backlog and its setup link.
   Implementation and host enforcement are verified; remaining manual checks
   and deferred provider/local-first work stay documented in `pi/README.md`,

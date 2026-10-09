@@ -65,6 +65,8 @@ brew "container"
 brew "herdr"
 # OpenAI coding agent CLI
 cask "codex"
+# Anthropic coding agent CLI (settings deployed from claude/)
+cask "claude-code"
 # Terminal
 cask "ghostty"
 
