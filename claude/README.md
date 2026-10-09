@@ -5,8 +5,24 @@ Mac settings file**, `claude/.claude/settings.json`, to
 `~/.claude/settings.json`, plus personal instructions in `~/.claude/CLAUDE.md`.
 Both apply across repositories; no per-repository settings or hooks are needed.
 
-Root `CLAUDE.md` only imports repository instructions and clarifies Claude's
-execution environment. It is not a second personal settings file.
+## Shared repository instructions
+
+Claude Code v2.1.277 and later can read `AGENTS.md` directly; there is no
+repository-root `CLAUDE.md` wrapper or `@AGENTS.md` import to maintain here.
+Use v2.1.281 or later to avoid earlier session-specific limitations. Check
+`claude --version` and `/memory` in an actual Mac or web session to confirm
+`AGENTS.md` loaded; hosted sessions may use a different CLI version.
+
+The default Project instructions setting uses `AGENTS.md` when there is no
+project `CLAUDE.md`, `.claude/CLAUDE.md`, or `CLAUDE.local.md` in the working
+directory or an ancestor. If another repository has both instruction formats,
+choose `claude-md-and-agents-md` in `/config` to load both. The built-in AGENTS
+plugin must be enabled. Older or unsupported sessions need an upgrade or an
+explicit compatibility import rather than assuming `AGENTS.md` loaded.
+
+The global `~/.claude/CLAUDE.md` remains the supported location for personal
+instructions across projects. It does not prevent project `AGENTS.md` loading
+and is separate from this repository's shared instructions.
 
 ## Install on the Mac
 
@@ -45,16 +61,20 @@ a link with a regular file, merge the changes back and restow.
 
 ## Mac sandbox and Git identity
 
-Claude runs on the host, **not** in Gondolin. User settings enable its native
-sandbox, require sandbox availability, and automatically allow sandboxed Bash
+Claude runs on the host with its native macOS sandbox. User settings enable
+sandboxing, require sandbox availability, and automatically allow sandboxed Bash
 commands. Permission mode stays `default`; this setup does not enable auto mode
 or bypass permissions. Homebrew, Stow, launchd, defaults mutations, sudo, and
 Git pushes have explicit ask rules.
 
 Git fetch/pull/push are excluded from the native sandbox for SSH authentication;
 permission checks still apply. Review any request to run other commands
-unsandboxed. Hooks and built-in file tools are not confined by the Bash sandbox;
-these settings are not a Gondolin-equivalent VM boundary.
+unsandboxed. Hooks and built-in file tools are not confined by the Bash sandbox.
+`failIfUnavailable` prevents startup without sandbox support, but does not forbid
+unsandboxed exclusions or retries. We do not set `allowUnsandboxedCommands: false`
+or secret-file deny rules. Ask patterns cover matching command text, not every
+possible invocation of a program (for example, `git -C . push` is a different
+form from `git push`). These settings are not a full-process isolation boundary.
 
 On the Mac, Git continues using the existing personal/work `includeIf` rules
 and linked worktrees inherit their primary repository's identity. The user
@@ -75,6 +95,32 @@ git var GIT_COMMITTER_IDENT
 Inherited `GIT_AUTHOR_*` or `GIT_COMMITTER_*` variables override Git config.
 Remove stale overrides from the Mac's launching environment; do not ask the
 agent to invent an identity or bypass the check.
+
+## Comparison with this repository's native Pi sandbox
+
+Pi also uses macOS Seatbelt, directly through `sandbox-exec`; it no longer uses
+Gondolin. See [Pi's native sandbox](../pi/README.md#native-sandbox) and its
+[policy](../pi/.pi/agent/extensions/lib/native-policy.ts) /
+[runtime](../pi/.pi/agent/extensions/lib/native-runtime.ts).
+
+| Area | Pi on current main | These Claude user settings |
+|---|---|---|
+| Covered tools | `read`, `write`, `edit`, `bash`, including nested/codemode calls | Bash commands/children; file tools have separate permission checks |
+| Writes | Fixed canonical launch directory, private scratch, discovered Git metadata | Working directory, sandbox temp, additional permitted directories |
+| Approvals | No general per-tool prompts inside the boundary | Default/manual mode; sandboxed Bash auto-approved, file edits can prompt |
+| Network/IPC | Not restricted by Pi's profile; normal SSH-agent/loopback access | Sandboxed shell network uses Claude's proxy/domain controls |
+| Git remote commands | Run inside the native profile, with Git metadata writes allowed | Matching fetch/pull/push commands run unsandboxed; matching pushes prompt |
+| Sandbox failure/escape | Startup self-test; failed initialization blocks model tools; no unsandboxed fallback | Missing sandbox blocks startup; exclusions and permission-controlled retries remain |
+| Git identity | Host config; appends `user.useConfigOnly=true` to existing Git env entries | Host config; static Git env slot 0 requires merging any pre-existing entries |
+| Python tooling | Recognized pip/poetry/venv commands blocked by uv guard | uv-first personal instructions, not a technical guard |
+
+Neither configuration provides complete credential/read isolation. Pi allows
+ordinary host reads, including CLI credentials, and unrestricted networking.
+Claude's current configuration has no explicit credential-file deny rules.
+Pi's user `!`/`!!` commands and trusted extensions remain outside the model-tool
+boundary; Claude hooks and non-Bash tools are outside its Bash sandbox.
+Both setups enforce configured Git identity rather than guessing, but neither
+`useConfigOnly` nor personal instructions prohibit deliberate identity overrides.
 
 ## Reusable claude.ai web environment
 
@@ -167,6 +213,7 @@ Test the interactive sandbox and web identity using the steps above after
 deployment; there is no custom hook requiring a dedicated regression suite.
 
 References: [settings](https://code.claude.com/docs/en/settings),
+[native AGENTS.md support](https://code.claude.com/docs/en/memory#agents-md),
 [attribution](https://code.claude.com/docs/en/settings-reference#attribution),
 [cloud environment variables](https://code.claude.com/docs/en/cloud-environments#set-environment-variables),
 [personal cloud instructions](https://code.claude.com/docs/en/cloud-environments#add-personal-preferences-without-committing-to-the-repo).

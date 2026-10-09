@@ -15,6 +15,12 @@ Leave Homebrew, Stow deployment, launchd, VPN, and local-LLM operations to the
 user. A development harness may expose a different tool cwd/environment;
 honor that rather than assuming host paths. See **Native sandbox** in `pi/README.md`.
 
+Claude Code runs on the host Mac with its own native Bash sandbox, or in a
+claude.ai cloud environment; Pi's tool policy does not apply to Claude. See
+`claude/README.md` for global settings, shared `AGENTS.md` support, and web Git
+identity setup. The same deliberate-user rule applies to Mac deployment and
+service operations.
+
 ## Git workflow
 
 Use Conventional Commits-style names when asked to create branches or commits:
