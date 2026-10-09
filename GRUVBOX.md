@@ -31,6 +31,7 @@ differ even when its editor and terminal surfaces match.
 | Glow | `glow/.config/glow/themes/gruvbox-dark-hard.json` | Classic Markdown colors; `zsh/.zshrc` supplies the absolute style path via `GLOW_STYLE`. Glow's browser chrome is app-owned. |
 | Lazygit | `lazygit/.config/lazygit/config.yml` | Classic colors, including brighter shades for focus and changes. |
 | Pi | `pi/.pi/agent/themes/gruvbox-dark.json` | Classic Dark Hard background and status colors; uses separate dimmer shades for a few message surfaces. |
+| Claude Code | `claude/.claude/themes/gruvbox-dark-hard.json` | Native custom-theme tokens use classic foreground/accent colors, Dark Hard surfaces, and muted green/red diff backgrounds; Ghostty owns the terminal background. |
 | Herdr | `herdr/.config/herdr/config.toml` | Built-in `gruvbox` theme; the app owns its palette. |
 | AeroSpace borders | `aerospace/.config/aerospace/aerospace.toml` | Bright yellow active, subdued gray inactive. The native workspace indicator is styled in AeroSpace's UI. |
 | macOS and wallpaper | `Justfile`, `wallpapers/` | Dark mode, native orange accent, tracked Pink Floyd Gruvbox wallpaper. |
