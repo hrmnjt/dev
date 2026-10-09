@@ -150,3 +150,17 @@ Useful maintenance commands:
 - `:Lazy` — inspect, update, or clean plugins.
 - `:LazyExtras` — enable language support when it is actually needed.
 - `:checkhealth` — diagnose Neovim, clipboard, parser, and provider issues.
+
+### Plugin lock file
+
+`lazy-lock.json` is tracked so every Mac installs the same plugin revisions.
+lazy.nvim writes it beside `init.lua`; once the tracked file exists, Stow links
+it and `:Lazy update` rewrites the repository copy, so updates appear in
+`git diff` for review. Adopt an existing host lock file once:
+
+```bash
+mv ~/.config/nvim/lazy-lock.json nvim/.config/nvim/lazy-lock.json
+just stowall
+```
+
+Use `:Lazy restore` on a new Mac to install exactly the locked revisions.
