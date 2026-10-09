@@ -8,7 +8,3 @@
 zed/.config/zed/conversations/**
 zed/.config/zed/prompts/**
 zed/.config/zed/themes/**
-
-
-# pi
-pi/.pi/agent/usage-data/
