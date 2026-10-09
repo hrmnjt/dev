@@ -1,22 +1,12 @@
 # Claude Code
 
-Homebrew installs the CLI with `cask "claude-code"`. Stow deploys personal
-instructions and settings into `~/.claude`; this repository also commits
-project settings for claude.ai web sessions.
+Homebrew installs the CLI with `cask "claude-code"`. Stow deploys **one global
+Mac settings file**, `claude/.claude/settings.json`, to
+`~/.claude/settings.json`, plus personal instructions in `~/.claude/CLAUDE.md`.
+Both apply across repositories; no per-repository settings or hooks are needed.
 
-## Files and scope
-
-| File | Scope |
-|---|---|
-| `claude/.claude/settings.json` | User settings on the Mac |
-| `claude/.claude/CLAUDE.md` | Personal instructions on the Mac |
-| `.claude/settings.json` at the repository root | This repository, local and web |
-| `CLAUDE.md` at the repository root | Imports `AGENTS.md` and adds Claude-specific guidance |
-| `_scripts/claude-web-git-identity.sh` | Web-only SessionStart hook for this repository |
-
-Web sessions do **not** read the Mac's `~/.claude` files. The root project
-settings are separate from the Stow package; they must be committed to the
-branch the web session clones. Do not Stow the root `.claude` directory.
+Root `CLAUDE.md` only imports repository instructions and clarifies Claude's
+execution environment. It is not a second personal settings file.
 
 ## Install on the Mac
 
@@ -36,8 +26,12 @@ back them up and merge useful preferences into the tracked files before removing
 the conflicting originals and rerunning Stow. Do not use `stow --adopt` blindly.
 `--no-folding` keeps `~/.claude` a real directory with only intentional files
 symlinked; credentials, `~/.claude.json`, history, projects, and other runtime
-state remain outside the repository. `.claude/settings.local.json` is also
-untracked via the global Git ignore rule.
+state remain outside the repository.
+
+Claude may create `.claude/settings.local.json` when saving project-specific
+permissions. It is optional, not a file to maintain in every repository.
+`git/.config/git/ignore` excludes it globally to prevent accidental commits,
+without ignoring the tracked user settings.
 
 Homebrew installations are updated through Homebrew:
 
@@ -53,7 +47,7 @@ a link with a regular file, merge the changes back and restow.
 
 Claude runs on the host, **not** in Gondolin. User settings enable its native
 sandbox, require sandbox availability, and automatically allow sandboxed Bash
-commands. Permission mode stays `default`; this slice does not enable auto mode
+commands. Permission mode stays `default`; this setup does not enable auto mode
 or bypass permissions. Homebrew, Stow, launchd, defaults mutations, sudo, and
 Git pushes have explicit ask rules.
 
@@ -79,82 +73,100 @@ git var GIT_COMMITTER_IDENT
 ```
 
 Inherited `GIT_AUTHOR_*` or `GIT_COMMITTER_*` variables override Git config.
-Remove stale overrides from the launching environment; do not ask the agent to
-invent an identity or bypass the check.
+Remove stale overrides from the Mac's launching environment; do not ask the
+agent to invent an identity or bypass the check.
 
-## Web-session identity
+## Reusable claude.ai web environment
 
-PR #194's commits use `Claude <noreply@anthropic.com>` as both author and
-committer. Attribution settings only control message trailers and PR footers;
-they do **not** change either Git identity.
+Web sessions do **not** inherit the Mac's user settings, instructions, or Git
+config. Claude does not automatically synchronize a single personal JSON
+settings file between your Mac and hosted sessions. Use a reusable cloud
+environment for web Git identity instead of committing settings to every repo.
 
-The project SessionStart hook exits without changes on the Mac. When
-`CLAUDE_CODE_REMOTE=true`, it:
-
-1. Reads `user.name` and `user.email` from `git/.config/git/config.personal`
-   (currently `hrmnjt <harman@hrmnjt.dev>`), without duplicating those values.
-2. Sets that identity and `user.useConfigOnly=true` in **this checkout's local
-   Git config**, never a global cloud fallback.
-3. Appends safely quoted `GIT_AUTHOR_*` and `GIT_COMMITTER_*` exports to
-   `CLAUDE_ENV_FILE`, overriding cloud defaults for subsequent Bash commands.
-
-The hook runs on startup, resume, and other SessionStart events, including
-compaction. It requires a valid repository root, the tracked identity file,
-and Claude's environment file. A SessionStart hook error does not itself block
-Claude from working; `CLAUDE.md` instructs the agent to stop before committing
-if identity setup or verification fails. This is workflow configuration, not
-a tamper-proof enforcement layer.
-
-Start a **new single-repository web session** on a branch containing these
-files. Run the identity checks above inside that session before its first
-commit. After an authorized commit, verify both fields:
+At [claude.ai/code](https://claude.ai/code), create or edit a personal cloud
+environment and select it for sessions across your personal repositories.
+In its **Environment variables** field, set all four Git identity variables.
+Generate the values from the tracked personal config on the Mac:
 
 ```bash
+# From this repository's root; this only prints configuration for the web UI.
+name=$(git config --file git/.config/git/config.personal --get user.name)
+email=$(git config --file git/.config/git/config.personal --get user.email)
+printf 'GIT_AUTHOR_NAME=%s\nGIT_AUTHOR_EMAIL=%s\nGIT_COMMITTER_NAME=%s\nGIT_COMMITTER_EMAIL=%s\n' \
+  "$name" "$email" "$name" "$email"
+```
+
+Paste the output into the environment's variables field, not into a repository.
+The current identity is `hrmnjt <harman@hrmnjt.dev>`. Environment variables
+override `user.name` / `user.email`, including a VM's Claude defaults.
+Do not set these globally in your Mac shell, where they would override the
+personal/work path rules.
+
+Use a **separate work cloud environment** with the work identity if needed.
+Every repository in a cloud session uses the selected environment's identity;
+a mixed personal/work multi-repository session is therefore inappropriate.
+This is an explicit environment identity, not a path-based cloud fallback.
+If the tracked identity changes, update the web environment manually.
+
+### Personal web instructions
+
+Optionally add this to the cloud environment's **Setup script** field to give
+sessions personal instructions without committing them to each repository:
+
+```bash
+mkdir -p "$HOME/.claude"
+cat > "$HOME/.claude/CLAUDE.md" <<'EOF'
+Use the configured Git author and committer; do not override them or use --author.
+Verify git var GIT_AUTHOR_IDENT and git var GIT_COMMITTER_IDENT before committing.
+If either identity is missing or unexpected, stop and ask the user.
+Use Conventional Commits and do not push or open PRs unless asked.
+Do not add Claude co-author, generated-by, or session-link attribution.
+EOF
+```
+
+These are instructions, **not** equivalent to enforced JSON attribution
+settings. The Mac's attribution configuration does not apply on the web, and
+a cloud environment is not a universal replacement for every JSON setting.
+Organization-level server-managed settings, where available, provide a
+different policy mechanism.
+
+Start a **fresh session using that environment** after configuration. Verify
+both effective identities from its Bash tool before authorizing a commit:
+
+```bash
+git var GIT_AUTHOR_IDENT
+git var GIT_COMMITTER_IDENT
+# After an authorized commit:
 git show -s --format='Author: %an <%ae>%nCommitter: %cn <%ce>%n%B' HEAD
 ```
 
-Cloud sessions with several repositories do not load individual repositories'
-project settings/hooks. They need a separately reviewed cloud-environment
-setup; this hook deliberately does not impose a personal identity on other
-repositories or work projects. Other personal repositories need their own
-explicit identity setup, not a copy of the Mac's path-based rules.
+For web instructions, also check `/context` lists the user `CLAUDE.md` under
+Memory files. Existing sessions may retain old environment values until their
+VM is restored or rebuilt; starting fresh avoids relying on that timing.
+Hosted behavior needs checking in a real session, not just a local fixture.
 
 ## Attribution and existing commits
 
-Both user and project settings use:
+The global Mac settings use empty strings for `attribution.commit` and
+`attribution.pr`, and `false` for `attribution.sessionUrl`. The first two
+are strings, not booleans. They suppress Claude's commit co-author trailer,
+PR footer, and session link on the Mac.
 
-```json
-"attribution": {
-  "commit": "",
-  "pr": "",
-  "sessionUrl": false
-}
-```
-
-`commit` and `pr` are strings, not booleans. Empty strings suppress the Claude
-co-author trailer and PR footer; `sessionUrl: false` suppresses the cloud
-session link. Project settings ensure this also applies on the web.
-
-This affects **future** commits; it does not rewrite PR #194. To preserve your
-identity without rewriting that published branch, squash-merge as yourself
+Attribution settings do **not** change author or committer identity. PR #194's
+existing Claude-authored commits are not rewritten by this setup. To preserve
+your identity without rewriting that published branch, squash-merge as yourself
 and remove any Claude co-author trailer from GitHub's suggested message.
-Rewriting all existing authors/committers would require a separate explicit
-history-rewrite decision and force push.
+Rewriting existing authors/committers requires a separate explicit decision
+and force push.
 
 ## Validation
 
-```bash
-python3 _scripts/tests/test_claude.py
-just doctor --only-check
-```
-
-The isolated tests exercise local no-op behavior, web author and committer
-selection despite Claude environment overrides, linked worktrees, invalid
-configuration, shell-safe quoting, settings, and Stow deployment. Test the
-actual interactive sandbox and a fresh web session after deployment; a local
-fixture cannot prove how the hosted service applies settings.
+Run `just doctor --only-check` for JSON, Git configuration, and isolated Git
+identity checks. Host `just doctor` also checks expected commands and Stow links.
+Test the interactive sandbox and web identity using the steps above after
+deployment; there is no custom hook requiring a dedicated regression suite.
 
 References: [settings](https://code.claude.com/docs/en/settings),
 [attribution](https://code.claude.com/docs/en/settings-reference#attribution),
-[cloud settings and hooks](https://code.claude.com/docs/en/cloud-environments#what-carries-over-from-your-setup),
-[SessionStart environment persistence](https://code.claude.com/docs/en/hooks#persist-environment-variables).
+[cloud environment variables](https://code.claude.com/docs/en/cloud-environments#set-environment-variables),
+[personal cloud instructions](https://code.claude.com/docs/en/cloud-environments#add-personal-preferences-without-committing-to-the-repo).

@@ -258,11 +258,11 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
-- 20261009: Added the Claude Code cask and Stow-managed Mac settings, with
-  native sandboxing and fail-closed Git identity; added project settings and a
-  web-only startup hook using the tracked personal author/committer identity.
-  Disabled Claude attribution with valid string settings and added isolated
-  setup tests. Existing PR commits are not rewritten.
+- 20261009: Added the Claude Code cask and one Stow-managed global Mac settings
+  file, with native sandboxing, fail-closed Git identity, and no Claude
+  attribution. Globally ignored optional project-local settings and documented
+  reusable claude.ai environment identity and personal instructions without
+  per-repo settings or hooks. Existing PR commits are not rewritten.
 - 20261007: Retired the native-migration planning backlog and its setup link.
   Implementation and host enforcement are verified; remaining manual checks
   and deferred provider/local-first work stay documented in `pi/README.md`,
