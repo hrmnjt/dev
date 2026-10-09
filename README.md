@@ -260,8 +260,10 @@ expanded month by month. Full history lives in `git log`.
 ### 202610
 
 - 20261009: Added the Claude Code cask and one Stow-managed global Mac settings
-  file, with native sandboxing, fail-closed Git identity, and no Claude
-  attribution. Globally ignored optional project-local settings and documented
+  file, with autonomous workspace edits, outside-read blocking, native
+  sandboxing without command exclusions or unsandboxed retries, fail-closed Git
+  identity, and no Claude attribution. Kept personal instructions repo-neutral.
+  Globally ignored optional project-local settings and documented
   reusable claude.ai environment identity and personal instructions without
   per-repo settings or hooks. Use shared `AGENTS.md` directly without a root
   `CLAUDE.md` wrapper; documented differences from Pi's current native sandbox.

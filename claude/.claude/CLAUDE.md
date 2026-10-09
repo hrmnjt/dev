@@ -1,13 +1,13 @@
 # Personal instructions
 
-- Use the repository's `CLAUDE.md` / `AGENTS.md` and package README.
-- Leave Homebrew, Stow deployment, launchd, macOS defaults, VPN, and local-LLM
-  service operations to me; provide the command instead.
-- Use the configured Git identity. Never invent an identity, set `--author`,
-  override author/committer variables, or add Claude attribution.
-- On this Mac, identity selection is path-based. Do not change `user.name` or
-  `user.email` to make a commit succeed in an unknown path.
-- Do not push, open pull requests, or rewrite published history unless asked.
-- Prefer Conventional Commits: branch `<type>/<scope>/<short-kebab-description>`,
-  commit `<type>(<scope>): <short imperative summary>`.
-- Python is uv-first: use `uv run`, `uv add`, and `uv venv`, not pip or poetry.
+- Follow the repository's instructions and existing conventions.
+- Complete the requested implementation, tests, and local commits autonomously
+  within the selected workspace or worktree.
+- Preserve the configured Git author and committer. Do not invent an identity,
+  override it, or add Claude attribution; stop if identity is missing or unexpected.
+- Do not bypass confinement, broaden directories or permissions, or route a
+  blocked action through another tool or service. Report what failed and ask
+  for a deliberate user action instead.
+- Do not modify other worktrees or branches, publish changes, open pull requests,
+  rewrite published history, or perform destructive shared-state operations
+  without explicit authorization.
