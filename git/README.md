@@ -12,7 +12,7 @@ git/
     ├── config            # Global defaults + includeIf rules
     ├── config.personal   # [user] name=harmanjeet email=harman@hrmnjt.dev
     ├── config.work       # [user] name=Harmanjeet Singh Nagi email=hanagi@doh.gov.ae
-    └── ignore            # Global gitignore (macOS junk and vim swaps)
+    └── ignore            # Global gitignore (macOS junk, vim swaps, Claude local settings)
 ```
 
 **config** sets `init.defaultBranch = main`, prunes deleted remote-tracking
@@ -66,6 +66,14 @@ git pull
 `fetch.prune = true` removes stale remote-tracking branches during the fetch
 stage, while `pull.ff = only` refuses a pull that would create a merge commit.
 Git still updates only the current branch from its configured upstream.
+
+## Global ignores
+
+`ignore` excludes macOS junk, Vim swap files, and
+`**/.claude/settings.local.json`. Claude Code may create that optional file
+when saving project-specific permissions; keep these machine-local exceptions
+out of commits across all repositories. This rule does not ignore the shared
+`.claude/settings.json` or the Stow-managed user settings.
 
 ## Deploy
 
