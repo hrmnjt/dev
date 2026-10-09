@@ -149,7 +149,8 @@ just doctor --only-check
 
 This validates shell syntax, strict JSON, TOML, Git and Just configuration,
 whitespace, conflict markers, and fail-closed Git identity selection in isolated
-temporary repositories. Tools unavailable in the development sandbox are reported as
+temporary repositories, including a commit test that Claude Code's settings refuse
+an invented identity. Tools unavailable in the development sandbox are reported as
 warnings rather than hiding the checks that did run.
 
 Run the complete diagnostic on the host Mac:
@@ -179,6 +180,8 @@ When changing the Stow diagnostic, run its small shell regression check:
 
 It tests six disposable healthy/broken link layouts without Node, Homebrew, or
 changes to your real home directory. Normal doctor runs do not run these fixtures.
+GitHub Actions runs `just doctor --only-check` and this regression check on pull
+requests and on `main`.
 
 #### Managing macOS defaults
 
@@ -259,6 +262,15 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261009: Fixed `/review` so untracked files are marked intent-to-add only in
+  a private copy of the index instead of the real one, and `--base` diffs from
+  the merge base rather than the base branch's tip. Added `UseKeychain` to the
+  GitHub SSH setup and reuse the launchd agent. Doctor now syntax-checks
+  extensionless scripts by shebang and tests that Claude's Git env refuses an
+  invented identity. GitHub Actions runs doctor and the Stow regression.
+  Started tracking `lazy-lock.json`, described the `vpn` symlinks in its
+  header, and removed a stale Pi ignore entry. Supersedes the review fixes in
+  the closed PR #194.
 - 20261009: Changed Azure CLI from a Homebrew formula to a cask to follow its
   upstream migration and correct the Brewfile dependency check.
 - 20261009: Preserved Claude's Opus/xhigh preferences, mobile push notifications,
