@@ -259,6 +259,12 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261009: Preserved Claude's Opus/xhigh preferences, mobile push notifications,
+  frontend-design plugin, and existing Herdr session hook during settings migration.
+  Added a native Gruvbox Dark Hard custom theme; shortened the package guide to
+  setup, preferences, safety checks, and web identity. Plain `claude` is the
+  default, with optional CLI policy priority. The workspace
+  confinement policy and omission of old tldraw command allow rules stay unchanged.
 - 20261009: Added the Claude Code cask and one Stow-managed global Mac settings
   file, with autonomous workspace edits, outside-read blocking, native
   sandboxing without command exclusions or unsandboxed retries, fail-closed Git
