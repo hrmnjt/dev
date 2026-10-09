@@ -83,17 +83,27 @@ check_conflict_markers() {
 check_shell_syntax() {
   shell_failed=false
 
-  for script in $(find "$ROOT" -type f -name '*.sh' ! -path '*/.git/*' ! -path '*/node_modules/*' -print); do
-    case "$(sed -n '1p' "$script")" in
-      *bash*)
-        if command_exists bash; then
-          bash -n "$script" || shell_failed=true
-        else
-          shell_failed=true
-        fi
-        ;;
-      *) sh -n "$script" || shell_failed=true ;;
+  # Check *.sh files and extensionless scripts such as vpn and llm by their
+  # shebang. Include untracked files so new scripts are checked while editing.
+  for name in $(git -C "$ROOT" ls-files --cached --others --exclude-standard); do
+    script="$ROOT/$name"
+    { [ -f "$script" ] && [ ! -L "$script" ]; } || continue
+    shebang=$(sed -n '1{/^#!/p;}' "$script")
+    case "$name" in
+      *.sh) ;;
+      *) [ -n "$shebang" ] || continue ;;
     esac
+    case "$shebang" in
+      *bash*) interpreter=bash ;;
+      *zsh*|*node*|*python*|*lua*) continue ;;
+      *) interpreter=sh ;;
+    esac
+    debug "$interpreter -n $name"
+    if command_exists "$interpreter"; then
+      "$interpreter" -n "$script" || shell_failed=true
+    else
+      shell_failed=true
+    fi
   done
 
   if [ "$shell_failed" = true ]; then
@@ -260,6 +270,56 @@ check_git_identities() {
   rm -rf "$identity_tmp"
 }
 
+check_claude_git_identity() {
+  if ! command_exists jq; then
+    warn "Claude Git identity skipped (jq unavailable)"
+    return
+  fi
+
+  # Only the GIT_CONFIG_* variables Claude Code passes to every command.
+  claude_git_env=$(jq -r '.env // {} | to_entries[]
+    | select(.key | test("^GIT_CONFIG_(COUNT|KEY_[0-9]+|VALUE_[0-9]+)$"))
+    | "\(.key)=\(.value)"' "$ROOT/claude/.claude/settings.json" 2>/dev/null)
+  if [ -z "$claude_git_env" ]; then
+    warn "Claude Git identity (settings lack useConfigOnly)"
+    return
+  fi
+
+  claude_tmp=$(mktemp -d "$TEMP_ROOT/dev-doctor-claude.XXXXXX") || {
+    fail "Claude Git identity test (temporary directory unavailable)"
+    return
+  }
+  claude_repo="$claude_tmp/home/code/unknown/check"
+  mkdir -p "$claude_repo"
+
+  # EMAIL stands in for the address Git would otherwise guess from the host.
+  # The control commit proves a guess is possible; Claude's env must refuse it.
+  guessed_commit() {
+    (
+      export HOME="$claude_tmp/home" XDG_CONFIG_HOME="$claude_tmp/home/.config" \
+        GIT_CONFIG_NOSYSTEM=1 EMAIL=guessed@doctor.invalid
+      unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL \
+        GIT_CONFIG_COUNT
+      if [ "$1" = claude ]; then
+        while IFS= read -r assignment; do export "$assignment"; done <<EOF
+$claude_git_env
+EOF
+      fi
+      git -C "$claude_repo" commit -q --allow-empty -m doctor-test
+    ) >/dev/null 2>&1
+  }
+
+  if ! GIT_CONFIG_NOSYSTEM=1 HOME="$claude_tmp/home" git -C "$claude_repo" init -q >/dev/null 2>&1 ||
+    ! guessed_commit control; then
+    warn "Claude Git identity skipped (Git could not guess a control identity)"
+  elif guessed_commit claude; then
+    fail "Claude Git identity fails closed in unknown paths"
+  else
+    pass "Claude Git identity fails closed in unknown paths"
+  fi
+  rm -rf "$claude_tmp"
+}
+
 check_justfile() {
   if command_exists just; then
     just_output=$(just --justfile "$ROOT/Justfile" --list 2>&1)
@@ -286,6 +346,7 @@ run_repository_checks() {
   check_toml
   check_git_configs
   check_git_identities
+  check_claude_git_identity
   check_justfile
 }
 
