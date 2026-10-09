@@ -51,6 +51,7 @@ mkdir -p _models
 brew bundle install
 
 # 8. Deploy the dotfiles
+# Review existing ~/.claude files for conflicts first; see claude/README.md
 just stowall
 
 # 9. Install and configure Pi
@@ -77,7 +78,7 @@ git remote set-url origin git@github.com:hrmnjt/dev.git
 gh auth login
 
 # 10.2. Configure Claude Code (installed by brew bundle; see claude/README.md)
-# Review existing ~/.claude files before Stow deployment, then sign in:
+# Sign in, then check the installation:
 claude
 claude doctor
 
@@ -262,7 +263,9 @@ expanded month by month. Full history lives in `git log`.
   file, with native sandboxing, fail-closed Git identity, and no Claude
   attribution. Globally ignored optional project-local settings and documented
   reusable claude.ai environment identity and personal instructions without
-  per-repo settings or hooks. Existing PR commits are not rewritten.
+  per-repo settings or hooks. Use shared `AGENTS.md` directly without a root
+  `CLAUDE.md` wrapper; documented differences from Pi's current native sandbox.
+  Existing PR commits are not rewritten.
 - 20261007: Retired the native-migration planning backlog and its setup link.
   Implementation and host enforcement are verified; remaining manual checks
   and deferred provider/local-first work stay documented in `pi/README.md`,
