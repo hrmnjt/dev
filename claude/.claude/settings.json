@@ -1,13 +1,20 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "model": "opus",
-  "modelSettings": {
-    "claude-opus-5-5": {
-      "effortLevel": "xhigh"
-    }
+  "env": {
+    "GIT_CONFIG_COUNT": "1",
+    "GIT_CONFIG_KEY_0": "user.useConfigOnly",
+    "GIT_CONFIG_VALUE_0": "true"
   },
-  "theme": "custom:gruvbox-dark-hard",
-  "agentPushNotifEnabled": true,
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "blockReadsOutsideWorkingDirectories": true
+  },
+  "model": "opus",
   "hooks": {
     "SessionStart": [
       {
@@ -22,25 +29,18 @@
       }
     ]
   },
-  "attribution": {
-    "commit": "",
-    "pr": "",
-    "sessionUrl": false
-  },
-  "env": {
-    "GIT_CONFIG_COUNT": "1",
-    "GIT_CONFIG_KEY_0": "user.useConfigOnly",
-    "GIT_CONFIG_VALUE_0": "true"
-  },
-  "permissions": {
-    "defaultMode": "acceptEdits",
-    "blockReadsOutsideWorkingDirectories": true
-  },
   "sandbox": {
     "enabled": true,
     "failIfUnavailable": true,
     "autoAllowBashIfSandboxed": true,
     "allowUnsandboxedCommands": false,
     "excludedCommands": []
-  }
+  },
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "xhigh"
+    }
+  },
+  "theme": "custom:gruvbox-dark-hard",
+  "agentPushNotifEnabled": true
 }
