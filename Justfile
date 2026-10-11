@@ -23,15 +23,6 @@ stowall:
 unstowall:
     stow --no-folding -t ~ -D [!_]*/
 
-# --- Setup commands (new machine) ---
-
-# Generate/reuse the dated GitHub key, configure Keychain, copy its public key.
-# Keep this recipe because the script encodes key naming, SSH config, Keychain,
-# and clipboard behavior rather than aliasing one standard command.
-ghsshkey:
-    ./_scripts/sshsetup.sh
-
-
 # --- macOS appearance ---
 
 # Apply gruvbox-inspired macOS appearance settings and wallpaper.

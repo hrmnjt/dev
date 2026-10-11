@@ -77,11 +77,12 @@ out of commits across all repositories. This rule does not ignore the shared
 
 ## GitHub SSH setup
 
-`just ghsshkey` creates or reuses the dated GitHub key, adds a managed Keychain
-preference block without replacing existing host identities, and reuses a
-reachable SSH agent (including an empty one). A private agent is started only
-when the existing one cannot be reached. An existing key can be selected with
-`./_scripts/sshsetup.sh /path/to/key`; its public half must also exist.
+`./_scripts/sshsetup.sh` (from the repository root) creates or reuses the dated
+GitHub key, adds a managed Keychain preference block without replacing existing
+host identities, and reuses a reachable SSH agent (including an empty one).
+A private agent is started only when the existing one cannot be reached.
+An existing key can be selected with `./_scripts/sshsetup.sh /path/to/key`;
+its public half must also exist.
 
 The helper runs on the Mac and changes SSH configuration/Keychain state.
 Existing `IdentityFile` entries remain unchanged; their key choice may need

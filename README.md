@@ -68,7 +68,7 @@ exec zsh -l
 
 # 10. Configure Git and GitHub SSH
 mkdir -p ~/code/work/doh
-just ghsshkey
+./_scripts/sshsetup.sh
 # Add the copied public key at https://github.com/settings/keys
 ssh -T git@github.com
 # After SSH authentication succeeds, update this checkout:
@@ -275,9 +275,10 @@ expanded month by month. Full history lives in `git log`.
   error/cleanup and linked-worktree regression coverage. Doctor checks shell
   shebangs and verifies Claude's Git identity refusal without treating unrelated
   failures as success. GitHub SSH setup preserves host entries, enables Keychain,
-  and reuses reachable agents. Kept Neovim's lock file host-local and Git-ignored,
-  corrected VPN documentation, and retained the legacy Pi usage ignore for
-  existing logs.
+  and reuses reachable agents. First-run setup calls `_scripts/sshsetup.sh`
+  directly instead of a thin Just wrapper. Kept Neovim's lock file host-local
+  and Git-ignored, corrected VPN documentation, and retained the legacy Pi usage
+  ignore for existing logs.
 - 20261009: Changed Azure CLI from a Homebrew formula to a cask to follow its
   upstream migration and correct the Brewfile dependency check.
 - 20261009: Preserved Claude's Opus/xhigh preferences, mobile push notifications,

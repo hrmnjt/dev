@@ -30,7 +30,7 @@ Run on the host Mac from the repository root:
 brew bundle install
 just stowall
 
-# Authenticate over SSH, reusing the key from just ghsshkey
+# Authenticate over SSH, reusing the key from ./_scripts/sshsetup.sh
 gh auth login
 gh config set git_protocol ssh   # default comes from config.yml after stow
 gh auth status
