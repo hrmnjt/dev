@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 const sdk = process.env.PI_TEST_SDK_ROOT ?? "/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent";
 const require = createRequire(path.join(sdk, "package.json"));
-const tuiPath = path.join(sdk, "node_modules/@earendil-works/pi-tui/dist/index.js");
+const tuiPath = require.resolve("@earendil-works/pi-tui");
 const jiti = require("jiti").createJiti(import.meta.url, { fsCache: false, alias: { "@earendil-works/pi-tui": tuiPath } });
 const { ReviewComponent } = await jiti.import(fileURLToPath(new URL("../../pi/.pi/agent/extensions/review.ts", import.meta.url)));
 const { TuiAltScreen } = await jiti.import(tuiPath);

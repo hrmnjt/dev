@@ -351,6 +351,14 @@ which the extension removes before restoring pi. Neovim uses the normal host
 configuration, including the Stow-deployed LazyVim setup; this deliberate user
 command runs outside the model-tool sandbox.
 
+Untracked files appear through a private copy of the index; the real index and
+existing staging remain unchanged. Staged/range reviews use the real index with
+optional Git refresh writes disabled. `--base` compares against the merge base,
+not the base branch tip. Git failures are reported rather than shown as empty
+reviews, and private indexes are removed on completion, cancellation, errors,
+and session shutdown. The new `lib/review-git.ts` needs Stow deployment before
+reload; actual Neovim interaction remains a host check.
+
 Commands:
 
 ```text
@@ -689,6 +697,10 @@ node --test _tests/pi/*.test.*
 ./_scripts/doctor.sh
 ```
 
+The tests default to the Homebrew SDK. For another installation, set
+`PI_TEST_SDK_ROOT` to the directory containing Pi's `package.json`; shared SDK
+dependencies are resolved from that installation.
+
 Then in Pi:
 
 ```text
@@ -732,9 +744,14 @@ native kernel suite and updated full host suite pass. Rerun outside nested
 Seatbelt confinement after any further code changes before merging. Nothing is
 pushed or merged automatically.
 
-Current automated evidence: all ten tracked factories load without errors via
-Pi's official loader; all TypeScript extensions pass strict semantic checking.
-After separating doctor fixtures into `_scripts/tests/doctor-stow.sh`, Pi-only
+Current follow-up evidence (Node 26/Pi SDK 1.1): all ten factories load through
+Pi's official loader and all TypeScript extensions pass strict semantic checking.
+Non-kernel regressions report **67 passed, 0 failed, 1 expected skip**; the three
+shell fixture suites pass **25 checks**. Repository doctor reports **13 passed,
+0 failed, 0 warnings**. Native kernel and real interactive checks are not rerun
+for these follow-ups.
+
+Earlier evidence, before the follow-ups: after separating doctor fixtures into `_scripts/tests/doctor-stow.sh`, Pi-only
 non-kernel regressions report **46 passed, 0 failed, 1 expected skip**, and all
 six shell fixture checks pass. Pi test bodies are unchanged. Repository doctor reports
 **12 passed, 0 failed, 0 warnings**. Existing runtime/review command deployment

@@ -25,7 +25,7 @@ unstowall:
 
 # --- Setup commands (new machine) ---
 
-# Generate ed25519 SSH key for GitHub, add to ssh-agent, copy pubkey to clipboard.
+# Generate/reuse the dated GitHub key, configure Keychain, copy its public key.
 # Keep this recipe because the script encodes key naming, SSH config, Keychain,
 # and clipboard behavior rather than aliasing one standard command.
 ghsshkey:

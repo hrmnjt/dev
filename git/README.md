@@ -10,7 +10,7 @@ conditionally includes identity files based on where the repo lives on disk.
 git/
 └── .config/git/
     ├── config            # Global defaults + includeIf rules
-    ├── config.personal   # [user] name=harmanjeet email=harman@hrmnjt.dev
+    ├── config.personal   # [user] name=hrmnjt email=harman@hrmnjt.dev
     ├── config.work       # [user] name=Harmanjeet Singh Nagi email=hanagi@doh.gov.ae
     └── ignore            # Global gitignore (macOS junk, vim swaps, Claude local settings)
 ```
@@ -74,6 +74,19 @@ Git still updates only the current branch from its configured upstream.
 when saving project-specific permissions; keep these machine-local exceptions
 out of commits across all repositories. This rule does not ignore the shared
 `.claude/settings.json` or the Stow-managed user settings.
+
+## GitHub SSH setup
+
+`just ghsshkey` creates or reuses the dated GitHub key, adds a managed Keychain
+preference block without replacing existing host identities, and reuses a
+reachable SSH agent (including an empty one). A private agent is started only
+when the existing one cannot be reached. An existing key can be selected with
+`./_scripts/sshsetup.sh /path/to/key`; its public half must also exist.
+
+The helper runs on the Mac and changes SSH configuration/Keychain state.
+Existing `IdentityFile` entries remain unchanged; their key choice may need
+adjustment when generating a new key. Real authentication/reboot behavior is
+separate from the disposable script checks.
 
 ## Deploy
 

@@ -5,15 +5,16 @@ import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 const sdk = process.env.PI_TEST_SDK_ROOT ?? "/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent";
 const require = createRequire(path.join(sdk, "package.json"));
+const tuiPath = require.resolve("@earendil-works/pi-tui");
 const jiti = require("jiti").createJiti(import.meta.url, { fsCache: false, alias: {
   "@earendil-works/pi-coding-agent": path.join(sdk, "dist/index.js"),
-  "@earendil-works/pi-tui": path.join(sdk, "node_modules/@earendil-works/pi-tui/dist/index.js"),
+  "@earendil-works/pi-tui": tuiPath,
 } });
 const base = fileURLToPath(new URL("../../pi/.pi/agent/extensions/", import.meta.url));
 const { default: extension, parseExtractionResult, extractQuestions, QnAComponent } = await jiti.import(path.join(base, "answer.ts"));
 const { SessionManager, initTheme } = await jiti.import(path.join(sdk, "dist/index.js"));
 initTheme("dark", false); // SDK UI primitives need a theme even in the isolated fixture.
-const { visibleWidth } = await jiti.import(path.join(sdk, "node_modules/@earendil-works/pi-tui/dist/index.js"));
+const { visibleWidth } = await jiti.import(tuiPath);
 const model = { provider: "fixture", id: "fixture-local" };
 const questions = [{ question: "First?", context: "Useful context" }, { question: "Second?" }];
 const response = (value = { questions }, stopReason = "stop") => ({ stopReason, content: [{ type: "text", text: JSON.stringify(value) }] });
