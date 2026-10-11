@@ -275,8 +275,9 @@ expanded month by month. Full history lives in `git log`.
   error/cleanup and linked-worktree regression coverage. Doctor checks shell
   shebangs and verifies Claude's Git identity refusal without treating unrelated
   failures as success. GitHub SSH setup preserves host entries, enables Keychain,
-  and reuses reachable agents. Tracked the existing Neovim lock file, corrected
-  VPN documentation, and retained the legacy Pi usage ignore for existing logs.
+  and reuses reachable agents. Kept Neovim's lock file host-local and Git-ignored,
+  corrected VPN documentation, and retained the legacy Pi usage ignore for
+  existing logs.
 - 20261009: Changed Azure CLI from a Homebrew formula to a cask to follow its
   upstream migration and correct the Brewfile dependency check.
 - 20261009: Preserved Claude's Opus/xhigh preferences, mobile push notifications,
