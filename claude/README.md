@@ -60,11 +60,33 @@ write denials. Configuration checks do not prove live behavior.
 
 ## Web sessions
 
-claude.ai does not inherit Mac settings. Set `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`,
-`GIT_COMMITTER_NAME`, and `GIT_COMMITTER_EMAIL` in a reusable cloud environment
-from `git/.config/git/config.personal`; use a separate work environment. Optionally
-install the personal `CLAUDE.md` via its setup script. Start fresh and verify
-identity. Mac attribution settings do not apply on the web.
+Cloud environments belong to your account, not Stow; reuse them on a new Mac.
+At [claude.ai/code](https://claude.ai/code), open the cloud selector above the
+message box → **Cloud → Add cloud environment** if they do not exist:
+
+- `hrmnjt-personal`: use the name/email from `git/.config/git/config.personal`.
+- `hrmnjt-work`: use `git/.config/git/config.work`, only for authorized work repos.
+- In each environment, set `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`,
+  `GIT_COMMITTER_NAME`, and `GIT_COMMITTER_EMAIL`; start with **Trusted** networking.
+  Do not set these identity variables globally in your Mac shell.
+- On each Mac, use `/remote-env` in Claude to select the CLI cloud default;
+  select the appropriate environment separately for browser sessions.
+
+Use the environment's **Setup script** to install personal instructions in
+`~/.claude/CLAUDE.md`: read repository `AGENTS.md` before editing, verify branch
+naming, and use the explicitly requested branch for both pushing and the PR head.
+Merge these with existing personal instructions rather than overwriting them.
+They are reminders, not enforcement; Mac settings/attribution do not carry over.
+
+For each new task, request a compliant branch explicitly (in this repo,
+`<type>/<scope>/<short-kebab-description>`, e.g. `fix/meta/review-followups`).
+A generated `claude/...` branch is not an exception. If the cloud workflow blocks
+using the requested branch, stop and report rather than silently falling back.
+Verify the actual PR head; a local rename does not change an existing PR.
+
+Start a fresh session, check `/context` for loaded instructions, and verify
+`git branch --show-current`, `git var GIT_AUTHOR_IDENT`, and
+`git var GIT_COMMITTER_IDENT` before edits/commits. Existing commits are unchanged.
 
 References: [settings](https://code.claude.com/docs/en/settings),
 [custom themes](https://code.claude.com/docs/en/terminal-config#create-a-custom-theme),
