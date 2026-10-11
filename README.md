@@ -271,14 +271,28 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
-- 20261011: Fixed Pi `/review` index isolation and merge-base comparisons with
-  error/cleanup and linked-worktree regression coverage. Doctor checks shell
-  shebangs and verifies Claude's Git identity refusal without treating unrelated
-  failures as success. GitHub SSH setup preserves host entries, enables Keychain,
-  and reuses reachable agents. First-run setup calls `_scripts/sshsetup.sh`
-  directly instead of a thin Just wrapper. Kept Neovim's lock file host-local
-  and Git-ignored, corrected VPN documentation, and retained the legacy Pi usage
-  ignore for existing logs.
+- 20261011: Isolated Pi `/review` intent-to-add in a private index, preserving
+  existing staging. Compare base reviews against the merge base, report Git
+  failures, and clean up on completion, cancellation, errors, and shutdown.
+  Added linked-worktree, alternate-index, and command regression coverage.
+- 20261011: Expanded doctor shell checks to supported shebang scripts, including
+  extensionless files; safely skip non-shell and binary headers.
+- 20261011: Added doctor validation of Claude's Git identity refusal, distinguishing
+  missing identity from malformed configuration and unrelated commit failures.
+- 20261011: Improved GitHub SSH setup to preserve host entries and symlinks,
+  enable Keychain preferences, reuse reachable agents, and accept existing keys.
+  Added disposable regression checks without touching real SSH/Keychain state.
+- 20261011: Removed the thin Just SSH setup wrapper; first-run instructions call
+  `./_scripts/sshsetup.sh` directly.
+- 20261011: Resolved Pi UI test dependencies through the selected SDK installation
+  rather than assuming dependencies are nested inside its package directory.
+- 20261011: Documented that Neovim's lock file remains host-local and Git-ignored,
+  not Stow-managed.
+- 20261011: Corrected the documented personal Git name to match the configuration.
+- 20261011: Corrected VPN script usage and Stow setup notes; removed obsolete
+  SketchyBar indicator documentation.
+- 20261011: Retained the legacy Pi usage ignore because existing runtime logs
+  still need it.
 - 20261009: Changed Azure CLI from a Homebrew formula to a cask to follow its
   upstream migration and correct the Brewfile dependency check.
 - 20261009: Preserved Claude's Opus/xhigh preferences, mobile push notifications,
