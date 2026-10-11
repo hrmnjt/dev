@@ -32,13 +32,7 @@ import {
   wrapTextWithAnsi,
 } from "@earendil-works/pi-tui";
 
-
-type ReviewTarget =
-  | { kind: "head" }
-  | { kind: "staged" }
-  | { kind: "unstaged" }
-  | { kind: "range"; range: string }
-  | { kind: "base"; base: string };
+import { createReviewIndex, diffArgs, reviewGit, type ReviewIndex, type ReviewTarget } from "./lib/review-git.js";
 
 type FileStatus = "added" | "modified" | "deleted" | "renamed" | "binary" | "unknown";
 
@@ -133,9 +127,10 @@ type Hitbox =
 
 const NVIM_REVIEW_SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "review-nvim.lua");
 
-function runText(command: string, args: string[], cwd: string): string | null {
+function runText(command: string, args: string[], cwd: string, env?: NodeJS.ProcessEnv): string | null {
   const result = spawnSync(command, args, {
     cwd,
+    env,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "ignore"],
   });
@@ -143,8 +138,8 @@ function runText(command: string, args: string[], cwd: string): string | null {
   return result.stdout.trimEnd();
 }
 
-function git(cwd: string, args: string[]): string {
-  return runText("git", ["-c", "core.quotePath=false", ...args], cwd) ?? "";
+function git(cwd: string, args: string[], env?: NodeJS.ProcessEnv): string {
+  return runText("git", ["-c", "core.quotePath=false", ...args], cwd, env) ?? "";
 }
 
 function isGitRepo(cwd: string): boolean {
@@ -225,17 +220,6 @@ function targetLabel(target: ReviewTarget): string {
     case "unstaged": return "unstaged";
     case "range": return target.range;
     case "base": return `${target.base}...working-tree`;
-  }
-}
-
-function diffArgs(target: ReviewTarget, extra: string[] = []): string[] {
-  const common = ["diff", "--find-renames", ...extra];
-  switch (target.kind) {
-    case "head": return [...common, "HEAD"];
-    case "staged": return [...common, "--cached"];
-    case "unstaged": return common;
-    case "range": return [...common, target.range];
-    case "base": return [...common, target.base];
   }
 }
 
@@ -417,23 +401,19 @@ function parseDiff(raw: string, numstat: Map<string, { additions: number; deleti
   return files.filter((f) => f.displayPath !== "(unknown)" || f.hunks.length > 0 || f.rawHeader.length > 0);
 }
 
-function collectReview(root: string, target: ReviewTarget): { files: DiffFile[]; context: GitContext; rawDiff: string } {
-  if (target.kind !== "staged") {
-    spawnSync("git", ["add", "-N", "."], { cwd: root, stdio: "ignore" });
-  }
-
+function collectReview(root: string, target: ReviewTarget, env: NodeJS.ProcessEnv): { files: DiffFile[]; context: GitContext; rawDiff: string } {
   const context: GitContext = {
     root,
-    branch: git(root, ["rev-parse", "--abbrev-ref", "HEAD"]) || "(unknown)",
-    head: git(root, ["rev-parse", "--short", "HEAD"]) || "(unknown)",
-    upstream: git(root, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"]) || "(none)",
-    status: git(root, ["status", "--short"]),
-    diffStat: git(root, diffArgs(target, ["--stat"])),
+    branch: git(root, ["rev-parse", "--abbrev-ref", "HEAD"], env) || "(unknown)",
+    head: git(root, ["rev-parse", "--short", "HEAD"], env) || "(unknown)",
+    upstream: git(root, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"], env) || "(none)",
+    status: reviewGit(root, ["status", "--short"], { ...process.env, GIT_OPTIONAL_LOCKS: "0" }),
+    diffStat: reviewGit(root, diffArgs(target, ["--stat"]), env),
   };
 
-  const rawDiff = git(root, diffArgs(target, ["--unified=999999"]));
-  const numstat = parseNumstat(git(root, diffArgs(target, ["--numstat"])));
-  const statuses = parseNameStatus(git(root, diffArgs(target, ["--name-status"])));
+  const rawDiff = reviewGit(root, diffArgs(target, ["--unified=999999"]), env);
+  const numstat = parseNumstat(reviewGit(root, diffArgs(target, ["--numstat"]), env));
+  const statuses = parseNameStatus(reviewGit(root, diffArgs(target, ["--name-status"]), env));
   return { files: parseDiff(rawDiff, numstat, statuses), context, rawDiff };
 }
 
@@ -612,7 +592,7 @@ function parseNvimOutcome(raw: string, exitCode: number | null, spawnError?: Err
   }
 }
 
-async function openNvimReview(root: string, target: ReviewTarget, ctx: ExtensionContext): Promise<NvimReviewOutcome> {
+async function openNvimReview(root: string, target: ReviewTarget, env: NodeJS.ProcessEnv, ctx: ExtensionContext): Promise<NvimReviewOutcome> {
   return ctx.ui.custom<NvimReviewOutcome>((tui, _theme, _keybindings, done) => {
     let outcome: NvimReviewOutcome = { action: "cancel" };
     let stopped = false;
@@ -631,7 +611,7 @@ async function openNvimReview(root: string, target: ReviewTarget, ctx: Extension
         "git",
         "-c",
         "core.quotePath=false",
-        ...diffArgs(target, ["--no-color", "--no-ext-diff", "--unified=6"]),
+        ...diffArgs(target, ["--unified=6"]),
       ];
       const result = spawnSync(
         "nvim",
@@ -640,7 +620,7 @@ async function openNvimReview(root: string, target: ReviewTarget, ctx: Extension
           cwd: root,
           encoding: "utf8",
           env: {
-            ...process.env,
+            ...env,
             PI_REVIEW_GIT_COMMAND: JSON.stringify(command),
             PI_REVIEW_LUA: NVIM_REVIEW_SCRIPT,
             PI_REVIEW_OUTPUT_PATH: outputPath,
@@ -1575,7 +1555,7 @@ export class ReviewComponent implements Component, Focusable {
   }
 }
 
-async function review(pi: ExtensionAPI, args: string, ctx: ExtensionContext) {
+async function review(pi: ExtensionAPI, args: string, ctx: ExtensionContext, activeIndexes: Set<ReviewIndex>) {
   const trimmedArgs = args.trim();
   if (trimmedArgs === "help" || trimmedArgs === "--help" || trimmedArgs === "-h") {
     if (ctx.mode !== "tui") {
@@ -1607,29 +1587,42 @@ async function review(pi: ExtensionAPI, args: string, ctx: ExtensionContext) {
 
   const root = repoRoot(cwd);
   const { mode, target } = request;
-  const { files, context } = collectReview(root, target);
-
-  if (files.length === 0) {
-    ctx.ui.notify(`No changes found for ${targetLabel(target)}.`, "info");
-    return;
-  }
-
+  let index: ReviewIndex | undefined;
+  let context: GitContext;
   let result: ReviewResult | null;
-  if (mode === "nvim") {
-    const outcome = await openNvimReview(root, target, ctx);
-    if (outcome.action === "cancel") {
-      ctx.ui.notify("Review cancelled", "info");
+  try {
+    index = createReviewIndex(root, target);
+    activeIndexes.add(index);
+    const collected = collectReview(root, target, index.env);
+    context = collected.context;
+    if (collected.files.length === 0) {
+      ctx.ui.notify(`No changes found for ${targetLabel(target)}.`, "info");
       return;
     }
-    if (outcome.action === "error") {
-      ctx.ui.notify(outcome.message, "error");
-      return;
+    if (mode === "nvim") {
+      const outcome = await openNvimReview(root, target, index.env, ctx);
+      if (outcome.action === "cancel") {
+        ctx.ui.notify("Review cancelled", "info");
+        return;
+      }
+      if (outcome.action === "error") {
+        ctx.ui.notify(outcome.message, "error");
+        return;
+      }
+      result = { target, comments: outcome.comments };
+    } else {
+      result = await ctx.ui.custom<ReviewResult | null>((tui, _theme, _kb, done) => {
+        return new ReviewComponent(collected.files, target, tui, done);
+      });
     }
-    result = { target, comments: outcome.comments };
-  } else {
-    result = await ctx.ui.custom<ReviewResult | null>((tui, _theme, _kb, done) => {
-      return new ReviewComponent(files, target, tui, done);
-    });
+  } catch (error) {
+    ctx.ui.notify(`Could not review changes: ${error instanceof Error ? error.message : String(error)}`, "error");
+    return;
+  } finally {
+    if (index) {
+      activeIndexes.delete(index);
+      index.cleanup();
+    }
   }
 
   if (result === null) {
@@ -1647,10 +1640,15 @@ async function review(pi: ExtensionAPI, args: string, ctx: ExtensionContext) {
 }
 
 export default function (pi: ExtensionAPI) {
+  const activeIndexes = new Set<ReviewIndex>();
+  pi.on("session_shutdown", () => {
+    for (const index of activeIndexes) index.cleanup();
+    activeIndexes.clear();
+  });
   pi.registerCommand("review", {
     description: "Review current git changes in Neovim and send comments to pi",
     handler: async (args, ctx) => {
-      await review(pi, args, ctx);
+      await review(pi, args, ctx, activeIndexes);
     },
   });
 }

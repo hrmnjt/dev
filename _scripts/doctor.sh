@@ -82,19 +82,40 @@ check_conflict_markers() {
 
 check_shell_syntax() {
   shell_failed=false
-
-  for script in $(find "$ROOT" -type f -name '*.sh' ! -path '*/.git/*' ! -path '*/node_modules/*' -print); do
-    case "$(sed -n '1p' "$script")" in
-      *bash*)
-        if command_exists bash; then
-          bash -n "$script" || shell_failed=true
-        else
-          shell_failed=true
-        fi
-        ;;
-      *) sh -n "$script" || shell_failed=true ;;
-    esac
-  done
+  shell_files=$(mktemp "$TEMP_ROOT/dev-doctor-shell.XXXXXX") || {
+    fail "Shell syntax check (temporary file unavailable)"
+    return
+  }
+  # Include new scripts while editing, but not ignored caches/dependencies.
+  # Line-delimited names allow spaces; this repo does not use newline filenames.
+  if ! git -C "$ROOT" -c core.quotePath=false ls-files --cached --others --exclude-standard --deduplicate > "$shell_files"; then
+    rm -f "$shell_files"
+    fail "Shell syntax check (file listing failed)"
+    return
+  fi
+  while IFS= read -r name; do
+    script="$ROOT/$name"
+    { [ -f "$script" ] && [ ! -L "$script" ]; } || continue
+    interpreter=""
+    case "$name" in *.sh) interpreter=sh ;; esac
+    # Inspect only a bounded header as bytes, not entire binary files under the
+    # host locale. Unknown/non-shell shebangs aren't sent through sh -n.
+    if [ "$(LC_ALL=C head -c 2 "$script")" = '#!' ]; then
+      interpreter=$(LC_ALL=C head -c 256 "$script" | LC_ALL=C head -n 1 | LC_ALL=C awk '
+        { sub(/^#![ \t]*/, ""); n = split($0, a, /[ \t]+/);
+          sub(/^.*\//, "", a[1]);
+          if (a[1] == "env") { i = 2; if (a[i] == "-S") i++; print a[i] }
+          else print a[1] }')
+    fi
+    case "$interpreter" in sh|bash|zsh|dash|ksh) ;; *) continue ;; esac
+    debug "$interpreter -n $name"
+    if command_exists "$interpreter"; then
+      "$interpreter" -n "$script" || shell_failed=true
+    else
+      shell_failed=true
+    fi
+  done < "$shell_files"
+  rm -f "$shell_files"
 
   if [ "$shell_failed" = true ]; then
     fail "Shell script syntax"
@@ -260,6 +281,67 @@ check_git_identities() {
   rm -rf "$identity_tmp"
 }
 
+check_claude_git_identity() {
+  if ! command_exists jq; then
+    warn "Claude Git identity skipped (jq unavailable)"
+    return
+  fi
+  # Validate the indexed Git env before exporting line-delimited assignments.
+  # Missing slots, invalid counts, or unrelated Git errors are not enforcement.
+  claude_git_env=$(jq -er '
+    (.env // {} | with_entries(select(.key | test("^GIT_CONFIG_(COUNT|KEY_[0-9]+|VALUE_[0-9]+)$")))) as $env
+    | if ($env.GIT_CONFIG_COUNT | test("^(0|[1-9][0-9]*)$")) and
+        ($env | all(to_entries[]; (.value | type) == "string" and (.value | test("[\r\n]") | not))) and
+        (all(range(0; $env.GIT_CONFIG_COUNT | tonumber);
+          . as $i | ($env["GIT_CONFIG_KEY_\($i)"] | type) == "string" and
+          ($env["GIT_CONFIG_VALUE_\($i)"] | type) == "string"))
+      then $env | to_entries[] | "\(.key)=\(.value)"
+      else error("invalid indexed Git environment") end
+  ' "$ROOT/claude/.claude/settings.json" 2>/dev/null) || {
+    fail "Claude Git identity (missing or invalid Git environment)"
+    return
+  }
+  claude_tmp=$(mktemp -d "$TEMP_ROOT/dev-doctor-claude.XXXXXX") || {
+    fail "Claude Git identity (temporary directory unavailable)"
+    return
+  }
+  claude_repo="$claude_tmp/home/code/unknown/check"
+  mkdir -p "$claude_repo"
+  claude_git() {
+    (
+      mode=$1; shift
+      export HOME="$claude_tmp/home" XDG_CONFIG_HOME="$claude_tmp/home/.config" \
+        GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null \
+        EMAIL=guessed@doctor.invalid LC_ALL=C
+      unset GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL \
+        GIT_AUTHOR_DATE GIT_COMMITTER_DATE GIT_CONFIG_COUNT GIT_CONFIG_PARAMETERS \
+        GIT_CONFIG GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR \
+        GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+      if [ "$mode" = claude ]; then
+        while IFS= read -r assignment; do export "$assignment"; done <<EOF
+$claude_git_env
+EOF
+      fi
+      git -C "$claude_repo" -c core.hooksPath=/dev/null -c commit.gpgSign=false -c core.fsmonitor=false "$@"
+    )
+  }
+  if ! claude_git control init -q --template= > "$claude_tmp/error" 2>&1; then
+    fail "Claude Git identity (fixture initialization failed)"
+  elif ! claude_git control commit -q --allow-empty -m doctor-control > "$claude_tmp/error" 2>&1; then
+    warn "Claude Git identity skipped (Git could not guess a control identity)"
+  elif [ "$(claude_git claude config --type=bool --get user.useConfigOnly 2>/dev/null)" != true ]; then
+    fail "Claude Git identity (effective useConfigOnly is not true)"
+  elif claude_git claude commit -q --allow-empty -m doctor-test > "$claude_tmp/error" 2>&1; then
+    fail "Claude Git identity fails closed in unknown paths"
+  elif grep -Eq 'fatal: no (name|email) was given and auto-detection is disabled' "$claude_tmp/error"; then
+    pass "Claude Git identity fails closed in unknown paths"
+  else
+    fail "Claude Git identity (commit failed for an unrelated reason)"
+  fi
+  debug_output "$(head -c 2000 "$claude_tmp/error")"
+  rm -rf "$claude_tmp"
+}
+
 check_justfile() {
   if command_exists just; then
     just_output=$(just --justfile "$ROOT/Justfile" --list 2>&1)
@@ -286,6 +368,7 @@ run_repository_checks() {
   check_toml
   check_git_configs
   check_git_identities
+  check_claude_git_identity
   check_justfile
 }
 

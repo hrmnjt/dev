@@ -149,9 +149,10 @@ Run the portable, non-mutating repository checks while editing:
 just doctor --only-check
 ```
 
-This validates shell syntax, strict JSON, TOML, Git and Just configuration,
-whitespace, conflict markers, and fail-closed Git identity selection in isolated
-temporary repositories. Tools unavailable in the development sandbox are reported as
+This validates shell syntax (including extensionless shebang scripts), strict
+JSON, TOML, Git and Just configuration, whitespace, conflict markers, and
+fail-closed Git identity selection in isolated temporary repositories, including
+Claude's Git configuration environment. Unavailable tools are reported as
 warnings rather than hiding the checks that did run.
 
 Run the complete diagnostic on the host Mac:
@@ -180,7 +181,16 @@ When changing the Stow diagnostic, run its small shell regression check:
 ```
 
 It tests six disposable healthy/broken link layouts without Node, Homebrew, or
-changes to your real home directory. Normal doctor runs do not run these fixtures.
+changes to your real home directory. Other focused script regressions are:
+
+```bash
+./_scripts/tests/doctor-repository.sh
+./_scripts/tests/sshsetup.sh
+```
+
+These cover shell discovery, Claude Git identity refusal, and SSH setup with
+fake keygen/agent/Keychain/clipboard commands. Normal doctor runs do not run
+these fixtures.
 
 #### Managing macOS defaults
 
@@ -261,6 +271,12 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261011: Fixed Pi `/review` index isolation and merge-base comparisons with
+  error/cleanup and linked-worktree regression coverage. Doctor checks shell
+  shebangs and verifies Claude's Git identity refusal without treating unrelated
+  failures as success. GitHub SSH setup preserves host entries, enables Keychain,
+  and reuses reachable agents. Tracked the existing Neovim lock file, corrected
+  VPN documentation, and retained the legacy Pi usage ignore for existing logs.
 - 20261009: Changed Azure CLI from a Homebrew formula to a cask to follow its
   upstream migration and correct the Brewfile dependency check.
 - 20261009: Preserved Claude's Opus/xhigh preferences, mobile push notifications,
