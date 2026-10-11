@@ -81,8 +81,8 @@ gh auth login
 # Sign in, then check the installation:
 claude
 claude doctor
-# 10.3. Reuse personal/work cloud environments; see claude/README.md#web-sessions.
-# In Claude, use /remote-env to select the CLI cloud default on this Mac.
+# 10.3. Cloud environments and identity: claude/README.md#web-sessions.
+# /remote-env selects the CLI cloud default on this Mac.
 
 # 11. Complete required app permissions
 # 11.1. Grant AeroSpace Accessibility permission; see the aerospace/README.md
@@ -261,10 +261,6 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
-- 20261011: Added new-Mac reminders for reusable personal/work Claude cloud
-  environments, `/remote-env` selection, and explicit repository-conforming
-  branch names with identity/instruction and PR-head verification. Accepted
-  Claude's current settings key order without changing any configuration values.
 - 20261009: Changed Azure CLI from a Homebrew formula to a cask to follow its
   upstream migration and correct the Brewfile dependency check.
 - 20261009: Preserved Claude's Opus/xhigh preferences, mobile push notifications,
