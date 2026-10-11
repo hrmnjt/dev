@@ -131,7 +131,6 @@ default appname.
 ```text
 nvim/.config/nvim/
 ├── init.lua
-├── lazy-lock.json        # tracked plugin revisions
 └── lua/
     ├── config/
     │   ├── lazy.lua       # official LazyVim-style bootstrap
@@ -146,16 +145,8 @@ nvim/.config/nvim/
         └── herdr.lua      # herdr-nvim annotations
 ```
 
-### Plugin lock file
-
-`lazy-lock.json` tracks the existing Mac's plugin revisions. `:Lazy restore`
-returns plugins to those revisions; `:Lazy update` changes the Stow-linked lock
-file for review in Git. The update checker does not upgrade plugins.
-
-An existing regular `~/.config/nvim/lazy-lock.json` conflicts with its new Stow
-link. After comparing it with the tracked copy and quitting Neovim, move only
-that file to a backup, then preview/redeploy Stow. No plugin update or host file
-replacement is performed by this repository change.
+`lazy-lock.json` remains host-local and Git-ignored, rather than Stow-managed.
+Plugin updates do not create tracked lock-file changes or a new deployment conflict.
 
 Useful maintenance commands:
 
