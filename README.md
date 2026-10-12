@@ -271,6 +271,7 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261012: Routed Zed windows to AeroSpace workspace 10 (`option-0`).
 - 20261011: Isolated Pi `/review` intent-to-add in a private index, preserving
   existing staging. Compare base reviews against the merge base, report Git
   failures, and clean up on completion, cancellation, errors, and shutdown.
