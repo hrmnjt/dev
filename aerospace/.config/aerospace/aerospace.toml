@@ -99,7 +99,8 @@ outer.right = 10
 #   5 = Microsoft Teams PWA
 #   6 = Thunderbird
 #   7-8 = ad hoc personal projects
-#   9-10 = spare / temporary
+#   9 = spare / temporary
+#   10 = Zed (option-0)
 
 [mode.main.binding]
 
@@ -247,6 +248,11 @@ backspace = ['close-all-windows-but-current', 'mode main']
 [[on-window-detected]]
 if.app-id = 'com.mitchellh.ghostty'
 run = 'move-node-to-workspace 1'
+
+# Zed -> workspace 10 (option-0).
+[[on-window-detected]]
+if.app-id = 'dev.zed.Zed'
+run = 'move-node-to-workspace 10'
 
 # Obsidian -> workspace 2.
 [[on-window-detected]]
