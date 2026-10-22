@@ -272,6 +272,8 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261022: Globally ignored local Claude `.claude/.cc-writes/` scratch output
+  without excluding shared Claude configuration.
 - 20261022: Added a Stow-deployed Rex `gruvbox-dark-hard` import theme matching
   Ghostty's cursor and selection colors, with native import and 18-point
   JetBrains Mono Nerd Font setup instructions; kept Rex runtime state unmanaged.

@@ -75,6 +75,10 @@ when saving project-specific permissions; keep these machine-local exceptions
 out of commits across all repositories. This rule does not ignore the shared
 `.claude/settings.json` or the Stow-managed user settings.
 
+`**/.claude/.cc-writes/` also excludes local Claude scratch output at any
+repository depth. Keep this disposable state out of commits without ignoring
+the rest of a project's `.claude/` directory.
+
 ## GitHub SSH setup
 
 `./_scripts/sshsetup.sh` (from the repository root) creates or reuses the dated
