@@ -3,3 +3,6 @@
 *.swo
 
 **/.claude/settings.local.json
+
+# Local Claude scratch output, not project source.
+**/.claude/.cc-writes/
