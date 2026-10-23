@@ -134,7 +134,7 @@ herdr plugin list --plugin hrmnjt.default-tabs
 - [Local llama.cpp inference](llama/README.md)
 - [Neovim](nvim/README.md)
 - [Pi agent package](pi/README.md)
-- [Rex appearance](rex/README.md)
+- [Rex configuration](rex/README.md)
 - [Starship](starship/README.md)
 - [Wallpapers](wallpapers/README.md)
 - [Zed](zed/README.md)
@@ -276,7 +276,11 @@ expanded month by month. Full history lives in `git log`.
   without excluding shared Claude configuration.
 - 20261022: Added a Stow-deployed Rex `gruvbox-dark-hard` import theme matching
   Ghostty's cursor and selection colors, with native import and 18-point
-  JetBrains Mono Nerd Font setup instructions; kept Rex runtime state unmanaged.
+  JetBrains Mono Nerd Font setup instructions. Added a repository-local Lua
+  helper using native theme actions and explicit `rex.exec` fallbacks for
+  typography, color, clipboard, pane, and notification settings without Lua
+  setters; included read-only preview, regression checks, and refresh guidance.
+  Kept Rex runtime state unmanaged.
 - 20261012: Routed Zed windows to AeroSpace workspace 10 (`option-0`).
 - 20261011: Isolated Pi `/review` intent-to-add in a private index, preserving
   existing staging. Compare base reviews against the merge base, report Git
