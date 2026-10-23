@@ -1,22 +1,18 @@
 # Rex configuration
 
 This Stow package provides an importable classic **Gruvbox Dark Hard** theme
-for [Rex](https://www.superlogical.com/rex/docs/). It matches the
-[shared palette](../GRUVBOX.md), Ghostty's yellow cursor and dark selection,
-and **JetBrainsMono Nerd Font Mono, 18 pt**. The font cask is already in
-`Brewfile`.
+for [Rex](https://www.superlogical.com/rex/docs/), matching the
+[shared palette](../GRUVBOX.md) and Ghostty's yellow cursor and dark selection.
+Use **JetBrainsMono Nerd Font Mono, Regular, 18 pt**, as in Ghostty and Zed;
+the font cask is already in `Brewfile`.
 
-The repository-local [`_scripts/rex-setup.lua`](../_scripts/rex-setup.lua)
-provides explicit setup/refresh commands. It uses **native Rex client actions**
-for themes and **`rex.exec`** only where the current Lua API has no settings
-setter. Those fallbacks still call macOS `defaults`; using Lua does not make
-native preferences disappear or turn private beta keys into a public API.
+Rex is still in beta. Keep setup **manual and documented here** until its
+configuration API stabilizes: no setup script, preference-management framework,
+or automatic application on reload. When changing a preference, update its
+value here too. Sessions, imported themes, and mutable preferences stay
+app-owned rather than being Stow-managed.
 
-Neither the helper nor app preferences are Stow-deployed. Sessions, server
-state, and mutable preferences remain app-owned. Ghostty's opacity, padding,
-and shader settings are not part of the theme.
-
-## Deploy and refresh
+## Deploy and refresh the theme
 
 From the repository root:
 
@@ -25,132 +21,138 @@ just stowall
 ```
 
 This links the theme to `~/.config/rex/themes/gruvbox-dark-hard`.
-**Stow does not tell Rex to reload anything.** The helper stays under
-`_scripts/`; run the following commands from this checkout, on the local Mac,
-with the Rex CLI on PATH:
+**Stow only updates symlinks; it does not tell Rex to reload.**
 
-| Changed | Refresh |
-|---|---|
-| Theme file | With Rex open, run `rex --autostart=false do ./_scripts/rex-setup.lua mode=theme`. |
-| Native setting values in the helper | Quit Rex, run the helper with `mode=apply` from Ghostty, then reopen Rex. |
-| `init.lua` actions/keybindings, if added later | Check with `rex config check`, then run `rex --autostart=false config reload`. Clients receive updated keys; no server restart is needed. |
-| Settings changed inside Rex | Use the app normally; reapplying the helper overwrites only its listed settings. |
-
-There is no `init.lua` in this package yet. Do not `require` the setup helper
-from one: setup must not run automatically on config reload.
-**`rex config reload` does not refresh this package's theme or native settings.**
-
-`rex do` requires a running local server even for the helper's subprocess-only
-modes. Keep it running when quitting the app. If it is unavailable, start it
-deliberately with Rex's normal `rex server start` command. The helper does not
-start/stop servers, quit the app, install hooks, or change any sessions.
-
-## Theme refresh through native Lua actions
-
-With Rex open:
+With Rex open and its CLI on PATH, run:
 
 ```bash
-rex --autostart=false do ./_scripts/rex-setup.lua mode=theme
+rex --autostart=false do client.appearance.switch_mode mode=dark
+rex --autostart=false do client.theme.import \
+  "path=$HOME/.config/rex/themes/gruvbox-dark-hard"
 ```
 
-The helper checks that the deployed file exists, then calls
-`rex.client.queue` with `client.appearance.switch_mode` and
-`client.theme.import`. Importing **selects** the theme; Rex stores a copy and
-does not watch the source file, so repeat this after editing it.
+Importing **selects** the theme. Rex stores a copy, so repeat the import after
+editing the source file. With several app clients connected, use
+`rex client ls` and add `-C <client-label-or-id>` before `do` to target the
+intended local app. The file path must be available on that Mac.
 
-If several app clients are connected, use `rex client ls` and add
-`-C <client-label-or-id>` before `do` to target the intended local app. The theme
-path is a path on that Mac, not a remote server's filesystem.
+Without the CLI, use Settings → Themes to import the file as a Ghostty theme
+and select dark appearance. Use `Cmd-Shift-G` in the file picker to enter
+`~/.config/rex/themes/`.
 
-Without the CLI, use Settings → Themes to import
-`~/.config/rex/themes/gruvbox-dark-hard` as a Ghostty theme and select dark
-appearance. Use `Cmd-Shift-G` in the file picker to enter the directory.
+Ghostty's opacity, padding, and shader settings are not part of this theme.
+Rex owns its UI chrome. If a saved selection override wins over the import,
+set selection background to `#3c3836` and foreground to `#fbf1c7` in Settings.
 
-## Relevant settings without native Lua setters
+## Recommended settings
 
-The helper keeps these fallbacks explicit and limited:
+Prefer Rex Settings for day-to-day changes. These are the current choices to
+reproduce, not a requirement to configure every beta setting:
 
 | Setting | Value | Why |
 |---|---|---|
-| Terminal font / default size | JetBrainsMono Nerd Font Mono / 18 pt | Matches Ghostty and Zed, including prompt icons. |
+| Terminal font / default size | JetBrainsMono Nerd Font Mono, Regular / 18 pt | Matches other terminals/editors, including prompt icons. |
 | Font smoothing / programming ligatures | On / on | Readable text and the font's programming glyphs. |
-| Improve text contrast | On | Lifts hard-to-read text; turn off in Settings if exact program-authored colors are preferable. |
+| Improve text contrast | On | Lifts hard-to-read text; turn off if exact program-authored colors are preferable. |
 | Force theme palette for text | Off | Preserve Pi, Neovim, diffs, and other programs' RGB/256-color choices. |
 | Display P3 colors | Off (sRGB) | Consistent interpretation of the shared hex palette. |
 | Copy on select | Off | Selecting output should not replace clipboard text or images intended for an agent. |
-| Autobalance splits | On | Keep panes evenly sized when adding or closing them. |
+| Autobalance splits | On | Evenly size panes when adding or closing them. |
 | Focus follows mouse inside Rex | Off | Pointer movement should not steal keyboard focus. AeroSpace window focus is separate. |
-| Terminal notifications (OSC 9/777) | On | Allow terminal programs to report completion through native notifications. |
+| Terminal notifications (OSC 9/777) | On | Let programs report completion through native notifications. |
 | Program Activity system notifications / extra sounds | On / off | Background-task alerts without Rex's additional activity sound. |
 
 Notifications still need macOS permission and a program that reports activity
-or emits notifications. This does not install agent hooks, guarantee Pi/Claude
+or emits notifications. This does not install hooks, guarantee Pi/Claude
 reporting, or silence sounds configured in macOS. Avoid duplicate Herdr/Rex
 notifications when nesting them.
 
-Preview is the default and makes no changes:
+### Optional command-line setup
 
-```bash
-rex --autostart=false do ./_scripts/rex-setup.lua
-# equivalent: add mode=preview
-```
+These settings currently have no documented native Lua setters. The commands
+below write individual macOS app preferences; they are **not** `init.lua`
+configuration. Keys were inspected in Rex Beta 0.1.0 (build 1347), so review
+them after upgrades and use Settings if a key changes.
 
-To apply, **fully quit Rex with `Cmd-Q`**, then use **Ghostty or another
-terminal**, not the Rex terminal being closed:
+**Fully quit Rex with `Cmd-Q` first**, then run the commands from **Ghostty or
+another terminal**, not the Rex terminal being closed. Do not write them while
+the app is running: its in-memory settings can overwrite the changes on exit.
 
-```bash
-rex --autostart=false do ./_scripts/rex-setup.lua mode=apply
-```
-
-The helper refuses to write while the Rex app is running. Each fallback uses
-an argument array passed to `rex.exec`, not a shell command string, and stops
-on a command failure. A failure can leave earlier settings applied; resolve
-it and rerun, or adjust those settings in the app.
-
-Reopen Rex, then run `mode=theme`. Choose the font's **Regular** face in
-Settings if an existing style override is active, and reset pane-specific
-font zoom if needed. The helper leaves UI fonts and unrelated settings alone.
-
-There is no backup/restore framework. If you want a snapshot before applying,
-export one yourself while Rex is quit:
+If desired, save a private snapshot first; keep it out of Git because it can
+contain local app metadata:
 
 ```bash
 defaults export com.superlogical.rex \
-  "$HOME/Downloads/rex-before-setup-$(date +%Y%m%d-%H%M%S).plist"
+  "$HOME/Downloads/rex-before-settings-$(date +%Y%m%d-%H%M%S).plist"
 ```
 
-Keep that private; it can include local app metadata. To undo individual
-choices, use Settings rather than replacing the entire preference domain.
-The fallback keys were inspected in Rex Beta 0.1.0 (build 1347); review them
-after beta upgrades. They are not stable public Lua APIs.
+Apply the choices you want:
 
-## Keep these app-managed for now
+```bash
+# Typography: default terminal family/size; choose Regular in Settings.
+defaults write com.superlogical.rex Workspace.terminalFontName \
+  -string 'JetBrainsMono Nerd Font Mono'
+defaults write com.superlogical.rex Workspace.terminalFontPointSize -float 18
+defaults write com.superlogical.rex Workspace.terminalFontSmoothing -bool true
+defaults write com.superlogical.rex Workspace.terminalAllowsLigatures -bool true
+
+# Readability without remapping Pi/Neovim/application colors.
+defaults write com.superlogical.rex Workspace.terminalImproveTextContrast -bool true
+defaults write com.superlogical.rex Workspace.terminalUseThemePalette -bool false
+defaults write com.superlogical.rex Workspace.terminalUsesDisplayP3 -bool false
+
+# Clipboard and pane behavior.
+defaults write com.superlogical.rex Workspace.terminalCopyOnSelect -bool false
+defaults write com.superlogical.rex Workspace.balancesSplitsOnCreation -bool true
+defaults write com.superlogical.rex Workspace.focusFollowsMouse -bool false
+
+# Background-task notifications without Rex's extra activity sound.
+defaults write com.superlogical.rex Workspace.allowsTerminalNotifications -bool true
+defaults write com.superlogical.rex Workspace.showsProgramActivityNotifications -bool true
+defaults write com.superlogical.rex Workspace.playsProgramActivitySounds -bool false
+```
+
+Reopen Rex afterward. Reset pane-specific font zoom if it masks the default
+size. Adjust or undo individual choices through Settings rather than replacing
+the entire preference domain from a snapshot. Keep this guide in sync with
+your preferred values; these commands are never run by Stow.
+
+## What does config reload do?
+
+Rex reads actions, keybindings, and host declarations from
+`~/.config/rex/init.lua`. There is no `init.lua` in this package yet. If one is
+added later, check and reload it with:
+
+```bash
+rex config check
+rex --autostart=false config reload
+```
+
+Clients receive updated keys without restarting the server. This **does not**
+re-import themes or apply the native preferences above:
+
+- Theme change: re-import the file while Rex is open.
+- Native preferences changed in Settings: Rex manages them directly.
+- Native preferences changed with `defaults`: quit first, write, then reopen.
+- `just stowall`: deploy files only; no automatic refresh or preference writes.
+
+## Leave these app-managed for now
 
 - Default shortcuts, tab placement, pane density, fading, and cursor behavior:
-  try Rex's defaults before adding bindings that could conflict with Neovim,
+  try the defaults before adding bindings that might conflict with Neovim,
   Pi, or AeroSpace.
 - Login shell and startup command: keep the default login shell so Zsh owns
   PATH, Starship, and initialization; do not auto-launch an agent in every pane.
 - Link-opening trust, server exposure, remote hosts, and agent integrations:
-  leave security-sensitive choices explicit. The helper does not install Rex
-  skills/hooks or replace existing Claude/Herdr integrations.
+  keep security-sensitive choices deliberate. No Rex skills/hooks are installed
+  by this package, and existing Claude/Herdr integrations are unchanged.
 
-## Checks and API references
+## References and checks
 
 - [Configuration file](https://www.superlogical.com/rex/docs/customize/config)
 - [Lua API](https://www.superlogical.com/rex/docs/reference/lua)
-- [Lua scripts and rex.exec](https://www.superlogical.com/rex/docs/automate/lua-scripts)
 
-The helper's read-only preview was verified with the installed Rex CLI. Pure
-Lua tests mock `rex.exec` and client actions, without changing host preferences:
-
-```bash
-luajit _scripts/tests/rex-setup.lua _scripts/rex-setup.lua
-just doctor --only-check
-```
-
-Live theme import, preference application, font rendering, notifications, and
-pane behavior still need an interactive check. After applying, check a fresh
-terminal and Neovim/Pi for readable text, icons, and a yellow cursor. Rex owns
-its UI chrome. If a saved selection-color override wins over the import,
-adjust it in Terminal settings: background `#3c3836`, foreground `#fbf1c7`.
+Run `just doctor --only-check` for repository validation. Theme import,
+preference application, font rendering, notifications, and pane behavior still
+need an interactive check. Compare a fresh terminal and Neovim/Pi for readable
+text, icons, selection contrast, and a yellow cursor.
