@@ -272,6 +272,8 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261023: Simplified the Rex guide into a manual setup flow with preview-era
+  TODOs, and added a minimal Stow-managed `init.lua` for future supported config.
 - 20261022: Globally ignored local Claude `.claude/.cc-writes/` scratch output
   without excluding shared Claude configuration.
 - 20261022: Added a Stow-deployed Rex `gruvbox-dark-hard` import theme matching

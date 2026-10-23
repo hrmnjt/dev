@@ -1,0 +1,4 @@
+-- Keep Rex's built-in defaults for now.
+-- Add supported keybindings, custom actions, and host declarations here.
+-- Native app preferences remain manual; see rex/README.md in the dotfiles repo.
+-- After edits: rex config check && rex config reload
