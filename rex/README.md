@@ -18,8 +18,14 @@ From this repository:
 just stowall
 ```
 
-This links `init.lua` and `themes/gruvbox-dark-hard` into `~/.config/rex/`.
-Review/merge any existing `init.lua` before deploying. Stow does not refresh Rex.
+This links `init.lua`, `worktrees.py`, and `themes/gruvbox-dark-hard` into
+`~/.config/rex/`. Review/merge any existing `init.lua` before deploying. Stow
+does not refresh Rex. Check and reload the Lua configuration from a Rex terminal:
+
+```bash
+rex config check
+rex --autostart=false config reload
+```
 
 ## 2. Set terminal preferences
 
@@ -69,6 +75,76 @@ Or import that file in **Settings → Themes** as a Ghostty theme. With multiple
 clients, use `rex client ls` and add `-C <client-label-or-id>` before `do`.
 If a selection override remains, set background `#3c3836`, foreground `#fbf1c7`.
 
+## 4. Worktree workflow
+
+Requires a local Rex terminal, Git, Python 3.9+, and `fzf` on the login shell's
+PATH (`fzf` is already in Brewfile). Enable Rex's **Remote Control** permission
+for CLI-driven session selection. No Herdr, agent hooks, `jq`, or Python packages
+are needed.
+
+Press **Ctrl+B**, release it, then the second key:
+
+| Key | Action |
+| --- | --- |
+| **Shift+G** | Enter a new Git branch name; create it from **local `main`**, then create its worktree and open a session. No fetch. |
+| **Shift+O** | Search existing worktrees and local branches with `fzf`; focus an open session, reopen a closed one, or create the missing worktree/session. |
+| **Shift+D** | Confirm stopping all programs in the current session and removing its worktree. Keep the branch. |
+| **Ctrl+B** | Send one Ctrl+B to the terminal. |
+
+For example, branch `feature-a` in `dev` gets sibling directory
+`../dev-feature-a` and session `dev-feature-a`. Branch names are preserved;
+`feat/rex/example` produces directory/session name `dev-feat-rex-example`.
+Generated names flatten `/`, `.`, and other punctuation to hyphens. Directory
+collisions are errors, never overwrites. Every new worktree session has **one
+ordinary shell tab**, with no tab naming, Pi startup, or extra tabs.
+
+Prompts use a temporary, single-tab menu session, which closes afterward. The
+Open picker distinguishes `[worktree; session open]`, `[worktree; session closed]`,
+and `[branch only; create worktree]`, and shows existing checkout paths. Type to
+search, use arrows and Enter to select, or Esc/Ctrl+C to cancel. A blank new-branch
+prompt cancels too. Delete defaults to **Cancel**; the affirmative choice warns
+that **all programs in the source session will stop**. It does not return to main.
+
+Safety and recovery:
+
+- Derive the repository from the focused terminal's actual process directory;
+  never hardcode this dotfiles checkout. Remote terminal actions are refused.
+- Never delete the primary checkout, even if its branch is not `main`. Refuse
+  modified/staged/untracked files, locked worktrees, and submodule worktrees;
+  never use `--force` or delete a branch. Ignored files follow normal Git
+  worktree-removal behavior.
+- Reuse session IDs, not labels; discover existing sessions by their terminal
+  directories. Refuse ambiguous duplicate sessions rather than create another.
+  Deletion also refuses sessions with unknown, remote, or unrelated terminal
+  directories.
+- Stop the source session **before** removing the checkout, then recheck for
+  files written during shutdown. If Git refuses removal, the checkout and
+  branch remain, though the session may already be closed. Use **Shift+O** to
+  reopen it. A session-creation failure likewise leaves a recoverable worktree.
+- Keep a small path-to-session-ID map and project lock under
+  `${XDG_STATE_HOME:-~/.local/state}/rex-worktrees/`, outside the repository.
+  This preserves associations after session renames/directory changes and
+  prevents overlapping menus for the same project. Git remains the source of
+  truth for worktrees and branches.
+
+### Checks
+
+Disposable real-Git fixtures with mocked Rex/menu actions (no deployment):
+
+```bash
+python3 _scripts/tests/rex-worktrees.py
+```
+
+Check the Lua action wiring with a running Rex server. This script mocks all
+Rex operations and changes no sessions:
+
+```bash
+rex --autostart=false do ./_scripts/tests/rex-worktrees.lua root="$PWD" --json
+```
+
+Actual key handling, menu rendering, and session shutdown still need a live
+interactive check after deploying and reloading.
+
 ## After changing something
 
 - **Theme file:** repeat the import; Rex stores a copy rather than watching it.
@@ -78,17 +154,19 @@ If a selection override remains, set background `#3c3836`, foreground `#fbf1c7`.
   Inspect with `defaults read com.superlogical.rex`; do not edit the plist directly.
 - **`defaults` commands:** quit Rex before writing, then reopen. Undo individual
   choices in Settings rather than replacing the whole preference domain.
-- **`init.lua`:** add supported keybindings, actions, or host declarations there,
-  then check and reload:
+- **`init.lua`:** edit supported bindings/actions there, then check and reload:
 
   ```bash
   rex config check
   rex --autostart=false config reload
   ```
 
-Lua reload does **not** re-import themes or apply native preferences. No setup
-script is maintained during beta. Leave unrelated defaults and security choices
-app-managed for now.
+- **`worktrees.py`:** the next menu invocation uses the changed helper; no Lua
+  reload is needed unless its launcher/bindings changed too.
+
+Lua reload does **not** re-import themes or apply native preferences. No
+appearance setup script is maintained during beta. Leave unrelated defaults and
+security choices app-managed for now.
 
 [Configuration guide](https://www.superlogical.com/rex/docs/customize/config) ·
 [Lua API](https://www.superlogical.com/rex/docs/reference/lua) ·
