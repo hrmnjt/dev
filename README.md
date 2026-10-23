@@ -187,11 +187,14 @@ changes to your real home directory. Other focused script regressions are:
 ```bash
 ./_scripts/tests/doctor-repository.sh
 ./_scripts/tests/sshsetup.sh
+python3 _scripts/tests/rex-worktrees.py
 ```
 
-These cover shell discovery, Claude Git identity refusal, and SSH setup with
-fake keygen/agent/Keychain/clipboard commands. Normal doctor runs do not run
-these fixtures.
+These cover shell discovery, Claude Git identity refusal, SSH setup with fake
+keygen/agent/Keychain/clipboard commands, and Rex worktree lifecycle safety with
+real disposable Git repositories and mocked Rex/menu operations. Normal doctor
+runs do not run these fixtures. See [Rex checks](rex/README.md#checks) for its
+mocked Lua action check and remaining interactive verification.
 
 #### Managing macOS defaults
 
@@ -272,6 +275,13 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261023: Added Rex Ctrl+B → Shift+G/O/D worktree actions with a temporary
+  fzf menu, local-main branch creation, hyphenated checkout/session names, and
+  one plain shell tab per worktree. Reuse sessions, list existing worktrees and
+  local branches, and confirm stopping programs before non-force removal while
+  retaining branches. Guard primary/dirty/locked/submodule checkouts and mixed
+  sessions; add disposable Git and mocked Lua regressions. Appearance remains
+  manual; live key/menu/shutdown verification is pending.
 - 20261023: Simplified the Rex guide into a manual setup flow with preview-era
   TODOs, and added a minimal Stow-managed `init.lua` for future supported config.
 - 20261022: Globally ignored local Claude `.claude/.cc-writes/` scratch output
