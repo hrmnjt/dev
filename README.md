@@ -187,7 +187,7 @@ changes to your real home directory. Other focused script regressions are:
 ```bash
 ./_scripts/tests/doctor-repository.sh
 ./_scripts/tests/sshsetup.sh
-python3 _scripts/tests/rex-worktrees.py
+./_scripts/tests/rex-worktrees.sh
 ```
 
 These cover shell discovery, Claude Git identity refusal, SSH setup with fake
@@ -280,8 +280,11 @@ expanded month by month. Full history lives in `git log`.
   one plain shell tab per worktree. Reuse sessions, list existing worktrees and
   local branches, and confirm stopping programs before non-force removal while
   retaining branches. Guard primary/dirty/locked/submodule checkouts and mixed
-  sessions; add disposable Git and mocked Lua regressions. Appearance remains
-  manual; live key/menu/shutdown verification is pending.
+  sessions. Keep both launcher and workflow in Rex's native Lua runtime, with
+  native session APIs, fzf prompts, and macOS kernel-backed project locks; no
+  Python or standalone Lua dependency. Add disposable Git, mocked Lua, and
+  lock/process-death regressions. Appearance remains manual; live
+  key/menu/shutdown verification is pending.
 - 20261023: Simplified the Rex guide into a manual setup flow with preview-era
   TODOs, and added a minimal Stow-managed `init.lua` for future supported config.
 - 20261022: Globally ignored local Claude `.claude/.cc-writes/` scratch output
