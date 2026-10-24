@@ -282,7 +282,8 @@ expanded month by month. Full history lives in `git log`.
   retaining branches. Guard primary/dirty/locked/submodule checkouts and mixed
   sessions. Keep both launcher and workflow in Rex's native Lua runtime, with
   native session APIs, fzf prompts, and macOS kernel-backed project locks; no
-  Python or standalone Lua dependency. Skip unreadable terminals during discovery,
+  Python or standalone Lua dependency. Find sessions by terminal directory
+  without a saved session map. Skip unreadable terminals during discovery,
   keep source-session deletion strict, print full errors until Enter, and rely
   on non-force Git removal for the final cleanliness check. Verify fzf and stdin
   in real Rex terminals; document RPC attachment requirements. Add disposable

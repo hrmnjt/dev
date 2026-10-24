@@ -82,7 +82,7 @@ is already in Brewfile). Both configuration and workflow use Rex's built-in
 Lua runtime and native session APIs; no Python, standalone Lua, Herdr, agent
 hooks, or `jq` are needed. Enable Rex's **Remote Control** permission for
 script-driven session selection. This macOS workflow uses the system `lockf`
-and `shasum` utilities for project locking and stable state-file names.
+and `shasum` utilities for a per-project lock.
 
 Press **Ctrl+B**, release it, then the second key:
 
@@ -117,8 +117,10 @@ Safety and recovery:
   modified/staged/untracked files, locked worktrees, and submodule worktrees;
   never use `--force` or delete a branch. Ignored files follow normal Git
   worktree-removal behavior.
-- Reuse session IDs, not labels; discover existing sessions by their terminal
-  directories. Refuse ambiguous duplicate sessions rather than create another.
+- Find sessions by their terminals' directories and reuse them by ID, not
+  label, so renaming a session is harmless. No session map is saved: a session
+  whose terminals have all left the worktree no longer counts, and Open starts
+  a new one. Refuse ambiguous duplicate sessions rather than create another.
   New/Open discovery skips inaccessible sessions and terminal directories rather
   than blocking other projects. Deletion still strictly refuses a source session
   with unknown, remote, inaccessible, or unrelated terminal directories.
@@ -128,16 +130,14 @@ Safety and recovery:
   shutdown and newly locked worktrees. If Git refuses, the checkout and branch
   remain, though the session may already be closed. Use **Shift+O** to reopen it.
   A session-creation failure likewise leaves a recoverable worktree.
-- Keep a small path-to-session-ID map and project lock under
-  `${XDG_STATE_HOME:-~/.local/state}/rex-worktrees/`, outside the repository.
+- Hold a project lock under `${XDG_STATE_HOME:-~/.local/state}/rex-worktrees/`,
+  outside the repository, so two menus never change one project at once.
   Native `lockf` holds a kernel lock while the menu runs; it releases on normal
   exit or process death without stale-PID cleanup. Keep the lock file itself
   in place so competing processes always lock the same inode.
-- The map preserves associations after session renames/directory changes;
-  the project lock prevents overlapping menus. This is **not** session
-  save/restore: a Rex server restart still ends its sessions. Open recreates a
-  plain shell session for an existing worktree. Git remains the source of
-  truth for worktrees and branches.
+- This is **not** session save/restore: a Rex server restart still ends its
+  sessions. Open recreates a plain shell session for an existing worktree.
+  Git remains the source of truth for worktrees and branches.
 
 ### Checks
 
