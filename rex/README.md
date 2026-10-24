@@ -146,6 +146,39 @@ Safety and recovery:
   sessions. Open recreates a plain shell session for an existing worktree.
   Git remains the source of truth for worktrees and branches.
 
+### Walkthrough
+
+This tries every action once on a real task, a branch for Pi notifications. It
+is also the end-to-end check that the automated tests below cannot cover: real
+shortcuts, fzf in a Rex terminal, and stopping programs.
+
+1. In a plain Rex shell, press **Cmd+Shift+N**, **Cmd+Shift+O**, and
+   **Cmd+Shift+Backspace**; Rex itself should not open anything. Then deploy
+   and reload as in [Deploy](#1-deploy). **Ctrl+B** now moves the shell cursor
+   back one character instead of starting a key sequence.
+2. In a shell in `~/code/github.com/hrmnjt/dev`, press **Cmd+Shift+N**, type
+   `feat/pi/add-rex-status`, and press Enter. Session
+   `dev-feat-pi-add-rex-status` opens with one shell tab in
+   `../dev-feat-pi-add-rex-status`, on a new branch from local `main`. Check
+   with `git status -sb`.
+3. Press **Cmd+K** and choose `dev` to return to the primary checkout. From
+   there, press **Cmd+Shift+O**: the branch shows as `[worktree; session open]`,
+   and choosing it focuses the same session.
+4. Close that session with `rex kill dev-feat-pi-add-rex-status`, which stops
+   everything in it. From `dev`, press **Cmd+Shift+O** again and choose the
+   branch, now `[worktree; session closed]`. A fresh shell session opens in
+   the same checkout.
+5. Start `pi` there and work as usual. Extra tabs are fine while they stay
+   inside the worktree; Delete refuses sessions with terminals elsewhere.
+6. In the worktree, run `touch scratch` and press **Cmd+Shift+Backspace**. The
+   menu refuses the untracked file without stopping anything. Press Enter,
+   then `rm scratch`.
+7. When the branch has merged, or to end a trial run, press
+   **Cmd+Shift+Backspace** in the worktree and choose **Remove worktree and
+   STOP ALL programs in its Rex session**. The session closes and the checkout
+   is removed. The branch stays; delete it from `dev` with
+   `git branch -d feat/pi/add-rex-status` once it has merged.
+
 ### Checks
 
 With the Rex server running, use Rex's own Lua runtime for disposable real-Git
@@ -163,23 +196,6 @@ To run only the mocked action-wiring checks without Git fixtures:
 ```bash
 rex --autostart=false do ./_scripts/tests/rex-worktrees.lua root="$PWD" --json
 ```
-
-Live checks on Rex build `623b2d` (API revision 7):
-
-- The exact `rex.exec` fzf probe rendered `a`/`b` in a temporary Rex terminal;
-  Enter returned `ok=true`, `code=0`, `stdout="a\n"`, and empty stderr.
-- `io.read("*l")` read a line from a real Rex terminal and the script exited 0.
-- With fzf deliberately redirected to a nonexistent executable, the helper
-  printed the launch error and recovery text, stayed open until Enter, then
-  removed only its temporary menu session.
-- Calling `session.view` before attachment failed with 409 "stream is not
-  attached to session"; attaching then viewing succeeded. This is RPC stream
-  scoping, not switching the visible session. The helper documents that
-  requirement and caches attachments per connection.
-
-The temporary probe sessions were removed. The shortcuts, the complete
-New/Open/Delete workflow, and real program shutdown still need an interactive
-check after deploying and reloading; the prompt probes alone do not verify them.
 
 ## After changing something
 
