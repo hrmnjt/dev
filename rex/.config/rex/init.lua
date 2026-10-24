@@ -31,10 +31,16 @@ local function worktree_menu(mode, ctx)
   end
   local home = assert(os.getenv("HOME"), "HOME is not set")
   local config = os.getenv("XDG_CONFIG_HOME") or (home .. "/.config")
-  local helper = config .. "/rex/worktrees.py"
+  local helper = config .. "/rex/worktrees.lua"
   local file = io.open(helper, "r")
-  if not file then error("Deploy rex/worktrees.py with just stowall first", 0) end
+  if not file then error("Deploy rex/worktrees.lua with just stowall first", 0) end
   file:close()
+  local binary_dir = os.getenv("REX_BIN_DIR")
+  local binary = binary_dir and (binary_dir .. "/rex") or "rex"
+  local arguments = checked(rex.json.encode{
+    mode = mode, directory = directory,
+    source_session = ctx.session_id, source_block = ctx.block_id,
+  })
 
   -- A separate, short-lived menu session survives stopping the target session.
   -- This lets delete stop its programs BEFORE asking Git to remove the checkout.
@@ -44,7 +50,8 @@ local function worktree_menu(mode, ctx)
       flavor = "com.superlogical.terminal.shell",
       options = {
         cwd = home,
-        command = { "python3", helper, mode, ctx.session_id, ctx.block_id, ctx.client_id, directory },
+        command = { binary, "--autostart=false", "-C", ctx.client_id,
+          "do", helper, "--args", arguments },
         exit = { on_completion = false },
       },
     }}},

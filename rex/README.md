@@ -18,7 +18,7 @@ From this repository:
 just stowall
 ```
 
-This links `init.lua`, `worktrees.py`, and `themes/gruvbox-dark-hard` into
+This links `init.lua`, `worktrees.lua`, and `themes/gruvbox-dark-hard` into
 `~/.config/rex/`. Review/merge any existing `init.lua` before deploying. Stow
 does not refresh Rex. Check and reload the Lua configuration from a Rex terminal:
 
@@ -77,10 +77,12 @@ If a selection override remains, set background `#3c3836`, foreground `#fbf1c7`.
 
 ## 4. Worktree workflow
 
-Requires a local Rex terminal, Git, Python 3.9+, and `fzf` on the login shell's
-PATH (`fzf` is already in Brewfile). Enable Rex's **Remote Control** permission
-for CLI-driven session selection. No Herdr, agent hooks, `jq`, or Python packages
-are needed.
+Requires a local Rex terminal and Git/`fzf` on the login shell's PATH (`fzf`
+is already in Brewfile). Both configuration and workflow use Rex's built-in
+Lua runtime and native session APIs; no Python, standalone Lua, Herdr, agent
+hooks, or `jq` are needed. Enable Rex's **Remote Control** permission for
+script-driven session selection. This macOS workflow uses the system `lockf`
+and `shasum` utilities for project locking and stable state-file names.
 
 Press **Ctrl+B**, release it, then the second key:
 
@@ -98,8 +100,8 @@ Generated names flatten `/`, `.`, and other punctuation to hyphens. Directory
 collisions are errors, never overwrites. Every new worktree session has **one
 ordinary shell tab**, with no tab naming, Pi startup, or extra tabs.
 
-Prompts use a temporary, single-tab menu session, which closes afterward. The
-Open picker distinguishes `[worktree; session open]`, `[worktree; session closed]`,
+All prompts use fzf in a temporary, single-tab menu session, which closes afterward.
+The Open picker distinguishes `[worktree; session open]`, `[worktree; session closed]`,
 and `[branch only; create worktree]`, and shows existing checkout paths. Type to
 search, use arrows and Enter to select, or Esc/Ctrl+C to cancel. A blank new-branch
 prompt cancels too. Delete defaults to **Cancel**; the affirmative choice warns
@@ -123,20 +125,29 @@ Safety and recovery:
   reopen it. A session-creation failure likewise leaves a recoverable worktree.
 - Keep a small path-to-session-ID map and project lock under
   `${XDG_STATE_HOME:-~/.local/state}/rex-worktrees/`, outside the repository.
-  This preserves associations after session renames/directory changes and
-  prevents overlapping menus for the same project. Git remains the source of
+  State-file names and mappings remain compatible with the earlier helper.
+  Native `lockf` holds a kernel lock while the menu runs; it releases on normal
+  exit or process death without stale-PID cleanup. Keep the lock file itself
+  in place so competing processes always lock the same inode.
+- The map preserves associations after session renames/directory changes;
+  the project lock prevents overlapping menus. This is **not** session
+  save/restore: a Rex server restart still ends its sessions. Open recreates a
+  plain shell session for an existing worktree. Git remains the source of
   truth for worktrees and branches.
 
 ### Checks
 
-Disposable real-Git fixtures with mocked Rex/menu actions (no deployment):
+With the Rex server running, use Rex's own Lua runtime for disposable real-Git
+fixtures and mocked session/client/menu operations (no deployment or Python):
 
 ```bash
-python3 _scripts/tests/rex-worktrees.py
+./_scripts/tests/rex-worktrees.sh
 ```
 
-Check the Lua action wiring with a running Rex server. This script mocks all
-Rex operations and changes no sessions:
+This also tests concurrent-lock exclusion and kernel-lock release after killing
+the test Lua process. It never stops the Rex server or changes real sessions.
+
+To run only the mocked action-wiring checks without Git fixtures:
 
 ```bash
 rex --autostart=false do ./_scripts/tests/rex-worktrees.lua root="$PWD" --json
@@ -161,7 +172,7 @@ interactive check after deploying and reloading.
   rex --autostart=false config reload
   ```
 
-- **`worktrees.py`:** the next menu invocation uses the changed helper; no Lua
+- **`worktrees.lua`:** the next menu invocation uses the changed helper; no config
   reload is needed unless its launcher/bindings changed too.
 
 Lua reload does **not** re-import themes or apply native preferences. No
