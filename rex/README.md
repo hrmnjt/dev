@@ -106,6 +106,8 @@ and `[branch only; create worktree]`, and shows existing checkout paths. Type to
 search, use arrows and Enter to select, or Esc/Ctrl+C to cancel. A blank new-branch
 prompt cancels too. Delete defaults to **Cancel**; the affirmative choice warns
 that **all programs in the source session will stop**. It does not return to main.
+Errors are printed in full in the menu terminal and wait for Enter before it
+closes, including when fzf itself fails.
 
 Safety and recovery:
 
@@ -117,15 +119,17 @@ Safety and recovery:
   worktree-removal behavior.
 - Reuse session IDs, not labels; discover existing sessions by their terminal
   directories. Refuse ambiguous duplicate sessions rather than create another.
-  Deletion also refuses sessions with unknown, remote, or unrelated terminal
-  directories.
-- Stop the source session **before** removing the checkout, then recheck for
-  files written during shutdown. If Git refuses removal, the checkout and
-  branch remain, though the session may already be closed. Use **Shift+O** to
-  reopen it. A session-creation failure likewise leaves a recoverable worktree.
+  New/Open discovery skips inaccessible sessions and terminal directories rather
+  than blocking other projects. Deletion still strictly refuses a source session
+  with unknown, remote, inaccessible, or unrelated terminal directories.
+- Check cleanliness and submodules before confirmation and again before stopping
+  programs. Then stop the source session **before** asking Git to remove the
+  checkout, without `--force`. Git's removal checks protect files written during
+  shutdown and newly locked worktrees. If Git refuses, the checkout and branch
+  remain, though the session may already be closed. Use **Shift+O** to reopen it.
+  A session-creation failure likewise leaves a recoverable worktree.
 - Keep a small path-to-session-ID map and project lock under
   `${XDG_STATE_HOME:-~/.local/state}/rex-worktrees/`, outside the repository.
-  State-file names and mappings remain compatible with the earlier helper.
   Native `lockf` holds a kernel lock while the menu runs; it releases on normal
   exit or process death without stale-PID cleanup. Keep the lock file itself
   in place so competing processes always lock the same inode.
@@ -153,8 +157,22 @@ To run only the mocked action-wiring checks without Git fixtures:
 rex --autostart=false do ./_scripts/tests/rex-worktrees.lua root="$PWD" --json
 ```
 
-Actual key handling, menu rendering, and session shutdown still need a live
-interactive check after deploying and reloading.
+Live checks on Rex build `623b2d` (API revision 7):
+
+- The exact `rex.exec` fzf probe rendered `a`/`b` in a temporary Rex terminal;
+  Enter returned `ok=true`, `code=0`, `stdout="a\n"`, and empty stderr.
+- `io.read("*l")` read a line from a real Rex terminal and the script exited 0.
+- With fzf deliberately redirected to a nonexistent executable, the helper
+  printed the launch error and recovery text, stayed open until Enter, then
+  removed only its temporary menu session.
+- Calling `session.view` before attachment failed with 409 "stream is not
+  attached to session"; attaching then viewing succeeded. This is RPC stream
+  scoping, not switching the visible session. The helper documents that
+  requirement and caches attachments per connection.
+
+The temporary probe sessions were removed. Prefix key handling, the complete
+New/Open/Delete workflow, and real program shutdown still need an interactive
+check after deploying and reloading; the prompt probes alone do not verify them.
 
 ## After changing something
 

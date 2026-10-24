@@ -110,12 +110,13 @@ local function menu(branch, selection, confirm, hook)
 end
 local function fake(primary)
   local f = { live = { source = "main", helper = "menu" }, paths = { source = {primary}, helper = {} },
-    created = {}, killed = {}, focused = {}, attached = {} }
+    created = {}, killed = {}, focused = {}, attached = {}, process_failures = {}, view_failures = {} }
   local r = { exec = real.exec, json = real.json, layout = real.layout, session_id = "helper", session = {}, block = {}, client = {} }
   f.rex = r
   function r.session.attach(args) assert(f.live[args.session_id]); f.attached[args.session_id] = true; return {} end
   function r.session.view(args)
     assert(f.attached[args.session_id], "missing native session attachment")
+    if f.view_failures[args.session_id] then return nil, "session view failed" end
     local blocks = {}
     for i in ipairs(f.paths[args.session_id]) do
       table.insert(blocks, { block_id = tostring(i), host_id = "local", creator_name = "com.superlogical.terminal" })
@@ -124,6 +125,9 @@ local function fake(primary)
   end
   function r.block.call(creator, method, args)
     assert(creator == "com.superlogical.terminal" and method == "process" and f.attached[args.session_id])
+    if f.process_failures[args.session_id] or f.process_failures[args.session_id .. ":" .. args.block_id] then
+      return nil, "terminal process failed"
+    end
     local directory = args.block_id == "focused" and f.block_override or nil
     directory = directory or f.paths[args.session_id][tonumber(args.block_id) or 1]
     return { foreground = { cwd = directory or nil } }
@@ -244,6 +248,48 @@ test("saved association survives rename and directory changes", function(f)
   locked(f:flow(), function(flow) assert(flow:open_path(path) == id) end)
   assert(#f.server.created == 1)
 end)
+test("unrelated missing directory cannot block New or Open", function(f)
+  local path = f:linked()
+  f.server.live.stray, f.server.paths.stray = "stray", {f.root .. "/missing-directory"}
+  local ui = menu("feature-b", 2)
+  locked(f:flow(nil, ui), function(flow)
+    flow:open()
+    assert(f.server.created[1].path == path)
+    flow:new_branch()
+  end)
+  assert(#f.server.created == 2 and f:trees() == 3)
+end)
+test("failed unrelated session view cannot block Open", function(f)
+  f:linked()
+  f.server.live.stray, f.server.paths.stray = "stray", {f.root}
+  f.server.view_failures.stray = true
+  locked(f:flow(nil, menu(nil, 2)), function(flow) flow:open() end)
+  assert(#f.server.created == 1)
+end)
+test("failed process lookup cannot hide healthy blocks or block another project", function(f)
+  local path = f:linked()
+  f.server.live.manual, f.server.paths.manual = "manual", {path, f.root}
+  f.server.process_failures["manual:2"] = true
+  f.server.live.stray, f.server.paths.stray = "stray", {f.root}
+  f.server.process_failures.stray = true
+  locked(f:flow(), function(flow) assert(flow:open_path(path) == "manual") end)
+  assert(#f.server.created == 0)
+end)
+test("unreadable Git context in an unrelated terminal is skipped", function(f)
+  local path = f:linked()
+  local corrupt = f.primary .. "/corrupt-nested-repository"
+  execute({"/bin/mkdir", corrupt}); write(corrupt .. "/.git", "gitdir: /nonexistent/repository\n")
+  f.server.live.stray, f.server.paths.stray = "stray", {corrupt}
+  locked(f:flow(), function(flow) flow:open_path(path) end)
+  assert(#f.server.created == 1)
+end)
+test("source process failures still block deletion", function(f)
+  local path = f:linked(); f:source_at(path)
+  table.insert(f.server.paths.source, f.root)
+  f.server.process_failures["source:2"] = true
+  fails(function() locked(f:flow(path), function(flow) flow:delete() end) end, "terminal process failed")
+  assert(#f.server.killed == 0 and f:trees() == 2)
+end)
 test("ambiguous sessions fail closed", function(f)
   local path = f:linked()
   f.server.live.a, f.server.paths.a = "a", {path}; f.server.live.b, f.server.paths.b = "b", {path}
@@ -302,7 +348,7 @@ end)
 test("files written during shutdown preserve checkout", function(f)
   local path = f:linked(); f:source_at(path)
   f.server.after_kill = function() write(path .. "/new-file", "keep") end
-  fails(function() locked(f:flow(path), function(flow) flow:delete() end) end, "modified, staged, or untracked")
+  fails(function() locked(f:flow(path), function(flow) flow:delete() end) end, "modified or untracked")
   assert(#f.server.killed == 1 and read(path .. "/new-file") == "keep")
 end)
 test("locked worktree and mixed terminal session refused", function(f)
@@ -406,6 +452,49 @@ test("cancelled main action returns to source and closes only its menu", functio
     state_home = f.root .. "/state"}, f.server.rex)
   assert(#f.server.killed == 1 and f.server.killed[1] == "helper" and f.server.live.source)
   assert(f.server.focused[1] == "source")
+end)
+test("native Git preserves tracked changes staged or modified during shutdown", function(f)
+  local path = f:linked()
+  for _, kind in ipairs({"modified", "staged"}) do
+    f:source_at(path); f.server.live.source = "source"
+    f.server.after_kill = function()
+      write(path .. "/tracked", "shutdown changes\n")
+      if kind == "staged" then git(path, "add", "tracked") end
+    end
+    fails(function() locked(f:flow(path), function(flow) flow:delete() end) end, "modified or untracked")
+    assert(read(path .. "/tracked") == "shutdown changes\n" and f:trees() == 2)
+    git(path, "reset", "--hard", "HEAD") -- fixture only
+  end
+end)
+test("native Git refuses a worktree locked during program shutdown", function(f)
+  local path = f:linked(); f:source_at(path)
+  f.server.after_kill = function() git(f.primary, "worktree", "lock", path) end
+  fails(function() locked(f:flow(path), function(flow) flow:delete() end) end, "locked")
+  assert(#f.server.killed == 1 and f:trees() == 2)
+end)
+test("fzf launch errors are printed in full and acknowledged without invoking fzf again", function(f)
+  f.server.live.helper = "rex-worktrees-open"
+  local console = { calls = 0, waited = false, output = "" }
+  local message = "fzf launch failed\n" .. string.rep("long error text ", 100)
+  f.server.rex.exec = setmetatable({start = real.exec.start}, {__call = function(_, argv, options)
+    if argv[1] == "fzf" then console.calls = console.calls + 1; return nil, message end
+    return real.exec(argv, options)
+  end})
+  local terminal = {
+    write = function(text) console.output = console.output .. text end,
+    flush = function() end,
+    read = function(format)
+      assert(format == "*l" and #f.server.killed == 0 and f.server.live.helper)
+      console.waited = true
+      return ""
+    end,
+  }
+  core.main({mode = "open", source_session = "source", source_block = "focused",
+    directory = f.primary, state_home = f.root .. "/state"}, f.server.rex, terminal)
+  assert(console.calls == 1 and console.waited)
+  contains(console.output, message)
+  contains(console.output, "Press Enter to close this menu.")
+  assert(#f.server.killed == 1 and f.server.killed[1] == "helper" and f.server.live.source)
 end)
 local passed = 0
 for _, item in ipairs(tests) do
