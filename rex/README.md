@@ -92,6 +92,7 @@ Actions also appear under **Worktrees** in the **Cmd+Shift+P** command palette.
 
 | Key | Action |
 | --- | --- |
+| **Cmd+Shift+K** | Pick a project from your list; switch to its open session or open its checkout. Works from any pane. |
 | **Cmd+Shift+N** | Enter a branch name; create it from **local `main`**, then open its worktree in a new session. No fetch. |
 | **Cmd+Shift+O** | Search worktrees and local branches; focus an open session, reopen a closed one, or create the missing worktree/session. |
 | **Cmd+Shift+Backspace** | Confirm stopping all programs in the session and removing its worktree. Keep the branch. |
@@ -101,24 +102,50 @@ Every Ctrl key still reaches the shell, Neovim, and Pi. Custom bindings live in
 `init.lua`; `rex keymap` lists configured bindings, not Rex's app defaults.
 
 Worktrees are siblings of the primary checkout: branch `feat/rex/example` in
-`dev` gets directory/session name `dev-feat-rex-example`. New sessions contain
-one ordinary shell tab; Pi does not start automatically.
+`dev` gets directory/session name `dev-feat-rex-example`, and the primary
+checkout's own session is named `dev`. New sessions contain one ordinary shell
+tab; Pi does not start automatically.
 
 Prompts use `fzf` in a temporary menu session. Type to search, use arrows and
 Enter to select, or Esc/Ctrl+C to cancel. Errors wait for Enter before closing.
 
+### Projects
+
+Projects are the checkouts listed in the `projects` table at the top of
+`init.lua`; nothing is scanned or recorded at runtime:
+
+```lua
+local projects = {
+  "~/code/github.com/hrmnjt/dev",
+  "~/code/work/doh/some-service",
+}
+```
+
+List primary checkouts with absolute or `~/` paths, then check and reload. The
+picker lists open projects first and the current one last, so **Cmd+Shift+K**
+then Enter switches to another open project. Missing directories show as
+`[missing]`.
+
+From a terminal outside any Git checkout, such as after a Rex restart,
+**Cmd+Shift+N** and **Cmd+Shift+O** ask for the project first. When two or more
+worktrees have no session, Open's `[all worktrees]` row gives each one a plain
+shell session and focuses the primary checkout.
+
 ### Safety and recovery
 
-- The focused terminal's directory determines the repository. Remote terminals
-  are refused; sessions are found by terminal directory, not label.
-- Delete refuses primary, dirty, locked, submodule, and mixed-directory session
-  checkouts. It never uses `--force` or deletes a branch. Ignored files follow
-  normal Git worktree-removal behavior.
+- The focused terminal's directory determines the repository; outside Git, New
+  and Open use the chosen project. Remote terminals are refused; sessions are
+  found by terminal directory, not label.
+- Delete only acts on the focused terminal's own worktree and never offers the
+  project picker. It refuses primary, dirty, locked, submodule, and
+  mixed-directory session checkouts, and never uses `--force` or deletes a
+  branch. Ignored files follow normal Git worktree-removal behavior.
 - Delete stops the session's programs **before** Git removes the checkout. If Git
   refuses removal, the checkout and branch remain, but the session may be closed.
   Use **Cmd+Shift+O** to reopen it.
-- Rex server restarts end sessions. Open recreates a plain shell session for an
-  existing worktree; it does not restore running programs.
+- Rex server restarts end sessions. **Cmd+Shift+K** and Open's `[all worktrees]`
+  row recreate plain shell sessions for existing checkouts; running programs are
+  not restored.
 
 ## Checks
 
@@ -131,9 +158,9 @@ Run disposable real-Git fixtures with mocked Rex sessions/menu operations:
 Requires a running Rex server; it does not change real sessions. Real shortcuts,
 `fzf` interaction, and program shutdown still need interactive verification.
 
-After editing `init.lua`, run `rex config check` and
-`rex --autostart=false config reload`. Changes to `worktrees.lua` take effect on
-the next menu invocation. Lua reload does not apply native preferences or
+After editing `init.lua`, including the project list, run `rex config check`
+and `rex --autostart=false config reload`. Changes to `worktrees.lua` take
+effect on the next menu invocation. Lua reload does not apply native preferences or
 re-import themes.
 
 [Configuration guide](https://www.superlogical.com/rex/docs/customize/config) ·

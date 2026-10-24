@@ -275,6 +275,13 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261025: Added a Rex project picker on Cmd+Shift+K over a hand-kept
+  `projects` table in `init.lua`. It lists open projects first and switches to
+  their session or opens the checkout. From a terminal outside Git, such as
+  after a Rex restart, New and Open ask for the project first; Delete never
+  does. Open adds an `[all worktrees]` row that gives every worktree without
+  a session a plain shell session again. The primary checkout's session is now
+  named after its project. Nothing is scanned or saved at runtime.
 - 20261025: Trimmed the Rex guide to setup and daily use, removing the worktree
   walkthrough, future TODOs, diagnostic history, and repeated implementation
   details while keeping shortcuts, safety/recovery notes, and checks.
