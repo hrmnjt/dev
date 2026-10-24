@@ -81,8 +81,7 @@ Requires a local Rex terminal and Git/`fzf` on the login shell's PATH (`fzf`
 is already in Brewfile). Both configuration and workflow use Rex's built-in
 Lua runtime and native session APIs; no Python, standalone Lua, Herdr, agent
 hooks, or `jq` are needed. Enable Rex's **Remote Control** permission for
-script-driven session selection. This macOS workflow uses the system `lockf`
-and `shasum` utilities for a per-project lock.
+script-driven session selection.
 
 Each action is one shortcut, and is also listed under **Worktrees** in the
 command palette (**Cmd+Shift+P**):
@@ -137,12 +136,7 @@ Safety and recovery:
   shutdown and newly locked worktrees. If Git refuses, the checkout and branch
   remain, though the session may already be closed. Use Open (**Cmd+Shift+O**) to reopen it.
   A session-creation failure likewise leaves a recoverable worktree.
-- Hold a project lock under `${XDG_STATE_HOME:-~/.local/state}/rex-worktrees/`,
-  outside the repository, so two menus never change one project at once.
-  Native `lockf` holds a kernel lock while the menu runs; it releases on normal
-  exit or process death without stale-PID cleanup. Keep the lock file itself
-  in place so competing processes always lock the same inode.
-- This is **not** session save/restore: a Rex server restart still ends its
+- Nothing is saved outside Git and Rex. This is **not** session save/restore: a Rex server restart still ends its
   sessions. Open recreates a plain shell session for an existing worktree.
   Git remains the source of truth for worktrees and branches.
 
@@ -188,8 +182,7 @@ fixtures and mocked session/client/menu operations (no deployment or Python):
 ./_scripts/tests/rex-worktrees.sh
 ```
 
-This also tests concurrent-lock exclusion and kernel-lock release after killing
-the test Lua process. It never stops the Rex server or changes real sessions.
+It never stops the Rex server or changes real sessions.
 
 To run only the mocked action-wiring checks without Git fixtures:
 

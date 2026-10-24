@@ -35,38 +35,6 @@ local function slug(r, value)
   return name ~= "" and name or "worktree-" .. digest(r, value):sub(1, 8)
 end
 
--- macOS's lockf holds an exclusive kernel-backed project lock.
--- A stdin pipe keeps its command alive. EOF (including parent death) releases
--- the kernel lock. Keep the inode (-k); never delete/recreate a live lock file.
-function M.acquire(r, path)
-  local output, stderr = "", ""
-  local handle = checked(r.exec.start({
-    "/usr/bin/lockf", "-k", "-t", "0", path, "/bin/sh", "-c",
-    "printf 'locked\\n'; exec /bin/cat > /dev/null",
-  }, {
-    stdin = true,
-    stdout = function(data) output = output .. data end,
-    stderr = function(data) stderr = stderr .. data end,
-  }))
-  local function release()
-    handle:close_stdin()
-    if not handle:wait(2) then handle:kill(); handle:wait(2) end
-  end
-  for _ = 1, 50 do
-    local result = handle:wait(0.1) -- also dispatches streaming callbacks
-    if result then
-      release()
-      if result.code == 75 then fail("Another worktree menu for this project is already open") end
-      fail("Cannot acquire project lock: " .. visible(stderr))
-    end
-    if output == "locked\n" then
-      return { release = release, alive = function() return handle:running() end }
-    end
-  end
-  release()
-  fail("Timed out acquiring project lock")
-end
-
 local Menu = {}
 Menu.__index = Menu
 function Menu.new(r) return setmetatable({ rex = r }, Menu) end
@@ -148,9 +116,6 @@ function Workflow.new(args, r, menu)
   if not registered then fail("Current directory is not a registered worktree") end
   self.host = checked(r.call("server.status")).host_id
   self.helper = r.session_id
-  self.state_root = (args.state_home or os.getenv("XDG_STATE_HOME") or (assert(os.getenv("HOME")) .. "/.local/state")) .. "/rex-worktrees"
-  -- One lock per physical checkout, so every worktree of a project shares it.
-  self.lock_file = self.state_root .. "/" .. digest(r, self.primary) .. ".lock"
   return self
 end
 function Workflow:attach(session)
@@ -191,19 +156,6 @@ function Workflow:directories(session, strict)
     end
   end
   return directories
-end
-function Workflow:with_lock(fn)
-  execute(self.rex, { "/bin/mkdir", "-p", "-m", "700", self.state_root })
-  local lock = M.acquire(self.rex, self.lock_file)
-  self.lock = lock
-  local ok, result = pcall(fn)
-  lock.release()
-  self.lock = nil
-  if not ok then error(result, 0) end
-  return result
-end
-function Workflow:guard()
-  if not self.lock or not self.lock.alive() then fail("Project lock was lost; no further changes allowed") end
 end
 function Workflow:associations()
   local live, matches, roots = self:sessions(), {}, {}
@@ -250,7 +202,6 @@ function Workflow:open_path(path)
     for _, existing in pairs(self:sessions()) do
       if existing == label then label = label:sub(1, 119) .. "-" .. digest(self.rex, path):sub(1, 8); break end
     end
-    self:guard()
     session = checked(self.rex.call("session.create", {
       label = label:sub(1, 128),
       initial_windows = {{ layout = self.rex.layout.block{ flavor = TERMINAL .. ".shell", options = { cwd = path } } }},
@@ -271,7 +222,6 @@ function Workflow:add_branch(branch, new)
   end
   local path = parent(self.primary) .. "/" .. slug(self.rex, basename(self.primary)) .. "-" .. slug(self.rex, branch)
   if self:exists(path) then fail("Directory already exists; will not overwrite it: " .. visible(path)) end
-  self:guard()
   if new then
     self:git(self.primary, "show-ref", "--verify", "refs/heads/main")
     self:git(self.primary, "worktree", "add", "-b", branch, path, "main")
@@ -340,10 +290,8 @@ function Workflow:delete()
   local directory = (process.foreground or {}).cwd or (process.child or {}).cwd
   if not directory or not inside(self:physical(directory), self.checkout) then fail("Source terminal changed directory; deletion cancelled") end
   self:validate_source()
-  self:guard()
   self:destroy(self.args.source_session)
   if self:sessions()[self.args.source_session] then fail("Rex session is still running; checkout was not removed") end
-  self:guard()
   -- Git's non-force removal rechecks cleanliness/locks after programs stop.
   -- Keep the earlier explicit submodule checks: Git allows uninitialized gitlinks.
   self:git(self.primary, "worktree", "remove", self.checkout)
@@ -364,13 +312,10 @@ function M.main(args, r, terminal)
   end
   if not is_menu then fail("Only invoke this helper in its temporary menu session") end
   local menu, destination = Menu.new(r), args.source_session
-  local workflow
   local ok, err = pcall(function()
-    workflow = Workflow.new(args, r, menu)
-    destination = workflow:with_lock(function()
-      if args.mode == "new" then return workflow:new_branch() end
-      return workflow[args.mode](workflow)
-    end)
+    local workflow = Workflow.new(args, r, menu)
+    if args.mode == "new" then destination = workflow:new_branch()
+    else destination = workflow[args.mode](workflow) end
   end)
   if not ok and tostring(err) ~= CANCEL then
     -- Do not depend on fzf to display its own launch/render errors. Preserve
