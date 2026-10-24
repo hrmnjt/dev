@@ -275,6 +275,14 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261025: Trimmed the Rex guide to setup and daily use, removing the worktree
+  walkthrough, future TODOs, diagnostic history, and repeated implementation
+  details while keeping shortcuts, safety/recovery notes, and checks.
+- 20261025: Documented Pi 1.3.0's built-in Rex activity/notification support
+  through OSC 7501, avoiding duplicate extensions or agent hooks. Verified live
+  Pi working status and enabled Rex notification preferences; background
+  banners and other state indicators remain interactive checks. No host settings
+  changed.
 - 20261023: Added Rex worktree actions on Cmd+Shift+N/O/Backspace, leaving
   every Ctrl key to terminal programs. New branches from local `main` into a
   sibling checkout with one plain shell session; Open lists worktrees and local
@@ -283,8 +291,8 @@ expanded month by month. Full history lives in `git log`.
   and keeps the branch. Primary, dirty, locked, submodule, and mixed-session
   checkouts are refused. Sessions are found by terminal directory, and nothing
   is saved outside Git and Rex. Everything runs in Rex's own Lua runtime with
-  fzf prompts, tested against real Git with mocked sessions; the Rex guide has
-  a walkthrough for the end-to-end check.
+  fzf prompts, tested against real Git with mocked sessions; real shortcuts,
+  menu interaction, and shutdown still need an end-to-end check.
 - 20261023: Simplified the Rex guide into a manual setup flow with preview-era
   TODOs, and added a minimal Stow-managed `init.lua` for future supported config.
 - 20261022: Globally ignored local Claude `.claude/.cc-writes/` scratch output
