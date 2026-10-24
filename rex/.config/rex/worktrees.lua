@@ -107,15 +107,27 @@ function Workflow:worktrees()
 end
 function Workflow.new(args, r, menu)
   local self = setmetatable({ args = args, rex = r, menu = menu or Menu.new(r), attached = {} }, Workflow)
-  self.checkout = self:physical(line(self:git(args.directory, "rev-parse", "--show-toplevel")))
+  self.host = checked(r.call("server.status")).host_id
+  self.helper = r.session_id
+  local top, title = nil, "Projects: open a checkout or switch to its session"
+  if args.mode ~= "project" then
+    local ok, result = pcall(self.git, self, args.directory, "rev-parse", "--show-toplevel")
+    -- Deletion only ever targets the source terminal's own checkout.
+    if ok then top = result elseif not args.projects or args.mode == "delete" then error(result, 0) end
+    title = "Projects: this terminal is not in a Git checkout"
+  end
+  if not top then
+    local project = self:pick_project(title)
+    if not project.present then fail("Project directory is missing: " .. visible(project.path)) end
+    top = self:git(project.path, "rev-parse", "--show-toplevel")
+  end
+  self.checkout = self:physical(line(top))
   self.trees = self:worktrees()
   if not self.trees[1] or self.trees[1].bare then fail("A non-bare primary checkout is required") end
   self.primary = self.trees[1].path
   local registered = false
   for _, tree in ipairs(self.trees) do if tree.path == self.checkout then registered = true end end
   if not registered then fail("Current directory is not a registered worktree") end
-  self.host = checked(r.call("server.status")).host_id
-  self.helper = r.session_id
   return self
 end
 function Workflow:attach(session)
@@ -157,9 +169,9 @@ function Workflow:directories(session, strict)
   end
   return directories
 end
-function Workflow:associations()
+function Workflow:associate(paths)
   local live, matches, roots = self:sessions(), {}, {}
-  for _, tree in ipairs(self.trees) do matches[tree.path] = {}; table.insert(roots, tree.path) end
+  for _, path in ipairs(paths) do matches[path] = {}; table.insert(roots, path) end
   table.sort(roots, function(a, b) return #a > #b end)
   for session in pairs(live) do
     if session ~= self.helper then
@@ -184,32 +196,94 @@ function Workflow:associations()
   end
   return matches
 end
+function Workflow:associations()
+  local paths = {}
+  for _, tree in ipairs(self.trees) do table.insert(paths, tree.path) end
+  return self:associate(paths)
+end
+function Workflow:projects()
+  -- The configured list, in its own order; nothing is scanned or remembered.
+  local found, seen = {}, {}
+  for _, path in ipairs(self.args.projects or {}) do
+    if type(path) ~= "string" or path:sub(1, 1) ~= "/" then fail("Project paths must be absolute: " .. visible(path)) end
+    local present = self:is_directory(path)
+    local resolved = present and self:physical(path) or path
+    if not seen[resolved] then
+      seen[resolved] = true
+      table.insert(found, { path = resolved, name = basename(path) .. "  " .. path, present = present })
+    end
+  end
+  if #found == 0 then fail("No projects configured; list them in the projects table in init.lua") end
+  return found
+end
+function Workflow:pick_project(title)
+  local projects, paths = self:projects(), {}
+  for i, project in ipairs(projects) do paths[i] = project.path end
+  -- Open projects first, then closed ones; the source session's own project last.
+  local matches, groups = self:associate(paths), { {}, {}, {} }
+  for _, project in ipairs(projects) do
+    local sessions, group, status = matches[project.path], 2, "session closed"
+    if not project.present then status = "missing"
+    elseif sessions[self.args.source_session] then group, status = 3, "current session"
+    elseif count(sessions) > 0 then group, status = 1, "session open" end
+    table.insert(groups[group], { "[" .. status .. "] " .. project.name, project })
+  end
+  local choices = {}
+  for _, group in ipairs(groups) do
+    for _, choice in ipairs(group) do table.insert(choices, choice) end
+  end
+  return self.menu:pick(title, choices)
+end
 function Workflow:focus(session) self.rex.client.queue("session.select", { session_id = session }) end
 function Workflow:destroy(session)
   self:attach(session)
   checked(self.rex.call("session.destroy", { session_id = session }))
 end
+function Workflow:available(tree) return not tree.prunable and self:is_directory(tree.path) end
+function Workflow:create(tree)
+  -- The primary checkout's session is named after the project, e.g. `dev`.
+  local label = slug(self.rex, basename(self.primary))
+  if tree.path ~= self.primary then
+    local name = tree.branch ~= "" and tree.branch or "detached-" .. tree.HEAD:sub(1, 8)
+    label = label .. "-" .. slug(self.rex, name)
+  end
+  for _, existing in pairs(self:sessions()) do
+    if existing == label then label = label:sub(1, 119) .. "-" .. digest(self.rex, tree.path):sub(1, 8); break end
+  end
+  return checked(self.rex.call("session.create", {
+    label = label:sub(1, 128),
+    initial_windows = {{ layout = self.rex.layout.block{ flavor = TERMINAL .. ".shell", options = { cwd = tree.path } } }},
+  })).session_id
+end
 function Workflow:open_path(path)
   self.trees = self:worktrees()
   local tree
   for _, item in ipairs(self.trees) do if item.path == path then tree = item end end
-  if not tree or tree.prunable or not self:is_directory(path) then fail("Worktree unavailable; repair it with Git before reopening") end
+  if not tree or not self:available(tree) then fail("Worktree unavailable; repair it with Git before reopening") end
   local n, session = count(self:associations()[path])
   if n > 1 then fail("Several Rex sessions use this checkout; close duplicates before proceeding") end
-  if not session then
-    local name = tree.branch ~= "" and tree.branch or "detached-" .. tree.HEAD:sub(1, 8)
-    local label = slug(self.rex, basename(self.primary)) .. "-" .. slug(self.rex, name)
-    for _, existing in pairs(self:sessions()) do
-      if existing == label then label = label:sub(1, 119) .. "-" .. digest(self.rex, path):sub(1, 8); break end
-    end
-    session = checked(self.rex.call("session.create", {
-      label = label:sub(1, 128),
-      initial_windows = {{ layout = self.rex.layout.block{ flavor = TERMINAL .. ".shell", options = { cwd = path } } }},
-    })).session_id
-  end
+  session = session or self:create(tree)
   self:focus(session)
   return session
 end
+function Workflow:open_all()
+  -- Git's worktree list is the remembered set of spaces; create only missing sessions.
+  self.trees = self:worktrees()
+  local matches, failures, destination = self:associations(), {}
+  for _, tree in ipairs(self.trees) do
+    local n, session = count(matches[tree.path])
+    if n == 0 and self:available(tree) then
+      local ok, result = pcall(self.create, self, tree)
+      if ok then session = result else table.insert(failures, tree.path .. ": " .. tostring(result)) end
+    end
+    -- The primary is listed first, so its session is focused when it has one.
+    if n <= 1 and session and not destination then destination = session end
+  end
+  if #failures > 0 then fail("Could not open every worktree session:\n" .. table.concat(failures, "\n")) end
+  if destination then self:focus(destination) end
+  return destination
+end
+function Workflow:project() return self:open_path(self.checkout) end
 function Workflow:add_branch(branch, new)
   self:git(self.primary, "check-ref-format", "--branch", branch)
   self:git(self.primary, "check-ref-format", "refs/heads/" .. branch) -- no @{-1} expansion
@@ -232,19 +306,24 @@ function Workflow:add_branch(branch, new)
 end
 function Workflow:new_branch() return self:add_branch(self.menu:branch(), true) end
 function Workflow:open()
-  local matches, choices, checked_out = self:associations(), {}, {}
+  local matches, choices, checked_out, closed = self:associations(), {}, {}, 0
   for _, tree in ipairs(self.trees) do
     local branch = tree.branch ~= "" and tree.branch or "detached-" .. (tree.HEAD or ""):sub(1, 8)
     checked_out[tree.branch] = true
     local status = count(matches[tree.path]) > 0 and "session open" or "session closed"
+    if status == "session closed" and self:available(tree) then closed = closed + 1 end
     if tree.locked or tree.prunable then status = status .. "; locked/unavailable" end
     table.insert(choices, { "[worktree; " .. status .. "] " .. branch .. "  " .. tree.path, { path = tree.path } })
+  end
+  if closed > 1 then
+    table.insert(choices, { "[all worktrees] open " .. closed .. " closed sessions", { all = true } })
   end
   local branches = self:git(self.primary, "for-each-ref", "--format=%(refname:strip=2)", "refs/heads")
   for branch in branches:gmatch("[^\n]+") do
     if not checked_out[branch] then table.insert(choices, { "[branch only; create worktree] " .. branch, { branch = branch } }) end
   end
   local choice = self.menu:pick(basename(self.primary) .. ": worktrees and local branches", choices)
+  if choice.all then return self:open_all() end
   if choice.path then return self:open_path(choice.path) end
   return self:add_branch(choice.branch)
 end
@@ -301,11 +380,15 @@ M.cancelled = CANCEL
 
 function M.main(args, r, terminal)
   terminal = terminal or io
-  for _, name in ipairs({ "source_session", "source_block", "directory" }) do
+  -- The project picker needs no terminal directory; the others act on one.
+  local required = args.mode == "project" and { "source_session" } or { "source_session", "source_block", "directory" }
+  for _, name in ipairs(required) do
     if type(args[name]) ~= "string" or args[name] == "" then fail("Launch using the Rex worktree keybindings") end
   end
   if not r.session_id or r.session_id == args.source_session then fail("Launch using the Rex worktree keybindings") end
-  if args.mode ~= "new" and args.mode ~= "open" and args.mode ~= "delete" then fail("Invalid worktree action") end
+  local modes = { new = true, open = true, delete = true, project = true }
+  if not modes[args.mode] then fail("Invalid worktree action") end
+  if args.mode == "project" and type(args.projects) ~= "table" then fail("Launch using the Rex worktree keybindings") end
   local is_menu = false
   for _, session in ipairs(checked(r.call("session.list")).sessions or {}) do
     if session.session_id == r.session_id and session.label == "rex-worktrees-" .. args.mode then is_menu = true end
