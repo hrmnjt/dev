@@ -282,9 +282,12 @@ expanded month by month. Full history lives in `git log`.
   retaining branches. Guard primary/dirty/locked/submodule checkouts and mixed
   sessions. Keep both launcher and workflow in Rex's native Lua runtime, with
   native session APIs, fzf prompts, and macOS kernel-backed project locks; no
-  Python or standalone Lua dependency. Add disposable Git, mocked Lua, and
-  lock/process-death regressions. Appearance remains manual; live
-  key/menu/shutdown verification is pending.
+  Python or standalone Lua dependency. Skip unreadable terminals during discovery,
+  keep source-session deletion strict, print full errors until Enter, and rely
+  on non-force Git removal for the final cleanliness check. Verify fzf and stdin
+  in real Rex terminals; document RPC attachment requirements. Add disposable
+  Git, mocked Lua, and lock/process-death regressions. Appearance remains manual;
+  the Rex guide lists the remaining end-to-end checks.
 - 20261023: Simplified the Rex guide into a manual setup flow with preview-era
   TODOs, and added a minimal Stow-managed `init.lua` for future supported config.
 - 20261022: Globally ignored local Claude `.claude/.cc-writes/` scratch output

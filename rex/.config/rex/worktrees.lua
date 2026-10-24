@@ -42,7 +42,7 @@ local function slug(r, value)
   return name ~= "" and name or "worktree-" .. digest(r, value):sub(1, 8)
 end
 
--- macOS's lockf holds the same BSD flock as the former Python implementation.
+-- macOS's lockf holds an exclusive kernel-backed project lock.
 -- A stdin pipe keeps its command alive. EOF (including parent death) releases
 -- the kernel lock. Keep the inode (-k); never delete/recreate a live lock file.
 function M.acquire(r, path)
@@ -156,11 +156,14 @@ function Workflow.new(args, r, menu)
   self.host = checked(r.call("server.status")).host_id
   self.helper = r.session_id
   self.state_root = (args.state_home or os.getenv("XDG_STATE_HOME") or (assert(os.getenv("HOME")) .. "/.local/state")) .. "/rex-worktrees"
-  local key = digest(r, self.primary) -- retain compatibility with the existing path-to-ID map
+  local key = digest(r, self.primary) -- stable identity for this physical checkout
   self.state_file, self.lock_file = self.state_root .. "/" .. key .. ".json", self.state_root .. "/" .. key .. ".lock"
   return self
 end
 function Workflow:attach(session)
+  -- API revision 7 rejects view/block/destroy requests on an unattached RPC
+  -- stream with 409 "stream is not attached to session" (verified live).
+  -- Attach scopes this connection; it does not select or restore the UI session.
   if not self.attached[session] then
     checked(self.rex.session.attach{ session_id = session })
     self.attached[session] = true
@@ -177,7 +180,7 @@ function Workflow:process(session, block)
   self:attach(session)
   return checked(self.rex.block.call(TERMINAL, "process", { session_id = session, block_id = block }))
 end
-function Workflow:directories(session)
+function Workflow:directories(session, strict)
   self:attach(session)
   local view = checked(self.rex.session.view{ session_id = session })
   local directories = {}
@@ -187,8 +190,9 @@ function Workflow:directories(session)
         if block.host_id ~= self.host then
           table.insert(directories, false)
         elseif block.creator_name == TERMINAL then
-          local process = self:process(session, block.block_id)
-          table.insert(directories, (process.foreground or {}).cwd or (process.child or {}).cwd or false)
+          local ok, process = pcall(self.process, self, session, block.block_id)
+          if not ok and strict then error(process, 0) end
+          table.insert(directories, ok and ((process.foreground or {}).cwd or (process.child or {}).cwd) or false)
         end
       end
     end
@@ -239,16 +243,21 @@ function Workflow:associations()
   end
   for session in pairs(live) do
     if session ~= self.helper then
-      for _, directory in ipairs(self:directories(session)) do
+      -- Discovery is best-effort: a vanished session or inaccessible terminal
+      -- must not prevent New/Open elsewhere. Deletion validates its source strictly.
+      local readable, directories = pcall(self.directories, self, session)
+      for _, directory in ipairs(readable and directories or {}) do
         if directory then
-          directory = self:physical(directory)
-          for _, root in ipairs(roots) do
-            if inside(directory, root) then
-              local actual = self:physical(line(self:git(directory, "rev-parse", "--show-toplevel")))
-              if actual == root then matches[root][session] = true end
-              break
+          local ok, root = pcall(function()
+            local physical = self:physical(directory)
+            for _, candidate in ipairs(roots) do
+              if inside(physical, candidate) then
+                local actual = self:physical(line(self:git(physical, "rev-parse", "--show-toplevel")))
+                return actual == candidate and candidate or nil
+              end
             end
-          end
+          end)
+          if ok and root then matches[root][session] = true end
         end
       end
     end
@@ -342,7 +351,7 @@ function Workflow:validate_source()
   if self.helper == self.args.source_session then fail("Deletion requires a separate menu session") end
   local n, session = count(self:associations()[self.checkout])
   if n ~= 1 or session ~= self.args.source_session then fail("Source session missing or checkout has multiple sessions") end
-  local directories = self:directories(session)
+  local directories = self:directories(session, true)
   if #directories == 0 then fail("Source session has unknown terminal directories") end
   for _, directory in ipairs(directories) do
     if not directory or not inside(self:physical(directory), self.checkout) then
@@ -368,8 +377,9 @@ function Workflow:delete()
   self:guard()
   self:destroy(self.args.source_session)
   if self:sessions()[self.args.source_session] then fail("Rex session is still running; checkout was not removed") end
-  self:clean_target() -- shutdown may have written new files; retain those rather than force removal
   self:guard()
+  -- Git's non-force removal rechecks cleanliness/locks after programs stop.
+  -- Keep the earlier explicit submodule checks: Git allows uninitialized gitlinks.
   self:git(self.primary, "worktree", "remove", self.checkout)
   self.saved[self.checkout] = nil
   self:save()
@@ -377,7 +387,8 @@ end
 M.Workflow = Workflow
 M.cancelled = CANCEL
 
-function M.main(args, r)
+function M.main(args, r, terminal)
+  terminal = terminal or io
   for _, name in ipairs({ "source_session", "source_block", "directory" }) do
     if type(args[name]) ~= "string" or args[name] == "" then fail("Launch using the Rex worktree keybindings") end
   end
@@ -398,9 +409,17 @@ function M.main(args, r)
     end)
   end)
   if not ok and tostring(err) ~= CANCEL then
-    pcall(menu.pick, menu, "Stopped: " .. visible(err) .. ". Checkout/branch retained if removal failed; use Open to recover.", {{ "Close menu", true }})
+    -- Do not depend on fzf to display its own launch/render errors. Preserve
+    -- newlines, remove terminal controls, and keep this terminal until Enter.
+    local message = tostring(err):gsub("[%z\1-\8\11-\31\127]", "?")
+    terminal.write("\nWorktree action stopped:\n" .. message .. "\n\n")
+    terminal.write("If Git refused removal after closing the source session, its checkout remains; use Open to reopen it.\n")
+    terminal.write("Press Enter to close this menu.")
+    terminal.flush()
+    terminal.read("*l")
   end
   local function destroy_helper()
+    -- As above, even destruction needs this RPC stream attached to its target.
     checked(r.session.attach{ session_id = r.session_id })
     checked(r.call("session.destroy", { session_id = r.session_id }))
   end
