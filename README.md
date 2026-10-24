@@ -275,6 +275,11 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261025: Replaced the Rex Cmd+Shift+K project picker with two choices.
+  `[all projects]` opens a plain shell session for every listed project that
+  has none and leaves projects with open sessions alone. `[path]` takes a typed
+  Git checkout path and switches to or opens its session without adding it to
+  the list. Also fixed the binding fixture's stale one-project assumption.
 - 20261025: Added a Rex project picker on Cmd+Shift+K over a hand-kept
   `projects` table in `init.lua`. It lists open projects first and switches to
   their session or opens the checkout. From a terminal outside Git, such as
