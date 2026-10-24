@@ -277,6 +277,17 @@ Cmd+Shift+5 → copy screenshot → Ctrl+V
 Use a model that advertises image input. No sandbox mount or project-local
 screenshot copy is required.
 
+### Rex notifications — built-in
+
+Pi 1.3.0 reports working, blocked, done, error, and idle states natively using
+OSC 7501 after detecting terminal support. In Rex this drives activity
+indicators and program-activity notifications, without an extra extension or
+agent hooks. Completion is reported only after the full run settles; cancelling
+reports idle instead. Prompts and model output are never included.
+
+See [Rex Pi notifications](../rex/README.md#pi-notifications) for preferences,
+verification, and troubleshooting. No Pi settings-template change is required.
+
 ### Herdr integration
 
 [Herdr](https://herdr.dev/) provides persistent terminal workspaces and tracks
