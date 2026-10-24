@@ -46,7 +46,7 @@ local function worktree_menu(mode, ctx)
   if not ctx.session_id or not ctx.client_id then
     error("Run this action from a terminal in the local Rex app", 0)
   end
-  -- The project picker works from any pane; the worktree actions need its directory.
+  -- The project menu works from any pane; the worktree actions need its directory.
   local directory = mode ~= "project" and terminal_directory(ctx) or nil
   local home = assert(os.getenv("HOME"), "HOME is not set")
   local config = os.getenv("XDG_CONFIG_HOME") or (home .. "/.config")
@@ -89,7 +89,7 @@ for _, item in ipairs({
   { "new", "cmd+shift+n", "Create Worktree", "worktree_new" },
   { "open", "cmd+shift+o", "Open Worktree or Branch", "worktree_open" },
   { "delete", "cmd+shift+backspace", "Delete Current Worktree", "worktree_delete" },
-  { "project", "cmd+shift+k", "Open or Switch Project", "project_switch" },
+  { "project", "cmd+shift+k", "Open All Projects or a Path", "project_switch" },
 }) do
   local mode = item[1]
   rex.action{

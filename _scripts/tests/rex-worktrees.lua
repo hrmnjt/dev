@@ -54,7 +54,10 @@ for _, pair in ipairs({ {"new", "cmd+shift+n", "worktree_new"}, {"open", "cmd+sh
   assert(args.mode == pair[1] and args.source_session == "source" and args.source_block == "block")
   assert(args.directory == (pair[1] ~= "project" and wiring.directory or nil))
   if pair[1] == "delete" then assert(args.projects == nil, "delete never offers projects")
-  else assert(#args.projects == 1 and args.projects[1] == home .. "/code/github.com/hrmnjt/dev") end
+  else
+    assert(args.projects[1] == home .. "/code/github.com/hrmnjt/dev")
+    for _, path in ipairs(args.projects) do assert(path:sub(1, 1) == "/", "~/ must be expanded: " .. path) end
+  end
   assert(options.cwd ~= wiring.directory, "menu cannot occupy the deleted checkout")
   assert(options.exit.on_completion == false)
 end
@@ -110,6 +113,7 @@ end
 local function menu(branch, selection, confirm, hook)
   local ui = { name = branch or "feature-a", selection = selection or 1, confirm = confirm ~= false, hook = hook }
   function ui:branch() return self.name end
+  function ui:query() return assert(self.path, "unexpected path prompt") end
   function ui:pick(title, choices)
     if title:match("^Projects") then self.project_rows = choices; return choose(choices, self.project or 1) end
     self.rows = choices
@@ -534,21 +538,52 @@ test("delete outside Git fails without offering projects", function(f)
   fails(function() f:flow(f.root, ui, { mode = "delete", projects = { f.primary } }) end, "not a git repository")
   assert(not ui.project_rows and #f.server.killed == 0)
 end)
-test("project picker lists open projects first and switches without duplicates", function(f)
+test("outside Git, the project list shows open first and the current session last", function(f)
   local other, zeta = f:repo("host/owner/other"), f:repo("host/owner/zeta")
   f.server.live.other, f.server.paths.other = "renamed", {other}
-  local args = { mode = "project", projects = { f.primary, zeta, other } }
+  f.server.paths.source = {f.root, f.primary}
   local ui = menu(); ui.project = "other"
-  run(f:flow(nil, ui, args), function(flow) assert(flow:project() == "other") end)
+  run(f:flow(f.root, ui, { mode = "open", projects = { f.primary, zeta, other } }), function(flow)
+    assert(flow:open() == "other")
+  end)
   assert(labels(ui.project_rows) == "[session open] other  " .. other .. "\n[session closed] zeta  " .. zeta
     .. "\n[current session] repo with spaces  " .. f.primary, labels(ui.project_rows))
+  assert(#f.server.created == 0)
+end)
+test("open all projects creates only missing sessions and leaves focus alone", function(f)
+  local other, zeta = f:repo("host/owner/other"), f:repo("host/owner/zeta")
+  execute({ "/bin/mkdir", other .. "/sub", zeta .. "/sub" })
+  f.server.live.other, f.server.paths.other = "renamed", {other .. "/sub"}
+  f:source_at(f.root)
+  local args = { mode = "project", projects = { f.primary, zeta, zeta .. "/sub", other, f.root .. "/missing" } }
+  local ui = menu(); ui.project = "[all projects]"
+  fails(function() run(f:flow(nil, ui, args), function(flow) flow:project() end) end,
+    f.root .. "/missing: directory is missing")
+  contains(labels(ui.project_rows), "[path]")
+  local created = {}
+  for _, session in ipairs(f.server.created) do created[session.path] = session.label end
+  assert(#f.server.created == 2 and created[f.primary] == "repo-with-spaces" and created[zeta] == "zeta")
+  args.projects[5] = nil
+  run(f:flow(nil, menu(), args), function(flow) assert(flow:project() == "source") end)
+  assert(#f.server.created == 2 and #f.server.focused == 0)
+end)
+test("a typed path opens its checkout once and is never listed", function(f)
+  local other = f:repo("host/owner/other"); execute({ "/bin/mkdir", other .. "/sub" })
+  local args = { mode = "project", projects = { f.primary } }
   for _ = 1, 2 do
-    local again = menu(); again.project = "zeta"
-    run(f:flow(nil, again, args), function(flow) flow:project() end)
+    local ui = menu(); ui.project, ui.path = "[path]", other .. "/sub"
+    run(f:flow(nil, ui, args), function(flow) flow:project() end)
   end
   local created = f.server.created[1]
-  assert(#f.server.created == 1 and created.label == "zeta" and created.path == zeta)
-  assert(f.server.focused[#f.server.focused] == created.id and #f.server.created == 1)
+  assert(#f.server.created == 1 and created.label == "other" and created.path == other)
+  assert(#f.server.focused == 2 and f.server.focused[1] == created.id and f.server.focused[2] == created.id)
+  assert(#args.projects == 1)
+  for typed, text in pairs({ ["relative/path"] = "absolute or ~/", [f.root .. "/missing"] = "Directory not found",
+    ["~/.rex-worktrees-fixture-missing"] = home .. "/.rex-worktrees-fixture-missing", [f.root] = "Not a Git checkout" }) do
+    local ui = menu(); ui.project, ui.path = "[path]", typed
+    fails(function() run(f:flow(nil, ui, args), function(flow) flow:project() end) end, text)
+  end
+  assert(#f.server.created == 1)
 end)
 test("open all creates only missing worktree sessions and focuses the main checkout", function(f)
   local a, b, c = f:linked("feature-a"), f:linked("feature-b"), f:linked("feature-c")
@@ -573,15 +608,20 @@ test("open all reports sessions it could not create", function(f)
 end)
 test("project main action needs no terminal directory and closes only its menu", function(f)
   f.server.live.helper = "rex-worktrees-project"; f:source_at(f.root)
+  -- Open all projects, then type the same checkout's path.
+  local responses = { "1\t\0", "2\t\0", f.primary .. "\0Open path\0" }
   f.server.rex.exec = setmetatable({}, { __call = function(_, argv, options)
-    if argv[1] == "fzf" then return { ok = true, code = 0, stdout = "1\t\0", stderr = "" } end
+    if argv[1] == "fzf" then return { ok = true, code = 0, stdout = table.remove(responses, 1), stderr = "" } end
     return real.exec(argv, options)
   end })
   core.main({ mode = "project", source_session = "source", projects = { f.primary } }, f.server.rex)
   local created = f.server.created[1]
   assert(#f.server.created == 1 and created.path == f.primary and created.label == "repo-with-spaces")
   assert(#f.server.killed == 1 and f.server.killed[1] == "helper" and f.server.live.source)
-  assert(f.server.focused[#f.server.focused] == created.id)
+  assert(f.server.focused[#f.server.focused] == "source")
+  f.server.live.helper = "rex-worktrees-project"
+  core.main({ mode = "project", source_session = "source", projects = { f.primary } }, f.server.rex)
+  assert(#f.server.created == 1 and #responses == 0 and f.server.focused[#f.server.focused] == created.id)
   fails(function() core.main({ mode = "project", source_session = "source" }, f.server.rex) end, "keybindings")
 end)
 local passed = 0

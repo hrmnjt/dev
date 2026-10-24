@@ -51,13 +51,13 @@ function Menu:run(title, rows, extra)
   if not result.ok then fail("fzf failed: " .. visible(result.stderr or "")) end
   return result.stdout
 end
-function Menu:branch()
-  local output = self:run("New branch from local main; blank cancels", { "Create branch" },
-    { "--disabled", "--print-query" })
-  local branch = trim(output:match("^([^%z]*)") or "")
-  if branch == "" then fail(CANCEL) end
-  return branch
+function Menu:query(title, row)
+  local output = self:run(title, { row }, { "--disabled", "--print-query" })
+  local query = trim(output:match("^([^%z]*)") or "")
+  if query == "" then fail(CANCEL) end
+  return query
 end
+function Menu:branch() return self:query("New branch from local main; blank cancels", "Create branch") end
 function Menu:pick(title, choices)
   if #choices == 0 then fail("No choices available") end
   local rows = {}
@@ -109,18 +109,19 @@ function Workflow.new(args, r, menu)
   local self = setmetatable({ args = args, rex = r, menu = menu or Menu.new(r), attached = {} }, Workflow)
   self.host = checked(r.call("server.status")).host_id
   self.helper = r.session_id
-  local top, title = nil, "Projects: open a checkout or switch to its session"
-  if args.mode ~= "project" then
-    local ok, result = pcall(self.git, self, args.directory, "rev-parse", "--show-toplevel")
+  -- The project menu chooses its checkouts after the user picks an action.
+  if args.mode == "project" then return self end
+  local ok, top = pcall(self.git, self, args.directory, "rev-parse", "--show-toplevel")
+  if not ok then
     -- Deletion only ever targets the source terminal's own checkout.
-    if ok then top = result elseif not args.projects or args.mode == "delete" then error(result, 0) end
-    title = "Projects: this terminal is not in a Git checkout"
-  end
-  if not top then
-    local project = self:pick_project(title)
+    if not args.projects or args.mode == "delete" then error(top, 0) end
+    local project = self:pick_project("Projects: this terminal is not in a Git checkout")
     if not project.present then fail("Project directory is missing: " .. visible(project.path)) end
     top = self:git(project.path, "rev-parse", "--show-toplevel")
   end
+  return self:load(top)
+end
+function Workflow:load(top)
   self.checkout = self:physical(line(top))
   self.trees = self:worktrees()
   if not self.trees[1] or self.trees[1].bare then fail("A non-bare primary checkout is required") end
@@ -283,7 +284,52 @@ function Workflow:open_all()
   if destination then self:focus(destination) end
   return destination
 end
-function Workflow:project() return self:open_path(self.checkout) end
+function Workflow:project()
+  local choice = self.menu:pick("Projects: open every listed project, or type a path", {
+    { "[all projects] open a session for each listed project without one", "all" },
+    { "[path] type a Git checkout path to open; it is not added to the list", "path" },
+  })
+  if choice == "all" then return self:open_projects() end
+  return self:open_typed()
+end
+function Workflow:open_projects()
+  -- A project with any open session is left alone; focus returns to the source.
+  local checkouts, seen, failures = {}, {}, {}
+  for _, project in ipairs(self:projects()) do
+    local ok, result = pcall(function()
+      if not project.present then fail("directory is missing") end
+      return self:physical(line(self:git(project.path, "rev-parse", "--show-toplevel")))
+    end)
+    if not ok then table.insert(failures, project.path .. ": " .. tostring(result))
+    elseif not seen[result] then seen[result] = true; table.insert(checkouts, result) end
+  end
+  local matches = self:associate(checkouts)
+  for _, checkout in ipairs(checkouts) do
+    if count(matches[checkout]) == 0 then
+      local ok, err = pcall(function()
+        self:load(checkout)
+        for _, tree in ipairs(self.trees) do if tree.path == self.checkout then self:create(tree) end end
+      end)
+      if not ok then table.insert(failures, checkout .. ": " .. tostring(err)) end
+    end
+  end
+  if #failures > 0 then fail("Could not open every project session:\n" .. table.concat(failures, "\n")) end
+  return self.args.source_session
+end
+function Workflow:open_typed()
+  -- A one-off project: the path is used once and never saved.
+  local typed = self.menu:query("Git checkout path, absolute or ~/; not saved; blank cancels", "Open path")
+  local path = typed
+  if typed == "~" or typed:sub(1, 2) == "~/" then
+    path = checked(os.getenv("HOME"), "HOME is not set") .. typed:sub(2)
+  end
+  if path:sub(1, 1) ~= "/" then fail("Type an absolute or ~/ path: " .. visible(typed)) end
+  if not self:is_directory(path) then fail("Directory not found: " .. visible(path)) end
+  local ok, top = pcall(self.git, self, path, "rev-parse", "--show-toplevel")
+  if not ok then fail("Not a Git checkout: " .. visible(path)) end
+  self:load(top)
+  return self:open_path(self.checkout)
+end
 function Workflow:add_branch(branch, new)
   self:git(self.primary, "check-ref-format", "--branch", branch)
   self:git(self.primary, "check-ref-format", "refs/heads/" .. branch) -- no @{-1} expansion

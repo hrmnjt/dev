@@ -92,7 +92,7 @@ Actions also appear under **Worktrees** in the **Cmd+Shift+P** command palette.
 
 | Key | Action |
 | --- | --- |
-| **Cmd+Shift+K** | Pick a project from your list; switch to its open session or open its checkout. Works from any pane. |
+| **Cmd+Shift+K** | Open a session for every listed project that has none, or type a checkout path to open as a one-off project. Works from any pane. |
 | **Cmd+Shift+N** | Enter a branch name; create it from **local `main`**, then open its worktree in a new session. No fetch. |
 | **Cmd+Shift+O** | Search worktrees and local branches; focus an open session, reopen a closed one, or create the missing worktree/session. |
 | **Cmd+Shift+Backspace** | Confirm stopping all programs in the session and removing its worktree. Keep the branch. |
@@ -121,15 +121,23 @@ local projects = {
 }
 ```
 
-List primary checkouts with absolute or `~/` paths, then check and reload. The
-picker lists open projects first and the current one last, so **Cmd+Shift+K**
-then Enter switches to another open project. Missing directories show as
-`[missing]`.
+List primary checkouts with absolute or `~/` paths, then check and reload.
+**Cmd+Shift+K** offers two rows:
+
+- `[all projects]` gives each listed project without a session a plain shell
+  session in its checkout. A project with any open session, even in a
+  subdirectory, is left alone, and focus returns to where you were. Missing or
+  non-Git entries are reported after the rest open.
+- `[path]` asks for an absolute or `~/` path inside a Git checkout, then
+  switches to that checkout's session or opens one. The path is used once and
+  never added to the list.
 
 From a terminal outside any Git checkout, such as after a Rex restart,
-**Cmd+Shift+N** and **Cmd+Shift+O** ask for the project first. When two or more
-worktrees have no session, Open's `[all worktrees]` row gives each one a plain
-shell session and focuses the primary checkout.
+**Cmd+Shift+N** and **Cmd+Shift+O** ask for the project first. That list shows
+open projects first and the current one last; missing directories show as
+`[missing]`. When two or more worktrees have no session, Open's
+`[all worktrees]` row gives each one a plain shell session and focuses the
+primary checkout.
 
 ### Safety and recovery
 
