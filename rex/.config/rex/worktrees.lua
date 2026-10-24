@@ -19,13 +19,6 @@ local function count(set)
   for key in pairs(set) do n, last = n + 1, key end
   return n, last
 end
-local function read(path)
-  local file = io.open(path, "r")
-  if not file then return nil end
-  local data = file:read("*a")
-  file:close()
-  return data
-end
 local function execute(r, argv, options)
   local result = checked(r.exec(argv, options or { timeout = 120 }))
   if not result.ok then
@@ -145,7 +138,7 @@ function Workflow:worktrees()
   return records
 end
 function Workflow.new(args, r, menu)
-  local self = setmetatable({ args = args, rex = r, menu = menu or Menu.new(r), attached = {}, saved = {} }, Workflow)
+  local self = setmetatable({ args = args, rex = r, menu = menu or Menu.new(r), attached = {} }, Workflow)
   self.checkout = self:physical(line(self:git(args.directory, "rev-parse", "--show-toplevel")))
   self.trees = self:worktrees()
   if not self.trees[1] or self.trees[1].bare then fail("A non-bare primary checkout is required") end
@@ -156,8 +149,8 @@ function Workflow.new(args, r, menu)
   self.host = checked(r.call("server.status")).host_id
   self.helper = r.session_id
   self.state_root = (args.state_home or os.getenv("XDG_STATE_HOME") or (assert(os.getenv("HOME")) .. "/.local/state")) .. "/rex-worktrees"
-  local key = digest(r, self.primary) -- stable identity for this physical checkout
-  self.state_file, self.lock_file = self.state_root .. "/" .. key .. ".json", self.state_root .. "/" .. key .. ".lock"
+  -- One lock per physical checkout, so every worktree of a project shares it.
+  self.lock_file = self.state_root .. "/" .. digest(r, self.primary) .. ".lock"
   return self
 end
 function Workflow:attach(session)
@@ -203,15 +196,7 @@ function Workflow:with_lock(fn)
   execute(self.rex, { "/bin/mkdir", "-p", "-m", "700", self.state_root })
   local lock = M.acquire(self.rex, self.lock_file)
   self.lock = lock
-  local ok, result = pcall(function()
-    local data = self:exists(self.state_file) and checked(read(self.state_file), "Cannot read session state; refusing to guess")
-    self.saved = data and checked(self.rex.json.decode(data)) or {}
-    if type(self.saved) ~= "table" then fail("Invalid worktree session state; refusing to guess") end
-    for path, session in pairs(self.saved) do
-      if type(path) ~= "string" or type(session) ~= "string" then fail("Invalid worktree session state; refusing to guess") end
-    end
-    return fn()
-  end)
+  local ok, result = pcall(fn)
   lock.release()
   self.lock = nil
   if not ok then error(result, 0) end
@@ -220,27 +205,10 @@ end
 function Workflow:guard()
   if not self.lock or not self.lock.alive() then fail("Project lock was lost; no further changes allowed") end
 end
-function Workflow:save()
-  self:guard()
-  local temp = line(execute(self.rex, { "/usr/bin/mktemp", self.state_file .. ".XXXXXX" }))
-  local ok, err = pcall(function()
-    local file = checked(io.open(temp, "w"))
-    local data = checked(self.rex.json.encode(self.saved))
-    local written, message = file:write(data)
-    file:close()
-    checked(written, message)
-    checked(os.rename(temp, self.state_file))
-  end)
-  os.remove(temp)
-  if not ok then error(err, 0) end
-end
 function Workflow:associations()
   local live, matches, roots = self:sessions(), {}, {}
   for _, tree in ipairs(self.trees) do matches[tree.path] = {}; table.insert(roots, tree.path) end
   table.sort(roots, function(a, b) return #a > #b end)
-  for path, session in pairs(self.saved) do
-    if live[session] and matches[path] and session ~= self.helper then matches[path][session] = true end
-  end
   for session in pairs(live) do
     if session ~= self.helper then
       -- Discovery is best-effort: a vanished session or inaccessible terminal
@@ -288,8 +256,6 @@ function Workflow:open_path(path)
       initial_windows = {{ layout = self.rex.layout.block{ flavor = TERMINAL .. ".shell", options = { cwd = path } } }},
     })).session_id
   end
-  self.saved[path] = session
-  self:save() -- remember the ID before focusing, even if the client rejects selection
   self:focus(session)
   return session
 end
@@ -381,8 +347,6 @@ function Workflow:delete()
   -- Git's non-force removal rechecks cleanliness/locks after programs stop.
   -- Keep the earlier explicit submodule checks: Git allows uninitialized gitlinks.
   self:git(self.primary, "worktree", "remove", self.checkout)
-  self.saved[self.checkout] = nil
-  self:save()
 end
 M.Workflow = Workflow
 M.cancelled = CANCEL
