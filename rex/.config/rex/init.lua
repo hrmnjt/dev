@@ -5,6 +5,10 @@
 -- primary checkouts in the order you want them; `~/` is your home directory.
 local projects = {
   "~/code/github.com/hrmnjt/dev",
+  "~/code/github.com/hrmnjt/sttp",
+  "~/code/github.com/hrmnjt/worklog",
+  "~/code/github.com/hrmnjt/assistant",
+  "~/code/work/doh/CoreDataEngineering",
 }
 
 local function checked(value, err)
