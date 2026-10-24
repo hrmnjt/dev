@@ -281,10 +281,10 @@ expanded month by month. Full history lives in `git log`.
   branches and focuses, reopens, or creates their sessions; Delete confirms
   stopping the session's programs, then removes the checkout without `--force`
   and keeps the branch. Primary, dirty, locked, submodule, and mixed-session
-  checkouts are refused. Sessions are found by terminal directory with no saved
-  map, and a `lockf` project lock prevents overlapping menus. Everything runs in
-  Rex's own Lua runtime with fzf prompts, tested against real Git with mocked
-  sessions; the Rex guide has a walkthrough for the end-to-end check.
+  checkouts are refused. Sessions are found by terminal directory, and nothing
+  is saved outside Git and Rex. Everything runs in Rex's own Lua runtime with
+  fzf prompts, tested against real Git with mocked sessions; the Rex guide has
+  a walkthrough for the end-to-end check.
 - 20261023: Simplified the Rex guide into a manual setup flow with preview-era
   TODOs, and added a minimal Stow-managed `init.lua` for future supported config.
 - 20261022: Globally ignored local Claude `.claude/.cc-writes/` scratch output
