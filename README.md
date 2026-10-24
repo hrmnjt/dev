@@ -275,20 +275,16 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
-- 20261023: Added Rex Ctrl+B → Shift+G/O/D worktree actions with a temporary
-  fzf menu, local-main branch creation, hyphenated checkout/session names, and
-  one plain shell tab per worktree. Reuse sessions, list existing worktrees and
-  local branches, and confirm stopping programs before non-force removal while
-  retaining branches. Guard primary/dirty/locked/submodule checkouts and mixed
-  sessions. Keep both launcher and workflow in Rex's native Lua runtime, with
-  native session APIs, fzf prompts, and macOS kernel-backed project locks; no
-  Python or standalone Lua dependency. Find sessions by terminal directory
-  without a saved session map. Skip unreadable terminals during discovery,
-  keep source-session deletion strict, print full errors until Enter, and rely
-  on non-force Git removal for the final cleanliness check. Verify fzf and stdin
-  in real Rex terminals; document RPC attachment requirements. Add disposable
-  Git, mocked Lua, and lock/process-death regressions. Appearance remains manual;
-  the Rex guide lists the remaining end-to-end checks.
+- 20261023: Added Rex worktree actions on Cmd+Shift+N/O/Backspace, leaving
+  every Ctrl key to terminal programs. New branches from local `main` into a
+  sibling checkout with one plain shell session; Open lists worktrees and local
+  branches and focuses, reopens, or creates their sessions; Delete confirms
+  stopping the session's programs, then removes the checkout without `--force`
+  and keeps the branch. Primary, dirty, locked, submodule, and mixed-session
+  checkouts are refused. Sessions are found by terminal directory with no saved
+  map, and a `lockf` project lock prevents overlapping menus. Everything runs in
+  Rex's own Lua runtime with fzf prompts, tested against real Git with mocked
+  sessions.
 - 20261023: Simplified the Rex guide into a manual setup flow with preview-era
   TODOs, and added a minimal Stow-managed `init.lua` for future supported config.
 - 20261022: Globally ignored local Claude `.claude/.cc-writes/` scratch output
