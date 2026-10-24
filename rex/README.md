@@ -84,14 +84,21 @@ hooks, or `jq` are needed. Enable Rex's **Remote Control** permission for
 script-driven session selection. This macOS workflow uses the system `lockf`
 and `shasum` utilities for a per-project lock.
 
-Press **Ctrl+B**, release it, then the second key:
+Each action is one shortcut, and is also listed under **Worktrees** in the
+command palette (**Cmd+Shift+P**):
 
 | Key | Action |
 | --- | --- |
-| **Shift+G** | Enter a new Git branch name; create it from **local `main`**, then create its worktree and open a session. No fetch. |
-| **Shift+O** | Search existing worktrees and local branches with `fzf`; focus an open session, reopen a closed one, or create the missing worktree/session. |
-| **Shift+D** | Confirm stopping all programs in the current session and removing its worktree. Keep the branch. |
-| **Ctrl+B** | Send one Ctrl+B to the terminal. |
+| **Cmd+Shift+N** | Enter a new Git branch name; create it from **local `main`**, then create its worktree and open a session. No fetch. |
+| **Cmd+Shift+O** | Search existing worktrees and local branches with `fzf`; focus an open session, reopen a closed one, or create the missing worktree/session. |
+| **Cmd+Shift+Backspace** | Confirm stopping all programs in the current session and removing its worktree. Keep the branch. |
+
+Rex handles Cmd shortcuts itself, so every Ctrl key still reaches the shell,
+Neovim, and Pi. Switch between open worktree sessions with Rex's own **Cmd+K**
+session picker. A binding replaces any Rex default on the same key, and
+`rex keymap` lists only configured bindings, not the app's defaults. Before
+the first reload, press each shortcut in a plain shell to confirm Rex does
+nothing with it; if one is taken, pick another key in `init.lua`.
 
 For example, branch `feature-a` in `dev` gets sibling directory
 `../dev-feature-a` and session `dev-feature-a`. Branch names are preserved;
@@ -128,7 +135,7 @@ Safety and recovery:
   programs. Then stop the source session **before** asking Git to remove the
   checkout, without `--force`. Git's removal checks protect files written during
   shutdown and newly locked worktrees. If Git refuses, the checkout and branch
-  remain, though the session may already be closed. Use **Shift+O** to reopen it.
+  remain, though the session may already be closed. Use Open (**Cmd+Shift+O**) to reopen it.
   A session-creation failure likewise leaves a recoverable worktree.
 - Hold a project lock under `${XDG_STATE_HOME:-~/.local/state}/rex-worktrees/`,
   outside the repository, so two menus never change one project at once.
@@ -170,7 +177,7 @@ Live checks on Rex build `623b2d` (API revision 7):
   scoping, not switching the visible session. The helper documents that
   requirement and caches attachments per connection.
 
-The temporary probe sessions were removed. Prefix key handling, the complete
+The temporary probe sessions were removed. The shortcuts, the complete
 New/Open/Delete workflow, and real program shutdown still need an interactive
 check after deploying and reloading; the prompt probes alone do not verify them.
 

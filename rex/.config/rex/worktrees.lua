@@ -265,7 +265,7 @@ function Workflow:add_branch(branch, new)
   self.trees = self:worktrees()
   for _, tree in ipairs(self.trees) do
     if tree.branch == branch then
-      if new then fail("Branch already exists; use Ctrl+B then Shift+O") end
+      if new then fail("Branch already exists; use Open (Cmd+Shift+O)") end
       return self:open_path(tree.path)
     end
   end

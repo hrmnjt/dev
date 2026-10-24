@@ -45,9 +45,9 @@ rex = {
 dofile(root .. "/rex/.config/rex/init.lua")
 assert(#wiring.created == 0 and #wiring.queued == 0, "config load must have no side effects")
 local context = { session_id = "source", block_id = "block", client_id = "client" }
-for _, pair in ipairs({ {"new", "g"}, {"open", "o"}, {"delete", "d"} }) do
+for _, pair in ipairs({ {"new", "cmd+shift+n"}, {"open", "cmd+shift+o"}, {"delete", "cmd+shift+backspace"} }) do
   local action = "worktree_" .. pair[1]
-  assert(wiring.bindings["ctrl+b>shift+" .. pair[2]].action == action)
+  assert(wiring.bindings[pair[2]].action == action)
   wiring.actions[action].run(context)
   local menu = wiring.created[#wiring.created]
   assert(menu.label == "rex-worktrees-" .. pair[1] and #menu.initial_windows == 1)
@@ -63,8 +63,12 @@ for _, pair in ipairs({ {"new", "g"}, {"open", "o"}, {"delete", "d"} }) do
   assert(options.exit.on_completion == false)
 end
 assert(#wiring.queued == 3)
-assert(wiring.bindings["ctrl+b>ctrl+b"].action == "pane.send_key")
-assert(wiring.bindings["ctrl+b>ctrl+b"].args.key == "ctrl+b")
+local bound = 0
+for key in pairs(wiring.bindings) do
+  bound = bound + 1
+  assert(not key:find("ctrl", 1, true), "leave Ctrl keys to terminal programs: " .. key)
+end
+assert(bound == 3)
 local function refused(ctx)
   local before = #wiring.created
   assert(not pcall(wiring.actions.worktree_delete.run, ctx))
@@ -76,7 +80,7 @@ wiring.host, wiring.directory = "local", nil; refused(context)
 wiring.directory, wiring.deployed = "/repo with spaces", false; refused(context)
 rex, io.open = real, real_open
 local core = dofile(root .. "/rex/.config/rex/worktrees.lua")
-if not fixture_root then return { ok = true, actions = 3, rejected_contexts = 4, bindings = 4 } end
+if not fixture_root then return { ok = true, actions = 3, rejected_contexts = 4, bindings = 3 } end
 
 local function execute(argv, options)
   local result = assert(real.exec(argv, options))
@@ -502,4 +506,4 @@ for _, item in ipairs(tests) do
   passed = passed + 1
   print("PASS " .. item[1])
 end
-return { ok = true, lifecycle_tests = passed, actions = 3, bindings = 4, rejected_contexts = 4 }
+return { ok = true, lifecycle_tests = passed, actions = 3, bindings = 3, rejected_contexts = 4 }

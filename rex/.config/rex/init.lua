@@ -59,10 +59,11 @@ local function worktree_menu(mode, ctx)
   rex.client.queue("session.select", { session_id = menu.session_id })
 end
 
+-- Cmd shortcuts never reach terminal programs, so every Ctrl key stays theirs.
 for _, item in ipairs({
-  { "new", "g", "Create Worktree" },
-  { "open", "o", "Open Worktree or Branch" },
-  { "delete", "d", "Delete Current Worktree" },
+  { "new", "cmd+shift+n", "Create Worktree" },
+  { "open", "cmd+shift+o", "Open Worktree or Branch" },
+  { "delete", "cmd+shift+backspace", "Delete Current Worktree" },
 }) do
   local mode = item[1]
   local action = "worktree_" .. mode
@@ -70,7 +71,5 @@ for _, item in ipairs({
     name = action, title = item[3], category = "Worktrees",
     run = function(ctx) worktree_menu(mode, ctx) end,
   }
-  rex.bind("ctrl+b>shift+" .. item[2], action)
+  rex.bind(item[2], action)
 end
--- Ctrl+B starts a sequence; press it twice to send Ctrl+B to the terminal.
-rex.bind("ctrl+b>ctrl+b", "pane.send_key", { key = "ctrl+b" })
