@@ -92,7 +92,7 @@ outer.right = 10
 # a fallback while you are learning.
 #
 # Workspace map used by this config:
-#   1 = Ghostty / shell
+#   1 = Rex / Ghostty / shell
 #   2 = Obsidian
 #   3 = Brave
 #   4 = Outlook PWA
@@ -243,6 +243,11 @@ backspace = ['close-all-windows-but-current', 'mode main']
 #   aerospace list-apps
 #
 # Then update the `if.app-id` value and reload with alt-shift-r.
+
+# Rex: terminal / agents / shell -> workspace 1.
+[[on-window-detected]]
+if.app-id = 'com.superlogical.rex'
+run = 'move-node-to-workspace 1'
 
 # Ghostty: terminal / agents / shell -> workspace 1.
 [[on-window-detected]]
