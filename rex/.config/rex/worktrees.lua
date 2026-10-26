@@ -57,7 +57,7 @@ function Menu:query(title, row)
   if query == "" then fail(CANCEL) end
   return query
 end
-function Menu:branch() return self:query("New branch from local main; blank cancels", "Create branch") end
+function Menu:branch() return self:query("Track matching remote branch, otherwise local main; no fetch; blank cancels", "Create branch") end
 function Menu:pick(title, choices)
   if #choices == 0 then fail("No choices available") end
   local rows = {}
@@ -330,6 +330,27 @@ function Workflow:open_typed()
   self:load(top)
   return self:open_path(self.checkout)
 end
+function Workflow:remote_branch(branch)
+  -- Only already-fetched, non-symbolic refs count. Match the whole branch name,
+  -- not a suffix, and never guess between remotes (including origin).
+  local refs = {}
+  local raw = self:git(self.primary, "for-each-ref", "--format=%(refname)%09%(symref)", "refs/remotes")
+  for row in raw:gmatch("[^\n]+") do
+    local ref = row:match("^([^\t]+)\t$")
+    if ref then refs[ref] = true end
+  end
+  local matches = {}
+  local remotes = self:git(self.primary, "remote")
+  for remote in remotes:gmatch("[^\n]+") do
+    local ref = "refs/remotes/" .. remote .. "/" .. branch
+    if refs[ref] then table.insert(matches, ref) end
+  end
+  if #matches > 1 then
+    fail("Branch matches several remotes: " .. table.concat(matches, ", ")
+      .. ". Create its tracking branch with Git, then use Open (Cmd+Shift+O)")
+  end
+  return matches[1]
+end
 function Workflow:add_branch(branch, new)
   self:git(self.primary, "check-ref-format", "--branch", branch)
   self:git(self.primary, "check-ref-format", "refs/heads/" .. branch) -- no @{-1} expansion
@@ -343,8 +364,13 @@ function Workflow:add_branch(branch, new)
   local path = parent(self.primary) .. "/" .. slug(self.rex, basename(self.primary)) .. "-" .. slug(self.rex, branch)
   if self:exists(path) then fail("Directory already exists; will not overwrite it: " .. visible(path)) end
   if new then
-    self:git(self.primary, "show-ref", "--verify", "refs/heads/main")
-    self:git(self.primary, "worktree", "add", "-b", branch, path, "main")
+    local remote = self:remote_branch(branch)
+    if remote then
+      self:git(self.primary, "worktree", "add", "--track", "-b", branch, path, remote)
+    else
+      self:git(self.primary, "show-ref", "--verify", "refs/heads/main")
+      self:git(self.primary, "worktree", "add", "-b", branch, path, "main")
+    end
   else
     self:git(self.primary, "worktree", "add", path, branch)
   end

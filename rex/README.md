@@ -93,7 +93,7 @@ Actions also appear under **Worktrees** in the **Cmd+Shift+P** command palette.
 | Key | Action |
 | --- | --- |
 | **Cmd+Shift+K** | Open a session for every listed project that has none, or type a checkout path to open as a one-off project. Works from any pane. |
-| **Cmd+Shift+N** | Enter a branch name; create it from **local `main`**, then open its worktree in a new session. No fetch. |
+| **Cmd+Shift+N** | Enter a branch name; track a matching fetched remote branch, otherwise create it from **local `main`**. Open its worktree in a new session. No fetch. |
 | **Cmd+Shift+O** | Search worktrees and local branches; focus an open session, reopen a closed one, or create the missing worktree/session. |
 | **Cmd+Shift+Backspace** | Confirm stopping all programs in the session and removing its worktree. Keep the branch. |
 | **Cmd+K** | Switch between Rex sessions. |
@@ -105,6 +105,12 @@ Worktrees are siblings of the primary checkout: branch `feat/rex/example` in
 `dev` gets directory/session name `dev-feat-rex-example`, and the primary
 checkout's own session is named `dev`. New sessions contain one ordinary shell
 tab; Pi does not start automatically.
+
+New matches the full branch name: `feat/example` uses `origin/feat/example`
+(or the sole matching remote) and sets it as the upstream. Multiple matching
+remotes stop the action instead of guessing or falling back to `main`. Fetch
+first if the branch is not known locally. Existing local branches are never
+reset; use **Cmd+Shift+O** to open them.
 
 Prompts use `fzf` in a temporary menu session. Type to search, use arrows and
 Enter to select, or Esc/Ctrl+C to cancel. Errors wait for Enter before closing.
