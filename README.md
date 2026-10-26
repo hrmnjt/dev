@@ -275,6 +275,8 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261026: Routed Rex windows to AeroSpace workspace 1 (`option-1`), alongside
+  Ghostty.
 - 20261025: Replaced the Rex Cmd+Shift+K project picker with two choices.
   `[all projects]` opens a plain shell session for every listed project that
   has none and leaves projects with open sessions alone. `[path]` takes a typed
