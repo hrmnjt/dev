@@ -275,6 +275,10 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261026: Made Rex New worktree track an exact, already-fetched remote branch
+  match instead of branching from local `main`. Keep `main` as the no-match
+  fallback, refuse ambiguous remotes, and never fetch or reset existing branches.
+  Added disposable real-Git regression coverage.
 - 20261026: Routed Rex windows to AeroSpace workspace 1 (`option-1`), alongside
   Ghostty.
 - 20261025: Replaced the Rex Cmd+Shift+K project picker with two choices.
