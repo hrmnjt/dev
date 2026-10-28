@@ -20,6 +20,10 @@ gives the same file higher priority; organization-managed settings still win.
 ## Configuration
 
 - Opus, with saved `xhigh` effort for `claude-opus-5-5`.
+- Auto permission mode by default (`permissions.defaultMode: "auto"`), using
+  Claude Code's classifier for approval decisions rather than bypassing checks.
+  Requires auto mode to be available for the session; CLI flags and higher-priority
+  settings can override this global default.
 - Native Gruvbox Dark Hard; Ghostty owns the terminal background.
 - Host personal/work Git identity, no Mac attribution, Remote Control mobile
   notifications, and Herdr's generated `~/.claude/hooks/herdr-agent-state.sh`.
@@ -57,4 +61,5 @@ name helps align work with `AGENTS.md` conventions; naming instructions are not
 enforcement. The PR head is separate from a local branch rename.
 
 References: [settings](https://code.claude.com/docs/en/settings),
+[permission modes](https://code.claude.com/docs/en/permission-modes),
 [palette](../GRUVBOX.md), [web environments](https://code.claude.com/docs/en/cloud-environments).

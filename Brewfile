@@ -67,6 +67,8 @@ brew "herdr"
 cask "codex"
 # Anthropic coding agent CLI (settings deployed from claude/)
 cask "claude-code"
+# Claude desktop app
+cask "claude"
 # Terminal
 cask "ghostty"
 

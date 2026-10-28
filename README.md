@@ -275,6 +275,11 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261028: Routed Claude, ChatGPT, and Microsoft 365 Copilot windows to AeroSpace
+  workspace 10 (`option-0`), alongside Zed.
+- 20261028: Made auto mode the Claude Code global default, preserving outside-read
+  blocking and mandatory Bash sandboxing without unsandboxed retries.
+- 20261028: Added the Claude desktop app cask to the Brewfile alongside Claude Code.
 - 20261028: Grouped Rex worktrees as named tabs in one session per project,
   leaving panes for programs. New/Open and bulk reopening reuse the project
   session; Delete closes only the target worktree tab, preserving sibling tabs

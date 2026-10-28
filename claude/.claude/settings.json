@@ -11,7 +11,7 @@
     "sessionUrl": false
   },
   "permissions": {
-    "defaultMode": "acceptEdits",
+    "defaultMode": "auto",
     "blockReadsOutsideWorkingDirectories": true
   },
   "model": "opus",
