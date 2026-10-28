@@ -90,21 +90,26 @@ Requires a local Rex terminal, Git, and `fzf` on PATH (`fzf` is in Brewfile).
 Enable Rex's **Remote Control** permission for script-driven session selection.
 Actions also appear under **Worktrees** in the **Cmd+Shift+P** command palette.
 
+Use **one session per project → one tab per worktree → panes for programs**.
+Rex's CLI/API calls tabs “windows”; these are not separate macOS windows.
+
 | Key | Action |
 | --- | --- |
 | **Cmd+Shift+K** | Open a session for every listed project that has none, or type a checkout path to open as a one-off project. Works from any pane. |
-| **Cmd+Shift+N** | Enter a branch name; track a matching fetched remote branch, otherwise create it from **local `main`**. Open its worktree in a new session. No fetch. |
-| **Cmd+Shift+O** | Search worktrees and local branches; focus an open session, reopen a closed one, or create the missing worktree/session. |
-| **Cmd+Shift+Backspace** | Confirm stopping all programs in the session and removing its worktree. Keep the branch. |
+| **Cmd+Shift+N** | Enter a branch name; track a matching fetched remote branch, otherwise create it from **local `main`**. Open its worktree in a tab in the project's session. No fetch. |
+| **Cmd+Shift+O** | Search worktrees and local branches; focus an open tab, reopen a closed one, or create the missing worktree/tab. |
+| **Cmd+Shift+Backspace** | Confirm stopping all programs in the worktree's tab and removing its checkout. Other tabs stay open. Keep the branch. |
 | **Cmd+K** | Switch between Rex sessions. |
 
 Every Ctrl key still reaches the shell, Neovim, and Pi. Custom bindings live in
 `init.lua`; `rex keymap` lists configured bindings, not Rex's app defaults.
 
 Worktrees are siblings of the primary checkout: branch `feat/rex/example` in
-`dev` gets directory/session name `dev-feat-rex-example`, and the primary
-checkout's own session is named `dev`. New sessions contain one ordinary shell
-tab; Pi does not start automatically.
+`dev` gets directory `dev-feat-rex-example` and tab `feat/rex/example` inside
+session `dev`. The primary checkout gets a tab named after its branch, usually
+`main`. Each new tab starts one ordinary shell; split it into panes as needed.
+Pi does not start automatically. Session and tab labels can be renamed: terminal
+directories, not labels, identify the project and worktree.
 
 New matches the full branch name: `feat/example` uses `origin/feat/example`
 (or the sole matching remote) and sets it as the upstream. Multiple matching
@@ -131,46 +136,64 @@ List primary checkouts with absolute or `~/` paths, then check and reload.
 **Cmd+Shift+K** offers two rows:
 
 - `[all projects]` gives each listed project without a session a plain shell
-  session in its checkout. A project with any open session, even in a
-  subdirectory, is left alone, and focus returns to where you were. Missing or
-  non-Git entries are reported after the rest open.
+  session in its primary checkout. A project with any open worktree tab, even
+  in a subdirectory or an old session, is left alone, and focus returns to where
+  you were. Missing or non-Git entries are reported after the rest open.
 - `[path]` asks for an absolute or `~/` path inside a Git checkout, then
-  switches to that checkout's session or opens one. The path is used once and
-  never added to the list.
+  switches to that checkout's tab or opens it in the project's session. The path
+  is used once and never added to the list.
 
 From a terminal outside any Git checkout, such as after a Rex restart,
 **Cmd+Shift+N** and **Cmd+Shift+O** ask for the project first. That list shows
 open projects first and the current one last; missing directories show as
-`[missing]`. When two or more worktrees have no session, Open's
-`[all worktrees]` row gives each one a plain shell session and focuses the
-primary checkout.
+`[missing]`. When two or more worktrees have no tab, Open's
+`[all worktrees]` row gives each one a plain shell tab in the project's session
+and focuses the primary checkout.
 
 ### Safety and recovery
 
 - The focused terminal's directory determines the repository; outside Git, New
-  and Open use the chosen project. Remote terminals are refused; sessions are
-  found by terminal directory, not label.
+  and Open use the chosen project. Remote terminals are refused; sessions and
+  tabs are found by terminal directory, not label.
 - Delete only acts on the focused terminal's own worktree and never offers the
   project picker. It refuses primary, dirty, locked, submodule, and
-  mixed-directory session checkouts, and never uses `--force` or deletes a
-  branch. Ignored files follow normal Git worktree-removal behavior.
-- Delete stops the session's programs **before** Git removes the checkout. If Git
-  refuses removal, the checkout and branch remain, but the session may be closed.
-  Use **Cmd+Shift+O** to reopen it.
+  mixed-directory tabs, duplicate worktree tabs, and unknown/remote blocks in
+  the target tab. It never uses `--force` or deletes a branch. Ignored files
+  follow normal Git worktree-removal behavior.
+- Delete stops only the target tab's programs **before** Git removes the checkout.
+  Sibling tabs and their programs remain untouched. When deleting the last tab,
+  it first opens a primary-checkout shell tab to keep the project session usable.
+  If Git refuses removal, the checkout and branch remain, but the worktree's tab
+  may be closed. Use **Cmd+Shift+O** to reopen it.
 - Rex server restarts end sessions. **Cmd+Shift+K** and Open's `[all worktrees]`
-  row recreate plain shell sessions for existing checkouts; running programs are
-  not restored.
+  row recreate project sessions and plain shell tabs for existing checkouts;
+  running programs are not restored.
+
+### Moving from worktree sessions
+
+Existing sessions and running programs are not moved or closed automatically.
+Open still focuses existing worktree tabs wherever they are. If several sessions
+belong to a project, creating additional tabs stops rather than guessing which
+session to use.
+
+For a clean switch, save/finish the programs in the old worktree sessions, then
+close those sessions yourself (**closing stops their programs**). Keep the
+primary-checkout project session. Use **Cmd+Shift+O → [all worktrees]** to reopen
+missing worktrees as tabs there; if only one is missing, select its row. If you
+closed every project session, use **Cmd+Shift+K** first. This does not delete Git
+worktrees or branches.
 
 ## Checks
 
-Run disposable real-Git fixtures with mocked Rex sessions/menu operations:
+Run disposable real-Git fixtures with mocked Rex sessions/tabs/menu operations:
 
 ```bash
 ./_scripts/tests/rex-worktrees.sh
 ```
 
 Requires a running Rex server; it does not change real sessions. Real shortcuts,
-`fzf` interaction, and program shutdown still need interactive verification.
+`fzf` interaction, tab selection, and tab-only program shutdown still need
+interactive verification.
 
 After editing `init.lua`, including the project list, run `rex config check`
 and `rex --autostart=false config reload`. Changes to `worktrees.lua` take
