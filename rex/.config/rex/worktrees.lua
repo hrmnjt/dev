@@ -151,56 +151,59 @@ function Workflow:process(session, block)
   self:attach(session)
   return checked(self.rex.block.call(TERMINAL, "process", { session_id = session, block_id = block }))
 end
-function Workflow:directories(session, strict)
+function Workflow:windows(session)
   self:attach(session)
   local view = checked(self.rex.session.view{ session_id = session })
-  local directories = {}
+  local windows = {}
   for _, window in ipairs(view.windows or {}) do
+    local item = { id = window.window_id, directories = {}, blocks = {} }
     for _, layer in ipairs(window.layers or {}) do
       for _, block in ipairs(layer.blocks or {}) do
-        if block.host_id ~= self.host then
-          table.insert(directories, false)
-        elseif block.creator_name == TERMINAL then
+        item.blocks[block.block_id] = true
+        if block.host_id ~= self.host or block.creator_name ~= TERMINAL then
+          table.insert(item.directories, false)
+        else
           local ok, process = pcall(self.process, self, session, block.block_id)
-          if not ok and strict then error(process, 0) end
-          table.insert(directories, ok and ((process.foreground or {}).cwd or (process.child or {}).cwd) or false)
+          table.insert(item.directories, ok and ((process.foreground or {}).cwd or (process.child or {}).cwd) or false)
         end
       end
     end
+    table.insert(windows, item)
   end
-  return directories
+  return windows
 end
-function Workflow:associate(paths)
+function Workflow:associate(paths, tabs)
   local live, matches, roots = self:sessions(), {}, {}
   for _, path in ipairs(paths) do matches[path] = {}; table.insert(roots, path) end
   table.sort(roots, function(a, b) return #a > #b end)
   for session in pairs(live) do
     if session ~= self.helper then
-      -- Discovery is best-effort: a vanished session or inaccessible terminal
-      -- must not prevent New/Open elsewhere. Deletion validates its source strictly.
-      local readable, directories = pcall(self.directories, self, session)
-      for _, directory in ipairs(readable and directories or {}) do
-        if directory then
-          local ok, root = pcall(function()
-            local physical = self:physical(directory)
-            for _, candidate in ipairs(roots) do
-              if inside(physical, candidate) then
-                local actual = self:physical(line(self:git(physical, "rev-parse", "--show-toplevel")))
-                return actual == candidate and candidate or nil
+      -- Discovery is best-effort; deletion rechecks the source tab strictly.
+      local readable, windows = pcall(self.windows, self, session)
+      for _, window in ipairs(readable and windows or {}) do
+        for _, directory in ipairs(window.directories) do
+          if directory then
+            local ok, root = pcall(function()
+              local physical = self:physical(directory)
+              for _, candidate in ipairs(roots) do
+                if inside(physical, candidate) then
+                  local actual = self:physical(line(self:git(physical, "rev-parse", "--show-toplevel")))
+                  return actual == candidate and candidate or nil
+                end
               end
-            end
-          end)
-          if ok and root then matches[root][session] = true end
+            end)
+            if ok and root then matches[root][tabs and window.id or session] = session end
+          end
         end
       end
     end
   end
   return matches
 end
-function Workflow:associations()
+function Workflow:associations(tabs)
   local paths = {}
   for _, tree in ipairs(self.trees) do table.insert(paths, tree.path) end
-  return self:associate(paths)
+  return self:associate(paths, tabs)
 end
 function Workflow:projects()
   -- The configured list, in its own order; nothing is scanned or remembered.
@@ -218,10 +221,20 @@ function Workflow:projects()
   return found
 end
 function Workflow:pick_project(title)
-  local projects, paths = self:projects(), {}
-  for i, project in ipairs(projects) do paths[i] = project.path end
-  -- Open projects first, then closed ones; the source session's own project last.
-  local matches, groups = self:associate(paths), { {}, {}, {} }
+  local projects, matches = self:projects(), {}
+  for _, project in ipairs(projects) do
+    matches[project.path] = {}
+    if project.present then
+      pcall(function()
+        self:load(self:git(project.path, "rev-parse", "--show-toplevel"))
+        for _, sessions in pairs(self:associations()) do
+          for session in pairs(sessions) do matches[project.path][session] = true end
+        end
+      end)
+    end
+  end
+  -- Include worktree-only sessions; labels are never project identity.
+  local groups = { {}, {}, {} }
   for _, project in ipairs(projects) do
     local sessions, group, status = matches[project.path], 2, "session closed"
     if not project.present then status = "missing"
@@ -235,53 +248,78 @@ function Workflow:pick_project(title)
   end
   return self.menu:pick(title, choices)
 end
-function Workflow:focus(session) self.rex.client.queue("session.select", { session_id = session }) end
-function Workflow:destroy(session)
-  self:attach(session)
-  checked(self.rex.call("session.destroy", { session_id = session }))
+function Workflow:focus(session, window)
+  self.destination = { session_id = session, window_id = window }
+  self.rex.client.queue("session.select", self.destination)
 end
 function Workflow:available(tree) return not tree.prunable and self:is_directory(tree.path) end
+function Workflow:project_session()
+  local sessions = {}
+  for _, matches in pairs(self:associations()) do
+    for session in pairs(matches) do sessions[session] = true end
+  end
+  local n, session = count(sessions)
+  if n > 1 then
+    fail("Several Rex sessions use this project; consolidate its worktree tabs into one session before opening more")
+  end
+  return session
+end
 function Workflow:create(tree)
-  -- The primary checkout's session is named after the project, e.g. `dev`.
+  local session = self:project_session()
+  local name = tree.branch ~= "" and tree.branch or "detached-" .. (tree.HEAD or ""):sub(1, 8)
+  local window = { window_label = name:sub(1, 128),
+    layout = self.rex.layout.block{ flavor = TERMINAL .. ".shell", options = { cwd = tree.path } } }
+  if session then
+    self:attach(session)
+    local created = checked(self.rex.call("session.new_window", {
+      session_id = session, window_label = window.window_label, layout = window.layout, focus = false,
+    }))
+    return session, checked(created.window_id, "Rex did not return the new tab")
+  end
   local label = slug(self.rex, basename(self.primary))
-  if tree.path ~= self.primary then
-    local name = tree.branch ~= "" and tree.branch or "detached-" .. tree.HEAD:sub(1, 8)
-    label = label .. "-" .. slug(self.rex, name)
-  end
   for _, existing in pairs(self:sessions()) do
-    if existing == label then label = label:sub(1, 119) .. "-" .. digest(self.rex, tree.path):sub(1, 8); break end
+    if existing == label then label = label:sub(1, 119) .. "-" .. digest(self.rex, self.primary):sub(1, 8); break end
   end
-  return checked(self.rex.call("session.create", {
-    label = label:sub(1, 128),
-    initial_windows = {{ layout = self.rex.layout.block{ flavor = TERMINAL .. ".shell", options = { cwd = tree.path } } }},
-  })).session_id
+  local created = checked(self.rex.call("session.create", {
+    label = label:sub(1, 128), initial_windows = { window },
+  }))
+  return created.session_id, checked((created.initial_windows or {})[1], "Rex did not return the initial tab").window_id
 end
 function Workflow:open_path(path)
   self.trees = self:worktrees()
   local tree
   for _, item in ipairs(self.trees) do if item.path == path then tree = item end end
   if not tree or not self:available(tree) then fail("Worktree unavailable; repair it with Git before reopening") end
-  local n, session = count(self:associations()[path])
-  if n > 1 then fail("Several Rex sessions use this checkout; close duplicates before proceeding") end
-  session = session or self:create(tree)
-  self:focus(session)
+  local matches = self:associations(true)[path]
+  local n, window = count(matches)
+  if n > 1 then fail("Several Rex tabs use this checkout; close duplicates before proceeding") end
+  local session = window and matches[window]
+  if not session then session, window = self:create(tree) end
+  self:focus(session, window)
   return session
 end
 function Workflow:open_all()
-  -- Git's worktree list is the remembered set of spaces; create only missing sessions.
+  -- Git remembers the worktrees; Rex holds their tabs. Never restore programs.
   self.trees = self:worktrees()
-  local matches, failures, destination = self:associations(), {}
+  local failures, destination, target = {}
   for _, tree in ipairs(self.trees) do
-    local n, session = count(matches[tree.path])
-    if n == 0 and self:available(tree) then
-      local ok, result = pcall(self.create, self, tree)
-      if ok then session = result else table.insert(failures, tree.path .. ": " .. tostring(result)) end
+    if self:available(tree) then
+      local matches = self:associations(true)[tree.path]
+      local n, window = count(matches)
+      local session = window and matches[window]
+      if n == 0 then
+        local ok, result, created = pcall(self.create, self, tree)
+        if ok then session, window = result, created
+        else table.insert(failures, tree.path .. ": " .. tostring(result)) end
+      elseif n > 1 then
+        table.insert(failures, tree.path .. ": several Rex tabs use this checkout")
+      end
+      -- Primary comes first and remains the destination even as tabs are added.
+      if n <= 1 and session and not destination then destination, target = session, window end
     end
-    -- The primary is listed first, so its session is focused when it has one.
-    if n <= 1 and session and not destination then destination = session end
   end
-  if #failures > 0 then fail("Could not open every worktree session:\n" .. table.concat(failures, "\n")) end
-  if destination then self:focus(destination) end
+  if #failures > 0 then fail("Could not open every worktree tab:\n" .. table.concat(failures, "\n")) end
+  if destination then self:focus(destination, target) end
   return destination
 end
 function Workflow:project()
@@ -293,25 +331,19 @@ function Workflow:project()
   return self:open_typed()
 end
 function Workflow:open_projects()
-  -- A project with any open session is left alone; focus returns to the source.
-  local checkouts, seen, failures = {}, {}, {}
+  -- A project with any open worktree tab is left alone, including legacy sessions.
+  local seen, failures = {}, {}
   for _, project in ipairs(self:projects()) do
-    local ok, result = pcall(function()
+    local ok, err = pcall(function()
       if not project.present then fail("directory is missing") end
-      return self:physical(line(self:git(project.path, "rev-parse", "--show-toplevel")))
+      self:load(self:git(project.path, "rev-parse", "--show-toplevel"))
+      if seen[self.primary] then return end
+      seen[self.primary] = true
+      local open = false
+      for _, matches in pairs(self:associations()) do if count(matches) > 0 then open = true end end
+      if not open then self:create(self.trees[1]) end
     end)
-    if not ok then table.insert(failures, project.path .. ": " .. tostring(result))
-    elseif not seen[result] then seen[result] = true; table.insert(checkouts, result) end
-  end
-  local matches = self:associate(checkouts)
-  for _, checkout in ipairs(checkouts) do
-    if count(matches[checkout]) == 0 then
-      local ok, err = pcall(function()
-        self:load(checkout)
-        for _, tree in ipairs(self.trees) do if tree.path == self.checkout then self:create(tree) end end
-      end)
-      if not ok then table.insert(failures, checkout .. ": " .. tostring(err)) end
-    end
+    if not ok then table.insert(failures, project.path .. ": " .. tostring(err)) end
   end
   if #failures > 0 then fail("Could not open every project session:\n" .. table.concat(failures, "\n")) end
   return self.args.source_session
@@ -378,17 +410,17 @@ function Workflow:add_branch(branch, new)
 end
 function Workflow:new_branch() return self:add_branch(self.menu:branch(), true) end
 function Workflow:open()
-  local matches, choices, checked_out, closed = self:associations(), {}, {}, 0
+  local matches, choices, checked_out, closed = self:associations(true), {}, {}, 0
   for _, tree in ipairs(self.trees) do
     local branch = tree.branch ~= "" and tree.branch or "detached-" .. (tree.HEAD or ""):sub(1, 8)
     checked_out[tree.branch] = true
-    local status = count(matches[tree.path]) > 0 and "session open" or "session closed"
-    if status == "session closed" and self:available(tree) then closed = closed + 1 end
+    local status = count(matches[tree.path]) > 0 and "tab open" or "tab closed"
+    if status == "tab closed" and self:available(tree) then closed = closed + 1 end
     if tree.locked or tree.prunable then status = status .. "; locked/unavailable" end
     table.insert(choices, { "[worktree; " .. status .. "] " .. branch .. "  " .. tree.path, { path = tree.path } })
   end
   if closed > 1 then
-    table.insert(choices, { "[all worktrees] open " .. closed .. " closed sessions", { all = true } })
+    table.insert(choices, { "[all worktrees] open " .. closed .. " closed tabs", { all = true } })
   end
   local branches = self:git(self.primary, "for-each-ref", "--format=%(refname:strip=2)", "refs/heads")
   for branch in branches:gmatch("[^\n]+") do
@@ -404,7 +436,7 @@ function Workflow:clean_target()
   local target
   for _, tree in ipairs(self.trees) do if tree.path == self.checkout then target = tree end end
   if not target or self.checkout == self.primary then fail("Never delete the primary checkout or an unregistered directory") end
-  if target.locked or target.prunable then fail("Worktree is locked or unavailable; no sessions were closed") end
+  if target.locked or target.prunable then fail("Worktree is locked or unavailable; no tabs were closed") end
   if self:git(self.checkout, "status", "--porcelain=v1", "--untracked-files=all", "--ignore-submodules=none") ~= "" then
     fail("Worktree has modified, staged, or untracked files; nothing will be force-removed")
   end
@@ -415,37 +447,73 @@ function Workflow:clean_target()
   return target
 end
 function Workflow:validate_source()
-  if self.helper == self.args.source_session then fail("Deletion requires a separate menu session") end
-  local n, session = count(self:associations()[self.checkout])
-  if n ~= 1 or session ~= self.args.source_session then fail("Source session missing or checkout has multiple sessions") end
-  local directories = self:directories(session, true)
-  if #directories == 0 then fail("Source session has unknown terminal directories") end
-  for _, directory in ipairs(directories) do
-    if not directory or not inside(self:physical(directory), self.checkout) then
-      fail("Source session has unknown, remote, or unrelated terminal directories")
-    end
-    if self:physical(line(self:git(directory, "rev-parse", "--show-toplevel"))) ~= self.checkout then
-      fail("Source session has a terminal in another nested repository")
+  local session = self.args.source_session
+  if self.helper == session then fail("Deletion requires a separate menu session") end
+  local windows = self:windows(session)
+  local source
+  for _, window in ipairs(windows) do
+    if window.blocks[self.args.source_block] then source = window end
+  end
+  if not source then fail("Source tab missing") end
+  local matches = self:associations(true)[self.checkout]
+  local n, id = count(matches)
+  if n ~= 1 or id ~= source.id or matches[id] ~= session then
+    fail("Source tab missing or checkout has multiple tabs")
+  end
+  -- Re-read only the source tab strictly; unrelated tabs cannot block deletion.
+  local directories = {}
+  self:attach(session)
+  local view = checked(self.rex.session.view{ session_id = session })
+  for _, window in ipairs(view.windows or {}) do
+    if window.window_id == source.id then
+      for _, layer in ipairs(window.layers or {}) do
+        for _, block in ipairs(layer.blocks or {}) do
+          if block.host_id ~= self.host or block.creator_name ~= TERMINAL then
+            fail("Source tab has unknown, remote, or unrelated blocks")
+          end
+          local process = self:process(session, block.block_id)
+          table.insert(directories, (process.foreground or {}).cwd or (process.child or {}).cwd or false)
+        end
+      end
     end
   end
+  if #directories == 0 then fail("Source tab has unknown terminal directories") end
+  for _, directory in ipairs(directories) do
+    if not directory or not inside(self:physical(directory), self.checkout) then
+      fail("Source tab has unknown, remote, or unrelated terminal directories")
+    end
+    if self:physical(line(self:git(directory, "rev-parse", "--show-toplevel"))) ~= self.checkout then
+      fail("Source tab has a terminal in another nested repository")
+    end
+  end
+  return source.id, #windows
 end
 function Workflow:delete()
   local target = self:clean_target()
-  self:validate_source()
+  local window = self:validate_source()
   local yes = self.menu:pick("DELETE " .. visible(target.branch ~= "" and target.branch or "detached") .. " at " .. visible(self.checkout) .. "? Branch is kept.", {
-    { "Cancel", false }, { "Remove worktree and STOP ALL programs in its Rex session", true },
+    { "Cancel", false }, { "Remove worktree and STOP ALL programs in its Rex tab only", true },
   })
   if not yes then fail(CANCEL) end
   self:clean_target()
   local process = self:process(self.args.source_session, self.args.source_block)
   local directory = (process.foreground or {}).cwd or (process.child or {}).cwd
   if not directory or not inside(self:physical(directory), self.checkout) then fail("Source terminal changed directory; deletion cancelled") end
-  self:validate_source()
-  self:destroy(self.args.source_session)
-  if self:sessions()[self.args.source_session] then fail("Rex session is still running; checkout was not removed") end
-  -- Git's non-force removal rechecks cleanliness/locks after programs stop.
-  -- Keep the earlier explicit submodule checks: Git allows uninitialized gitlinks.
+  local current, total = self:validate_source()
+  if current ~= window then fail("Source tab changed; deletion cancelled") end
+  -- Preserve a discoverable project session when removing its last worktree tab.
+  if total == 1 then
+    local primary = self.trees[1]
+    if not self:available(primary) then fail("Primary checkout unavailable; no tabs were closed") end
+    self:create(primary)
+  end
+  checked(self.rex.call("session.close_window", { session_id = self.args.source_session, window_id = window }))
+  for _, remaining in ipairs(self:windows(self.args.source_session)) do
+    if remaining.id == window then fail("Rex tab is still running; checkout was not removed") end
+  end
+  -- Git rechecks cleanliness and locks after the tab's programs stop.
   self:git(self.primary, "worktree", "remove", self.checkout)
+  return self.args.source_session
 end
 M.Workflow = Workflow
 M.cancelled = CANCEL
@@ -466,9 +534,9 @@ function M.main(args, r, terminal)
     if session.session_id == r.session_id and session.label == "rex-worktrees-" .. args.mode then is_menu = true end
   end
   if not is_menu then fail("Only invoke this helper in its temporary menu session") end
-  local menu, destination = Menu.new(r), args.source_session
+  local menu, destination, workflow = Menu.new(r), args.source_session, nil
   local ok, err = pcall(function()
-    local workflow = Workflow.new(args, r, menu)
+    workflow = Workflow.new(args, r, menu)
     if args.mode == "new" then destination = workflow:new_branch()
     else destination = workflow[args.mode](workflow) end
   end)
@@ -477,7 +545,7 @@ function M.main(args, r, terminal)
     -- newlines, remove terminal controls, and keep this terminal until Enter.
     local message = tostring(err):gsub("[%z\1-\8\11-\31\127]", "?")
     terminal.write("\nWorktree action stopped:\n" .. message .. "\n\n")
-    terminal.write("If Git refused removal after closing the source session, its checkout remains; use Open to reopen it.\n")
+    terminal.write("If Git refused removal after closing the source tab, its checkout remains; use Open to reopen it.\n")
     terminal.write("Press Enter to close this menu.")
     terminal.flush()
     terminal.read("*l")
@@ -491,7 +559,11 @@ function M.main(args, r, terminal)
   pcall(function()
     local live = checked(r.call("session.list")).sessions or {}
     for _, session in ipairs(live) do
-      if session.session_id == destination then r.client.queue("session.select", { session_id = destination }); break end
+      if session.session_id == destination then
+        local target = ok and workflow and workflow.destination or nil
+        r.client.queue("session.select", target or { session_id = destination })
+        break
+      end
     end
   end)
   destroy_helper()

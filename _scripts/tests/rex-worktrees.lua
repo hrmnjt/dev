@@ -130,32 +130,56 @@ local function labels(rows)
 end
 local function fake(primary)
   local f = { live = { source = "main", helper = "menu" }, paths = { source = {primary}, helper = {} },
-    created = {}, killed = {}, focused = {}, attached = {}, process_failures = {}, view_failures = {} }
+    tabs = {}, created = {}, sessions_created = {}, closed = {}, killed = {}, focused = {}, targets = {},
+    attached = {}, process_failures = {}, view_failures = {} }
   local r = { exec = real.exec, json = real.json, layout = real.layout, session_id = "helper", session = {}, block = {}, client = {} }
   f.rex = r
   function r.session.attach(args) assert(f.live[args.session_id]); f.attached[args.session_id] = true; return {} end
   function r.session.view(args)
     assert(f.attached[args.session_id], "missing native session attachment")
     if f.view_failures[args.session_id] then return nil, "session view failed" end
-    local blocks = {}
-    for i in ipairs(f.paths[args.session_id]) do
-      table.insert(blocks, { block_id = tostring(i), host_id = "local", creator_name = "com.superlogical.terminal" })
+    local windows = {}
+    if f.paths[args.session_id] then
+      local blocks = {}
+      for i in ipairs(f.paths[args.session_id]) do
+        table.insert(blocks, { block_id = tostring(i), host_id = "local", creator_name = "com.superlogical.terminal" })
+      end
+      table.insert(windows, { window_id = args.session_id .. "-tab", layers = {{ blocks = blocks }} })
     end
-    return { windows = {{ layers = {{ blocks = blocks }} }} }
+    for _, tab in ipairs(f.tabs[args.session_id] or {}) do table.insert(windows, tab) end
+    return { windows = windows }
   end
   function r.block.call(creator, method, args)
     assert(creator == "com.superlogical.terminal" and method == "process" and f.attached[args.session_id])
     if f.process_failures[args.session_id] or f.process_failures[args.session_id .. ":" .. args.block_id] then
       return nil, "terminal process failed"
     end
-    local directory = args.block_id == "focused" and f.block_override or nil
-    directory = directory or f.paths[args.session_id][tonumber(args.block_id) or 1]
+    for _, tab in ipairs(f.tabs[args.session_id] or {}) do
+      if tab.block_id == args.block_id then return { foreground = { cwd = tab.path } } end
+    end
+    local directory = (args.block_id == "focused" or args.block_id == "1") and f.block_override or nil
+    directory = directory or (f.paths[args.session_id] or {})[tonumber(args.block_id) or 1]
     return { foreground = { cwd = directory or nil } }
   end
   function r.client.queue(action, args)
     assert(action == "session.select")
     if f.focus_failure then error("focus failed", 0) end
-    table.insert(f.focused, args.session_id)
+    table.insert(f.focused, args.session_id); table.insert(f.targets, args)
+  end
+  local function new_tab(session, window)
+    if f.create_failure then return nil, "creation failed" end
+    local block = window.layout.block
+    assert(block.flavor == "com.superlogical.terminal.shell" and not block.options.command)
+    assert(window.window_label and #window.window_label <= 128)
+    local id = "window-" .. (#f.created + 1)
+    local tab = { window_id = id, block_id = id .. "-block", path = block.options.cwd,
+      label = window.window_label, layers = {{ blocks = {{
+        block_id = id .. "-block", host_id = "local", creator_name = "com.superlogical.terminal",
+      }} }} }
+    f.tabs[session] = f.tabs[session] or {}; table.insert(f.tabs[session], tab)
+    table.insert(f.created, { id = session, window = id, label = f.live[session],
+      tab_label = window.window_label, path = block.options.cwd })
+    return { window_id = id, block_ids = {tab.block_id} }
   end
   function r.call(method, args)
     if method == "server.status" then return { host_id = "local" } end
@@ -167,19 +191,32 @@ local function fake(primary)
     if method == "session.create" then
       if f.create_failure then return nil, "creation failed" end
       assert(#args.initial_windows == 1)
-      local block = args.initial_windows[1].layout.block
-      assert(block.flavor == "com.superlogical.terminal.shell" and not block.options.command)
-      assert(not args.initial_windows[1].window_label, "do not name tabs")
-      local id = "created-" .. (#f.created + 1)
-      f.live[id], f.paths[id] = args.label, {block.options.cwd}
-      table.insert(f.created, { id = id, label = args.label, path = block.options.cwd })
-      return { session_id = id }
+      local id = "created-session-" .. (#f.sessions_created + 1)
+      f.live[id] = args.label; table.insert(f.sessions_created, id)
+      return { session_id = id, initial_windows = { assert(new_tab(id, args.initial_windows[1])) } }
+    end
+    if method == "session.new_window" then
+      assert(f.attached[args.session_id] and args.focus == false)
+      return new_tab(args.session_id, args)
+    end
+    if method == "session.close_window" then
+      assert(f.attached[args.session_id])
+      if args.window_id == args.session_id .. "-tab" then f.paths[args.session_id] = nil
+      else
+        local found = false
+        for i, tab in ipairs(f.tabs[args.session_id] or {}) do
+          if tab.window_id == args.window_id then table.remove(f.tabs[args.session_id], i); found = true; break end
+        end
+        assert(found, "tab not found")
+      end
+      table.insert(f.closed, args)
+      if f.after_kill then f.after_kill() end
+      return {}
     end
     assert(method == "session.destroy", "unexpected operation: " .. method)
     assert(f.attached[args.session_id])
-    table.insert(f.killed, args.session_id)
-    f.live[args.session_id] = nil
-    if f.after_kill then f.after_kill() end
+    table.insert(f.killed, args.session_id); f.live[args.session_id] = nil
+    f.paths[args.session_id], f.tabs[args.session_id] = nil, nil
     return {}
   end
   return f
@@ -200,7 +237,7 @@ local function fixture()
   f.base = git(f.primary, "rev-parse", "main"):gsub("\n$", "")
   f.server = fake(f.primary)
   function f:flow(directory, ui, extra)
-    local args = { directory = directory or self.primary, source_session = "source", source_block = "focused" }
+    local args = { directory = directory or self.primary, source_session = "source", source_block = "1" }
     for key, value in pairs(extra or {}) do args[key] = value end
     return core.Workflow.new(args, self.server.rex, ui or menu())
   end
@@ -233,12 +270,12 @@ end
 local tests = {}
 local function test(name, fn) table.insert(tests, {name, fn}) end
 
-test("new uses local main, not primary HEAD; one unnamed shell tab", function(f)
+test("new uses local main, not primary HEAD; one named worktree tab", function(f)
   git(f.primary, "checkout", "-b", "other")
   write(f.primary .. "/tracked", "other\n"); git(f.primary, "commit", "-am", "other")
   run(f:flow(), function(flow) flow:new_branch() end)
   local created = f.server.created[1]
-  assert(#f.server.created == 1 and created.label == "repo-with-spaces-feature-a")
+  assert(#f.server.created == 1 and created.id == "source" and created.tab_label == "feature-a" and #f.server.sessions_created == 0)
   assert(git(created.path, "rev-parse", "HEAD"):gsub("\n$", "") == f.base)
 end)
 test("new tracks matching fetched remote tip, even with automatic tracking disabled", function(f)
@@ -288,19 +325,22 @@ end)
 test("branch slashes preserved; generated names use hyphens", function(f)
   run(f:flow(nil, menu("feat/rex/example")), function(flow) flow:new_branch() end)
   local created = f.server.created[1]
-  assert(created.label == "repo-with-spaces-feat-rex-example")
+  assert(created.tab_label == "feat/rex/example" and created.path:match("repo%-with%-spaces%-feat%-rex%-example$"))
   assert(git(created.path, "symbolic-ref", "--short", "HEAD") == "feat/rex/example\n")
 end)
-test("adopt existing session; repeated open never duplicates", function(f)
+test("adopt existing tab; repeated open never duplicates", function(f)
   local path = f:linked()
   f.server.live.manual, f.server.paths.manual = "manually named", {path}
   run(f:flow(), function(flow) assert(flow:open_path(path) == "manual"); assert(flow:open_path(path) == "manual") end)
   assert(#f.server.created == 0 and f:trees() == 2)
 end)
-test("reopen closed session without duplicating worktree", function(f)
+test("reopen closed tab without duplicating worktree", function(f)
   local path, first = f:linked()
   run(f:flow(), function(flow)
-    first = flow:open_path(path); flow:destroy(first); assert(flow:open_path(path) ~= first)
+    first = flow:open_path(path)
+    flow.rex.call("session.close_window", {session_id = first, window_id = f.server.created[1].window})
+    assert(flow:open_path(path) == first)
+    assert(f.server.created[1].window ~= f.server.created[2].window)
   end)
   assert(f:trees() == 2)
 end)
@@ -315,8 +355,8 @@ test("picker distinguishes open, closed and branch-only", function(f)
   run(f:flow(nil, ui), function(flow) flow:open() end)
   local rows = {}; for _, row in ipairs(ui.rows) do table.insert(rows, row[1]) end
   local text = table.concat(rows, "\n")
-  contains(text, "[worktree; session open] main")
-  contains(text, "[worktree; session closed] feature-a")
+  contains(text, "[worktree; tab open] main")
+  contains(text, "[worktree; tab closed] feature-a")
   contains(text, "[branch only; create worktree] local-only")
 end)
 test("renamed session is still found by its terminal directory", function(f)
@@ -366,12 +406,12 @@ test("source process failures still block deletion", function(f)
   table.insert(f.server.paths.source, f.root)
   f.server.process_failures["source:2"] = true
   fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "terminal process failed")
-  assert(#f.server.killed == 0 and f:trees() == 2)
+  assert(#f.server.killed == 0 and #f.server.closed == 0 and f:trees() == 2)
 end)
-test("ambiguous sessions fail closed", function(f)
+test("ambiguous worktree tabs fail closed", function(f)
   local path = f:linked()
   f.server.live.a, f.server.paths.a = "a", {path}; f.server.live.b, f.server.paths.b = "b", {path}
-  fails(function() run(f:flow(), function(flow) flow:open_path(path) end) end, "Several Rex sessions")
+  fails(function() run(f:flow(), function(flow) flow:open_path(path) end) end, "Several Rex tabs")
   assert(#f.server.created == 0)
 end)
 test("directory collisions never overwrite", function(f)
@@ -392,7 +432,7 @@ end)
 test("primary protected even when not on main", function(f)
   git(f.primary, "checkout", "-b", "other")
   fails(function() run(f:flow(), function(flow) flow:delete() end) end, "primary checkout")
-  assert(#f.server.killed == 0)
+  assert(#f.server.killed == 0 and #f.server.closed == 0)
 end)
 test("modified, staged, and untracked files block teardown", function(f)
   local path = f:linked(); f:source_at(path)
@@ -400,48 +440,50 @@ test("modified, staged, and untracked files block teardown", function(f)
     write(path .. (kind == "untracked" and "/untracked" or "/tracked"), "keep")
     if kind == "staged" then git(path, "add", "tracked") end
     fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "modified, staged, or untracked")
-    assert(#f.server.killed == 0)
+    assert(#f.server.killed == 0 and #f.server.closed == 0)
     git(path, "reset", "--hard", "HEAD") -- fixture only
   end
   assert(read(path .. "/untracked") == "keep")
 end)
-test("delete stops session first and keeps branch", function(f)
+test("delete stops only its tab first and keeps branch", function(f)
   local path = f:linked(); f:source_at(path)
   f.server.after_kill = function() assert(read(path .. "/tracked") == "base\n") end
   run(f:flow(path), function(flow) flow:delete() end)
-  assert(#f.server.killed == 1 and f.server.killed[1] == "source")
+  assert(#f.server.killed == 0 and #f.server.closed == 1 and f.server.closed[1].window_id == "source-tab")
+  assert(f.server.live.source and f.server.created[1].path == f.primary)
   assert(f:trees() == 1 and git(f.primary, "rev-parse", "feature-a"):gsub("\n$", "") == f.base)
 end)
 test("delete cancellation leaves session and checkout intact", function(f)
   local path = f:linked(); f:source_at(path)
   fails(function() run(f:flow(path, menu(nil, nil, false)), function(flow) flow:delete() end) end, core.cancelled)
-  assert(#f.server.killed == 0 and f:trees() == 2)
+  assert(#f.server.killed == 0 and #f.server.closed == 0 and f:trees() == 2)
 end)
-test("files written during confirmation block session teardown", function(f)
+test("files written during confirmation block tab teardown", function(f)
   local path = f:linked(); f:source_at(path)
   local ui = menu(nil, nil, nil, function() write(path .. "/new-file", "keep") end)
   fails(function() run(f:flow(path, ui), function(flow) flow:delete() end) end, "modified, staged, or untracked")
-  assert(#f.server.killed == 0)
+  assert(#f.server.killed == 0 and #f.server.closed == 0)
 end)
 test("files written during shutdown preserve checkout", function(f)
   local path = f:linked(); f:source_at(path)
   f.server.after_kill = function() write(path .. "/new-file", "keep") end
   fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "modified or untracked")
-  assert(#f.server.killed == 1 and read(path .. "/new-file") == "keep")
+  assert(#f.server.closed == 1 and read(path .. "/new-file") == "keep")
 end)
-test("locked worktree and mixed terminal session refused", function(f)
+test("locked worktree and mixed terminal tab refused", function(f)
   local path = f:linked(); f:source_at(path)
   git(f.primary, "worktree", "lock", path)
   fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "locked")
   git(f.primary, "worktree", "unlock", path)
   table.insert(f.server.paths.source, f.primary)
   fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "unrelated")
-  assert(#f.server.killed == 0)
+  assert(#f.server.killed == 0 and #f.server.closed == 0)
 end)
 test("changed source block directory cancels deletion", function(f)
-  local path = f:linked(); f:source_at(path); f.server.block_override = f.primary
-  fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "changed directory")
-  assert(#f.server.killed == 0)
+  local path = f:linked(); f:source_at(path)
+  local ui = menu(nil, nil, nil, function() f.server.block_override = f.primary end)
+  fails(function() run(f:flow(path, ui), function(flow) flow:delete() end) end, "changed directory")
+  assert(#f.server.killed == 0 and #f.server.closed == 0)
 end)
 test("creation/focus failures leave recoverable worktree without duplicate session", function(f)
   f.server.create_failure = true
@@ -459,15 +501,15 @@ test("submodule worktree refused before teardown", function(f)
   git(path, "update-index", "--add", "--cacheinfo", "160000," .. f.base .. ",submodule")
   git(path, "commit", "-m", "fixture gitlink"); execute({ "/bin/mkdir", path .. "/submodule" })
   fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "submodules")
-  assert(#f.server.killed == 0)
+  assert(#f.server.killed == 0 and #f.server.closed == 0)
 end)
-test("unknown terminals and late unrelated tabs block deletion", function(f)
+test("unknown terminals and late unrelated panes block deletion", function(f)
   local path = f:linked(); f:source_at(path); table.insert(f.server.paths.source, false)
   fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "unknown, remote")
   table.remove(f.server.paths.source)
   local ui = menu(nil, nil, nil, function() table.insert(f.server.paths.source, f.primary) end)
   fails(function() run(f:flow(path, ui), function(flow) flow:delete() end) end, "unrelated")
-  assert(#f.server.killed == 0)
+  assert(#f.server.killed == 0 and #f.server.closed == 0)
 end)
 test("nested repository not adopted as parent checkout", function(f)
   local path = f:linked(); local nested = path .. "/nested"
@@ -532,7 +574,7 @@ test("native Git refuses a worktree locked during program shutdown", function(f)
   local path = f:linked(); f:source_at(path)
   f.server.after_kill = function() git(f.primary, "worktree", "lock", path) end
   fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "locked")
-  assert(#f.server.killed == 1 and f:trees() == 2)
+  assert(#f.server.closed == 1 and f:trees() == 2)
 end)
 test("fzf launch errors are printed in full and acknowledged without invoking fzf again", function(f)
   f.server.live.helper = "rex-worktrees-open"
@@ -573,7 +615,7 @@ test("outside Git, New branches from the chosen project's local main", function(
   local ui = menu("feature-b"); ui.project = "other"
   run(f:flow(f.root, ui, { mode = "new", projects = { f.primary, other } }), function(flow) flow:new_branch() end)
   local created = f.server.created[1]
-  assert(created.label == "other-feature-b" and created.path == f.root .. "/host/owner/other-feature-b")
+  assert(created.label == "other" and created.tab_label == "feature-b" and created.path == f.root .. "/host/owner/other-feature-b")
   assert(git(created.path, "rev-parse", "HEAD") == git(other, "rev-parse", "main"))
 end)
 test("missing projects and empty lists are refused without creating sessions", function(f)
@@ -636,14 +678,13 @@ test("a typed path opens its checkout once and is never listed", function(f)
   end
   assert(#f.server.created == 1)
 end)
-test("open all creates only missing worktree sessions and focuses the main checkout", function(f)
+test("open all creates only missing worktree tabs and focuses the main checkout", function(f)
   local a, b, c = f:linked("feature-a"), f:linked("feature-b"), f:linked("feature-c")
   execute({ "/bin/rm", "-rf", c }) -- prunable worktrees are skipped
-  f.server.live.manual, f.server.paths.manual = "manual", {b}
-  f:source_at(f.root)
+  f.server.paths.source = {b}
   local ui = menu(nil, "[all worktrees]")
   run(f:flow(nil, ui), function(flow) flow:open() end)
-  contains(labels(ui.rows), "[all worktrees] open 2 closed sessions")
+  contains(labels(ui.rows), "[all worktrees] open 2 closed tabs")
   local created = {}
   for _, session in ipairs(f.server.created) do created[session.path] = session.id end
   assert(#f.server.created == 2 and created[f.primary] and created[a])
@@ -652,10 +693,10 @@ test("open all creates only missing worktree sessions and focuses the main check
   run(f:flow(nil, again), function(flow) flow:open() end)
   assert(not labels(again.rows):find("[all worktrees]", 1, true) and #f.server.created == 2)
 end)
-test("open all reports sessions it could not create", function(f)
+test("open all reports tabs it could not create", function(f)
   f:linked(); f:source_at(f.root); f.server.create_failure = true
   fails(function() run(f:flow(nil, menu(nil, "[all worktrees]")), function(flow) flow:open() end) end,
-    "Could not open every worktree session")
+    "Could not open every worktree tab")
 end)
 test("project main action needs no terminal directory and closes only its menu", function(f)
   f.server.live.helper = "rex-worktrees-project"; f:source_at(f.root)
@@ -674,6 +715,84 @@ test("project main action needs no terminal directory and closes only its menu",
   core.main({ mode = "project", source_session = "source", projects = { f.primary } }, f.server.rex)
   assert(#f.server.created == 1 and #responses == 0 and f.server.focused[#f.server.focused] == created.id)
   fails(function() core.main({ mode = "project", source_session = "source" }, f.server.rex) end, "keybindings")
+end)
+test("one project keeps primary and two worktrees in distinct tabs of one session", function(f)
+  local a, b = f:linked("feature-a"), f:linked("feature-b")
+  local flow = f:flow()
+  assert(flow:open_path(a) == "source" and flow:open_path(b) == "source")
+  assert(flow:open_path(a) == "source")
+  assert(#f.server.created == 2 and #f.server.sessions_created == 0)
+  assert(f.server.created[1].tab_label == "feature-a" and f.server.created[2].tab_label == "feature-b")
+  assert(f.server.targets[3].window_id == f.server.created[1].window)
+  assert(f.server.paths.source[1] == f.primary)
+end)
+test("duplicate tabs in the same session refuse Open and Delete", function(f)
+  local path = f:linked(); f:source_at(path)
+  local flow = f:flow(path)
+  flow:attach("source")
+  f.server.rex.call("session.new_window", {session_id = "source", window_label = "duplicate",
+    layout = real.layout.block{flavor = "com.superlogical.terminal.shell", options = {cwd = path}}, focus = false})
+  fails(function() flow:open_path(path) end, "Several Rex tabs")
+  fails(function() flow:delete() end, "multiple tabs")
+  assert(#f.server.closed == 0 and #f.server.killed == 0)
+end)
+test("legacy project sessions are not merged, destroyed, or added to arbitrarily", function(f)
+  local a, b = f:linked("feature-a"), f:linked("feature-b")
+  f.server.live.legacy, f.server.paths.legacy = "old worktree", {a}
+  local flow = f:flow()
+  assert(flow:open_path(a) == "legacy")
+  fails(function() flow:open_path(b) end, "Several Rex sessions use this project")
+  assert(#f.server.created == 0 and #f.server.killed == 0 and #f.server.closed == 0)
+end)
+test("project picker and all projects recognize a project with only a worktree tab", function(f)
+  local path = f:linked(); f:source_at(path)
+  local ui = menu(); ui.project = "repo with spaces"
+  local args = {mode = "open", projects = {f.primary}}
+  local flow = f:flow(f.root, ui, args)
+  contains(labels(ui.project_rows), "[current session] repo with spaces")
+  flow.args.mode = "project"
+  assert(flow:open_projects() == "source")
+  assert(#f.server.created == 0 and #f.server.sessions_created == 0)
+end)
+test("delete preserves sibling tabs and their programs, including unreadable ones", function(f)
+  local path, sibling = f:linked(), f:linked("feature-b")
+  local flow = f:flow()
+  flow:open_path(sibling)
+  f:source_at(path)
+  local keep = f.server.created[1]
+  f.server.process_failures["source:" .. keep.window .. "-block"] = true
+  flow = f:flow(path)
+  flow:delete()
+  assert(f.server.live.source and #f.server.closed == 1 and #f.server.killed == 0)
+  assert(#f.server.created == 1 and f.server.tabs.source[1].window_id == keep.window)
+  assert(read(sibling .. "/tracked") == "base\n" and f:trees() == 2)
+end)
+test("a late sibling tab is preserved rather than blocking deletion", function(f)
+  local path = f:linked(); f:source_at(path)
+  local ui = menu(nil, nil, nil, function()
+    local flow = f:flow()
+    flow:open_path(f.primary)
+  end)
+  run(f:flow(path, ui), function(flow) flow:delete() end)
+  assert(#f.server.closed == 1 and #f.server.created == 1 and f.server.live.source)
+  assert(f.server.created[1].path == f.primary)
+end)
+test("failed last-tab fallback does not stop source programs", function(f)
+  local path = f:linked(); f:source_at(path); f.server.create_failure = true
+  fails(function() f:flow(path):delete() end, "creation failed")
+  assert(#f.server.closed == 0 and f.server.live.source and f:trees() == 2)
+end)
+test("menu completion selects the exact worktree tab, not just its session", function(f)
+  local path = f:linked()
+  f.server.live.helper = "rex-worktrees-open"
+  f.server.rex.exec = setmetatable({}, {__call = function(_, argv, options)
+    if argv[1] == "fzf" then return {ok = true, code = 0, stdout = "2\tfeature-a\0"} end
+    return real.exec(argv, options)
+  end})
+  core.main({mode = "open", source_session = "source", source_block = "1", directory = f.primary}, f.server.rex)
+  local target = f.server.targets[#f.server.targets]
+  assert(target.session_id == "source" and target.window_id == f.server.created[1].window)
+  assert(f.server.created[1].path == path and #f.server.killed == 1 and f.server.killed[1] == "helper")
 end)
 local passed = 0
 for _, item in ipairs(tests) do

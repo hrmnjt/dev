@@ -67,8 +67,8 @@ local function worktree_menu(mode, ctx)
     projects = mode ~= "delete" and expanded or nil,
   })
 
-  -- A separate, short-lived menu session survives stopping the target session.
-  -- This lets delete stop its programs BEFORE asking Git to remove the checkout.
+  -- A separate, short-lived menu session survives closing the target tab.
+  -- Delete stops only that tab's programs BEFORE Git removes the checkout.
   local menu = checked(rex.call("session.create", {
     label = "rex-worktrees-" .. mode,
     initial_windows = {{ layout = rex.layout.block{

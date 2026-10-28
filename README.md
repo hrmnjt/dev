@@ -275,6 +275,11 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261028: Grouped Rex worktrees as named tabs in one session per project,
+  leaving panes for programs. New/Open and bulk reopening reuse the project
+  session; Delete closes only the target worktree tab, preserving sibling tabs
+  and the branch. Added tab-level safety/regression coverage and documented
+  deliberate migration from existing sessions without stopping running work.
 - 20261026: Made Rex New worktree track an exact, already-fetched remote branch
   match instead of branching from local `main`. Keep `main` as the no-match
   fallback, refuse ambiguous remotes, and never fetch or reset existing branches.
