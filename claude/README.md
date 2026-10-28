@@ -27,6 +27,9 @@ gives the same file higher priority; organization-managed settings still win.
 - Native Gruvbox Dark Hard; Ghostty owns the terminal background.
 - Host personal/work Git identity, no Mac attribution, Remote Control mobile
   notifications, and Herdr's generated `~/.claude/hooks/herdr-agent-state.sh`.
+- Rex's `SessionStart` hook supplies session/pane context for terminal control
+  when running inside Rex, not activity notifications. It has a five-second
+  timeout and ignores failures if Rex is unavailable.
 - Outside-read blocking and mandatory Bash sandboxing, without exclusions or
   unsandboxed retries. Hooks/plugins/MCP are outside the Bash sandbox; workspace
   secrets and remote-service effects are not isolated by filesystem confinement.
