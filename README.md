@@ -275,6 +275,8 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202610
 
+- 20261029: Added Rex's Claude Code `SessionStart` hook for session/pane context
+  alongside the existing Herdr hook, with a five-second timeout and ignored failures.
 - 20261028: Routed Claude, ChatGPT, and Microsoft 365 Copilot windows to AeroSpace
   workspace 10 (`option-0`), alongside Zed.
 - 20261028: Made auto mode the Claude Code global default, preserving outside-read
