@@ -121,7 +121,6 @@ herdr plugin list --plugin hrmnjt.default-tabs
 
 #### Setup references
 
-- [Gondolin agent plan and TODO](TODO.md)
 - [Gruvbox Dark Hard palette and application map](GRUVBOX.md)
 - [AeroSpace](aerospace/README.md)
 - [Ghostty](ghostty/README.md)
@@ -276,8 +275,6 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202611
 
-- 20261101: Added a TODO with goals, workflow questions, and a tracker for
-  running Pi, Claude Code, and Amp in Gondolin; runtime behavior is unchanged.
 - 20261101: Added the Tailscale desktop app cask to the Brewfile.
 
 ### 202610
