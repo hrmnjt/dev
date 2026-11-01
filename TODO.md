@@ -43,49 +43,72 @@ Status: `[ ]` to do, `[~]` in progress, `[x]` done, `[-]` dropped (say why).
 
 - [ ] Create the implementation worktree from `main`.
 - [ ] Record a host baseline: Pi, Claude Code, Amp, Gondolin, and QEMU
-  versions; `just doctor`.
+  versions; `just doctor`; VM boot time and memory per VM (W-04, W-13).
 - [ ] Find a way to try branch config without deploying it, for Pi, the
   Claude/Amp launch path, and Rex.
 
 ### 2. Decide the workflow
 
-- [ ] Study the references and note what each does per question.
-- [ ] Answer W-01 to W-20, with sources.
+- [x] Study the references and note what each does per question.
+- [x] Answer W-01 to W-20, with sources (2026-11-01).
 - [ ] Walk through a working day with each agent and confirm it with the user.
 
 ### 3. Shared Gondolin setup
 
-- [ ] Gondolin and a guest image that runs all three agents (W-01).
-- [ ] One place defines what agents can reach: mounts, network, secrets, and
-  identity (W-05, W-08).
-- [ ] Credentials stay on the host (W-02).
+- [ ] Choose and install Docker or Podman for image builds (host step, W-01).
+- [ ] A Debian-based guest image with pinned Claude Code, Amp, and Playwright
+  that runs all three agents (W-01).
+- [ ] One place defines what agents can reach: workspace and common Git dir
+  at host paths (W-05), open internet and per-project Mac services (W-08),
+  host-held secrets (W-02), and fail-closed identity.
+- [ ] Paths that run on the Mac are read-only in the VM: `.pi/`, `.claude/`,
+  `.git/hooks`, and `.git/config` (W-20).
+- [ ] Credentials stay on the host, in the Keychain (W-02).
 - [ ] Git identity stays fail-closed inside the VM.
+- [ ] One VM per agent session, labelled for `gondolin list`/`attach`; launch
+  fails closed and names the fix (W-04, W-09, W-15).
 - [ ] Agents push branches and open PRs with a limited GitHub token; `main` is
   protected by a GitHub ruleset on each repo they push to (W-12). Confirm
   rulesets are available for private repos on the current GitHub plan.
 
 ### 4. Pi
 
-- [ ] Pi runs in Gondolin in the chosen shape (W-16).
-- [ ] Extensions and built-ins pruned (W-17); native sandbox retired.
+- [ ] Pi runs on the Mac with its built-in tools in the VM; `!` and `!!` stay
+  on the Mac (W-16).
+- [ ] Drop the `sandbox`, `uv`, and `wal-writer` extensions and turn off the
+  `mcp` built-in (W-17).
 - [ ] Pi works freely inside the VM without approval friction.
 - [ ] Tests and doctor checks match the new setup.
 
 ### 5. Claude Code
 
-- [ ] Claude Code runs in Gondolin without approval prompts (W-18).
-- [ ] Quality-of-life items from the workflow answers (list them here).
+- [ ] Claude Code runs in Gondolin as a non-root user without approval
+  prompts, with tracked read-only settings (W-18).
+- [ ] A Rex shortcut starts Claude in a worktree tab; typed `claude` on the
+  Mac also starts the VM (W-03).
+- [ ] Status reaches Rex through Claude's native OSC 7501 (W-06).
+- [ ] `Ctrl+V` pastes images through an images-only clipboard proxy (W-07).
+- [ ] Opt-in previews through Gondolin's gateway; Playwright for the agent's
+  own checks (W-10).
+- [ ] Commits, pushes branches, and opens PRs (W-12).
+- [ ] History and memory per project (W-14).
 - [ ] Once Claude in the VM works, remove the Mac install and retire or
   repurpose the `claude/` Stow package (W-03).
-- [ ] Decide what to do with the Claude desktop app's Code feature, which runs
-  Claude Code on the Mac (W-19).
+- [ ] Keep the Claude desktop app for chat; turn off its local Code sessions,
+  or remove the app if no setting does (W-19).
 
 ### 6. Amp
 
-- [ ] Install Amp where W-01 decides: the host `Brewfile`, the guest image, or
-  both. Include sign-in (W-02) and setup docs.
-- [ ] Amp runs in Gondolin without approval prompts (W-18).
-- [ ] Quality-of-life items from the workflow answers (list them here).
+- [ ] Install Amp, pinned, in the guest image only; sign in with an `sgamp_`
+  token from the Keychain (W-01, W-02, W-03).
+- [ ] Amp runs in Gondolin without approval prompts, with tracked read-only
+  settings; confirm its allow-all flag with `amp --help` (W-18).
+- [ ] A Rex shortcut starts Amp in a worktree tab; typed `amp` on the Mac
+  also starts the VM (W-03).
+- [ ] Done and blocked ring the terminal bell (`AMP_FORCE_BEL`); investigate a
+  plugin that reports OSC 7501 (W-06).
+- [ ] `Ctrl+V` image paste, previews, Playwright, pushes and PRs, and
+  per-project history, as for Claude (W-07, W-10, W-12, W-14).
 
 ### 7. Ship
 
@@ -107,6 +130,23 @@ Status: `[ ]` to do, `[~]` in progress, `[x]` done, `[-]` dropped (say why).
     `USE_BUILTIN_RIPGREP=0` (verify).
   - Known: Amp's official Homebrew formula is `ampcode/tap/ampcode`; it
     installs the `amp` command. `amp login` signs in through the browser.
+  - Known: Playwright supports Debian 12/13 and Ubuntu; Alpine isn't listed.
+    Claude's reference devcontainer uses `node:20` (Debian), installs Claude
+    with `npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}`
+    (build argument, default `latest`), and runs as the non-root `node` user.
+    Pi's Docker example uses `node:24-bookworm-slim`. Gondolin always boots an
+    Alpine kernel and initramfs but can swap in an OCI root filesystem such as
+    `debian:bookworm-slim`; OCI pulls, and on macOS any build with
+    `postBuild.commands`, need Docker or Podman (not Apple's `container`).
+  - Answer: the guest root file system comes from a Debian-based Node image
+    (like `node:24-bookworm-slim`) on Gondolin's Alpine boot layer, so
+    Playwright and Claude run on glibc. Building it needs Docker or Podman on
+    the Mac. Source: Pi's Docker example, Claude's devcontainer, Playwright's
+    system requirements. 2026-11-01.
+  - Answer: Claude Code, Amp, and Playwright versions are pinned in this repo
+    and baked into the image; upgrading means bumping versions and
+    rebuilding, a user step. Agent auto-update stays off. Source: Claude's
+    devcontainer version argument, Docker Sandboxes' pinned kits. 2026-11-01.
 - **W-02 Credentials.** How does each agent authenticate without the guest
   holding a real token? How are tokens created, stored, and renewed?
   - Known: Pi's isolation guide and Docker Sandboxes keep provider credentials
@@ -153,7 +193,14 @@ Status: `[ ]` to do, `[~]` in progress, `[x]` done, `[-]` dropped (say why).
 - **W-04 Startup time.** How long does a VM take to boot, and does it need
   pre-warming, reuse per worktree, or sharing between agents?
   - Known: Gondolin can use `krun` on Apple Silicon (the old setup did) and can
-    snapshot and resume VMs.
+    snapshot and resume VMs. Its docs say VMs "boot in under a second". Docker
+    Sandboxes keeps one sandbox per workspace, stopped and reused until
+    removed.
+  - Answer: one VM per agent session, started with the agent and discarded on
+    exit; nothing to pre-warm or clean up. Project files and dependencies live
+    in the mounted worktree; tools are in the image. Revisit if boot time or
+    reinstalls hurt. Source: Pi's Gondolin example and the pre-October setup.
+    2026-11-01.
 - **W-05 What the agent sees.** Which host folders are mounted, read-write or
   read-only, and at which guest paths? What about linked-worktree Git metadata,
   other repos, and docs?
@@ -195,25 +242,70 @@ Status: `[ ]` to do, `[~]` in progress, `[x]` done, `[-]` dropped (say why).
   - Known: Pi's `clipboard-image` extension attaches host clipboard images
     before tools run. A whole agent inside the VM can't see the Mac clipboard.
     Gondolin's HTTP hooks can answer guest requests with host code.
-  - Idea: a Rex shortcut saves the clipboard image somewhere the VM can see and
-    types its path into the agent.
+  - Known: Docker Sandboxes has an opt-in `clipboard.imagePaste` setting:
+    `Ctrl+V` then pastes host clipboard images into Claude Code and Codex
+    through a host-side proxy. It is off by default because the sandbox could
+    read the host clipboard. Text paste always works through the terminal.
+    Claude Code also accepts drag and drop and image file paths; Amp accepts
+    `Ctrl+V` and drag and drop. macOS screenshots go to `~/Downloads` (set by
+    `_scripts/macos-defaults.sh`).
+  - Answer: Claude and Amp get `Ctrl+V` image paste through a host clipboard
+    proxy that serves images only, never text. Take screenshots to the
+    clipboard. Pi keeps its `clipboard-image` extension. Source: Docker
+    Sandboxes' `clipboard.imagePaste`, narrowed to images. 2026-11-01.
 - **W-08 Reach.** What can the agent reach on the internet and on the Mac
   (local services, local models)?
   - Known: Gondolin allows all HTTP by default, blocks internal addresses, and
     can map chosen addresses (`--tcp-map`). TLS passes through Gondolin's CA,
     which its guest init exports via `NODE_EXTRA_CA_CERTS` and `SSL_CERT_FILE`.
+  - Known: Claude Code on the web defaults to "Trusted" (package registries,
+    GitHub, cloud SDKs, Anthropic), with None, Full, and Custom levels. Claude's
+    devcontainer firewall is default-deny with a small allowlist. Docker
+    Sandboxes enforces policy in a host proxy (default not confirmed) and
+    reaches host services only after allowing a specific `localhost:port`.
+    Gondolin calls its mapped host TCP "a narrow exception path".
+  - Answer: open internet, Gondolin's default; tokens stay protected by host
+    substitution, and code can leave through any site. Source: Gondolin
+    default, Claude Code on the web's Full level. 2026-11-01.
+  - Answer: Mac services are blocked unless mapped in for a project. The
+    mappings live in this repo's config, not the project, so agents can't add
+    their own. Source: Docker Sandboxes' explicit localhost allow, Gondolin's
+    mapped TCP. 2026-11-01.
 - **W-09 Looking inside.** How do I inspect, interrupt, or take over a running
   VM?
   - Known: `gondolin list` and `gondolin attach` open another shell in a
     running VM.
+  - Answer: use `gondolin list` and `gondolin attach`; each VM's session label
+    names the agent and worktree, as the old extension's did. Source: Gondolin
+    CLI. 2026-11-01.
 
 ### Check the work
 
 - **W-10 Previews.** How do I open a dev server or app the agent started?
   - Known: Gondolin has an ingress gateway (`--listen`).
+  - Known: Docker Sandboxes publishes ports explicitly (`--publish 8080:3000`,
+    `sbx ports`), bound to host `127.0.0.1`; servers must listen on all guest
+    interfaces. Gondolin's ingress is HTTP-only (WebSockets work), binds host
+    `127.0.0.1` on a random port by default, and routes by path prefix from
+    the guest's `/etc/gondolin/listeners` or the SDK. Claude in Chrome runs on
+    the host and is off when signed in with a `setup-token` token. No
+    reference puts a browser inside the sandbox.
+  - Answer: previews are opt-in per session, like Docker's `--publish`; the
+    typed launch command takes the option, and how the Rex shortcut offers it
+    is still open. Source: Docker Sandboxes, Gondolin ingress docs.
+    2026-11-01.
+  - Answer: the guest image includes a headless browser (Playwright with
+    Chromium) so agents can load pages and take screenshots of their own
+    work. Playwright's bundled browsers target glibc, not Alpine's musl
+    (verify); this may decide the base image (W-01). Source: user choice; no
+    sandbox reference. 2026-11-01.
 - **W-11 Review.** How do I review the agent's changes before they are
   committed or pushed?
   - Known: Pi has `/review` (Neovim on the host).
+  - Answer: agents edit the live worktree and open PRs (W-05, W-12), so review
+    uses the usual Mac tools (Pi's `/review`, Neovim, Lazygit) and GitHub PRs.
+    Nothing VM-specific is needed. Source: follows from earlier answers; Docker
+    Sandboxes' direct mode likewise shows edits live on the host. 2026-11-01.
 
 ### Ship
 
@@ -244,12 +336,25 @@ Status: `[ ]` to do, `[~]` in progress, `[x]` done, `[-]` dropped (say why).
 
 - **W-13 Parallel work.** How many agents run at once, with one VM each or
   shared, and within what memory budget?
+  - Answer: one VM per running agent (W-04); the memory budget comes from the
+    baseline measurement. Source: follows from W-04. 2026-11-01.
 - **W-14 History.** Where do sessions live, how are they resumed, and are VM
   and host histories shared?
   - Known: sharing host `~/.claude/projects` would let a VM agent write memory
     files that host Claude loads.
+  - Answer: one state folder per agent per project (primary repo), shared by
+    that repo's worktrees. Resume and memory carry across branches; other
+    projects, work and personal, stay invisible. Source: Docker Sandboxes keeps
+    state per sandbox and workspace; Claude's devcontainer keeps one volume
+    per devcontainer. 2026-11-01.
 - **W-15 Failures.** What do I see when the VM fails to start, the image is
   stale, or a token expires?
+  - Answer: fail closed and name the fix. A VM that won't start, an image
+    missing or older than the pinned versions, or a missing Keychain token
+    stops the launch with a message saying which host step fixes it; nothing
+    falls back to the Mac. `just doctor` warns before the Claude token's
+    yearly expiry. Source: the current Pi sandbox's fail-closed startup and
+    the earlier plan's contract. 2026-11-01.
 
 ### Per agent
 
@@ -290,12 +395,29 @@ Status: `[ ]` to do, `[~]` in progress, `[x]` done, `[-]` dropped (say why).
   - Known: Amp settings live in `~/.config/amp/settings.json` on Linux, with
     workspace settings in `.amp/settings.json`. Its docs pages checked so far
     don't name a flag that skips permission prompts; check `amp --help`.
+  - Known: Claude's devcontainer docs persist a writable `~/.claude` volume;
+    Docker Sandboxes ignores user-level `~/.claude` and uses only project
+    settings.
+  - Answer: since Claude never runs on the Mac, telling sessions apart is moot.
+    VM settings are tracked in this repo (the `claude/` package rewritten for
+    the VM, plus an Amp settings file) and mounted read-only; history and
+    other runtime state go in a separate per-agent state folder on the Mac
+    (W-14). Source: this repo's tracked-config convention (AGENTS.md); Claude
+    Code's sandbox also keeps agents from rewriting their own settings.
+    2026-11-01.
 - **W-19 Local VM or vendor cloud.** When is the local VM better than Claude
   Code's cloud environments (already set up) or Amp's cloud executor?
   - Known: `amp --executor local` runs Amp's tools on the machine it starts on
     rather than in an Amp cloud orb; model inference still uses Amp's service.
   - Known: the Claude desktop app (in the Brewfile) can run Claude Code
     sessions on the Mac, outside the VM.
+  - Answer: keep vendor clouds (Claude Code on the web, Amp's cloud executor)
+    as a complement for phone, web, and long unattended work; they never run
+    on the Mac. Gondolin covers everything local. Source: user choice;
+    Claude's cloud keeps GitHub credentials in its proxy. 2026-11-01.
+  - Answer: keep the Claude desktop app for chat; find a setting that turns
+    off its local Code sessions, and remove the app if there is none. Source:
+    user requirement that agents never run on the Mac. 2026-11-01.
 
 ### Boundary
 
@@ -342,10 +464,11 @@ Status: `[ ]` to do, `[~]` in progress, `[x]` done, `[-]` dropped (say why).
   run on the Mac the next time Git runs there.
 - The main `dev` checkout holds live Stow targets (Claude hooks, `.zshrc`).
 - Host Pi loads project `.pi/extensions`, `.pi/mcp.json`, and
-  `.pi/settings.json` from any trusted folder. Trust is saved per directory (and its parents) in
-  `~/.pi/agent/trust.json`, not per content, so files a VM agent writes there
-  run in host Pi at the next start or `/reload`. Host Claude has the same
-  exposure through project `.claude/` settings and hooks.
+  `.pi/settings.json` from any trusted folder. Trust is saved per directory
+  (and its parents) in `~/.pi/agent/trust.json`, not per content, so files a
+  VM agent writes there run in host Pi at the next start or `/reload`. Host
+  Claude has the same exposure through project `.claude/` settings and hooks.
+  W-20 makes these paths read-only in the VM.
 - A forwarded SSH agent lets the agent push or force-push anything the key can.
 - Logging in inside the VM writes a real token into the guest.
 
