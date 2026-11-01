@@ -273,6 +273,10 @@ Workflow changes worth remembering, newest first. Everything up to and
 including [1.0.0] stays as one block at the bottom; changes after it are
 expanded month by month. Full history lives in `git log`.
 
+### 202611
+
+- 20261101: Added the Tailscale desktop app cask to the Brewfile.
+
 ### 202610
 
 - 20261029: Added Rex's Claude Code `SessionStart` hook for session/pane context

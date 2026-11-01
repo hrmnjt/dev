@@ -85,6 +85,9 @@ cask "brave-browser"
 # Desktop password manager with Touch ID unlock
 cask "bitwarden"
 
+# Tailscale mesh VPN desktop app
+cask "tailscale-app"
+
 # Messaging
 cask "whatsapp"
 # Email client
