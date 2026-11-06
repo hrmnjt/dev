@@ -69,6 +69,8 @@ cask "codex"
 cask "claude-code"
 # Claude desktop app
 cask "claude"
+# Hex desktop app
+cask "anomalyco/tap/hex"
 # Terminal
 cask "ghostty"
 
