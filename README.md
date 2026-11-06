@@ -275,6 +275,7 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202611
 
+- 20261106: Added the Hex desktop app cask (`anomalyco/tap/hex`) to the Brewfile.
 - 20261101: Added the Tailscale desktop app cask to the Brewfile.
 
 ### 202610
