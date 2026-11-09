@@ -1,4 +1,4 @@
--- Worktree and project actions only.
+-- Worktree, project and VM-agent actions.
 -- Appearance preferences remain manual: rex/README.md.
 
 -- Projects for Cmd+Shift+K, and for New/Open outside a Git checkout. List
@@ -82,6 +82,39 @@ local function worktree_menu(mode, ctx)
     }}},
   }))
   rex.client.queue("session.select", { session_id = menu.session_id })
+end
+
+-- A new program is a pane in the current worktree tab, never a duplicate tab.
+-- Absolute launcher paths prevent legacy Mac Claude/Amp binaries from winning PATH.
+local function agent_pane(agent, ctx)
+  local directory = terminal_directory(ctx)
+  local home = assert(os.getenv("HOME"), "HOME is not set")
+  local config = os.getenv("AGENT_VM_CONFIG") or (home .. "/.config/gondolin")
+  checked(rex.call("session.new_split", {
+    session_id = ctx.session_id, anchor_id = ctx.block_id,
+    direction = "horizontal", side = "after", focus = true,
+    layout = rex.layout.block{
+      flavor = "com.superlogical.terminal.shell", label = agent,
+      options = {
+        cwd = directory,
+        command = { "/usr/bin/env", "AGENT_VM_CONFIG=" .. config, "node", config .. "/cli.mjs", agent },
+        exit = { on_completion = false },
+      },
+    },
+  }))
+end
+
+for _, item in ipairs({
+  { "pi", "cmd+alt+p", "Start Pi (VM tools)" },
+  { "claude", "cmd+alt+c", "Start Claude Code (VM)" },
+  { "amp", "cmd+alt+a", "Start Amp (VM)" },
+}) do
+  local agent = item[1]
+  rex.action{
+    name = "agent_" .. agent, title = item[3], category = "Agents",
+    run = function(ctx) agent_pane(agent, ctx) end,
+  }
+  rex.bind(item[2], "agent_" .. agent)
 end
 
 -- Cmd shortcuts never reach terminal programs, so every Ctrl key stays theirs.

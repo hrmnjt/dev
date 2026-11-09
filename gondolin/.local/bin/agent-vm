@@ -1,0 +1,4 @@
+#!/bin/sh
+# Explicit override is for branch trials; never search for an unsandboxed CLI.
+export AGENT_VM_CONFIG="${AGENT_VM_CONFIG:-$HOME/.config/gondolin}"
+exec node "$AGENT_VM_CONFIG/cli.mjs" "$@"

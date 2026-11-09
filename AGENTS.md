@@ -6,20 +6,28 @@ on instructions that add to those guides rather than repeating them.
 
 ## Execution environment
 
-Deployed Pi filesystem/shell tools use the native macOS sandbox with real host
-paths and launch-directory-confined writes. Private scratch and this checkout's
-Git metadata are explicit exceptions; use bash Git commands, not direct file edits
-in `.git`. Networking and CLI authentication remain available. `!` and `!!` remain
-unsandboxed host commands.
-Leave Homebrew, Stow deployment, launchd, VPN, and local-LLM operations to the
-user. A development harness may expose a different tool cwd/environment;
-honor that rather than assuming host paths. See **Native sandbox** in `pi/README.md`.
+The target deployment uses Gondolin as the shared sandbox. Pi's interface and
+provider/OAuth connection stay on the Mac; its model filesystem/shell tools run
+only in the VM. Claude Code and Amp run entirely in separate session VMs; their
+Mac commands are launchers, not host agent installs. Pi's user `!`/`!!` remain
+host commands. See `gondolin/README.md` and the agent package guides.
 
-Claude Code runs on the host Mac with its own native Bash sandbox, or in a
-claude.ai cloud environment; Pi's tool policy does not apply to Claude. See
-`claude/README.md` for global settings, shared `AGENTS.md` support, and web Git
-identity setup. The same deliberate-user rule applies to Mac deployment and
-service operations.
+The complete worktree and linked common Git directory are mounted at the same
+absolute paths. Use ordinary bash Git commands; identity is selected from the
+primary repository, with no fallback. Host-backed `.pi`, `.claude`, Git hooks,
+VM launcher/config sources and guest global Git config are read-only. Never
+bypass those protections; ask for a deliberate host edit when needed.
+`.git/config` stays writable, with the documented host-hook/config execution risk.
+Tokens are host Keychain values substituted for guest placeholders; no SSH agent
+or arbitrary host environment is forwarded. The internet is open, but Mac/private
+services are blocked except the narrow images-only clipboard and Pi tldraw bridges.
+
+Homebrew, Stow, live npm installs, image builds, Keychain, GitHub rulesets,
+launchd, VPN and local-model services remain deliberate user steps. Do not merge
+or deploy before host VM acceptance. This worktree/harness may still have the
+previous native sandbox loaded; honor its actual tools and boundary, never route
+blocked writes through host services. Claude/Amp cloud sessions remain separate;
+see `claude/README.md` for web Git identity.
 
 ## Git workflow
 
@@ -45,24 +53,26 @@ actually does. If it does not, add one.
 Before modifying Pi extensions, themes, skills, prompts, keybindings, models,
 SDK integrations, or TUI components, read the relevant installed Pi documentation
 completely, follow its cross-references, and inspect applicable installed examples.
-`/sandbox` reports the paths (normally under
-`/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/`).
+Inside the VM, installed Pi docs/examples are mounted at `/pi/docs` and
+`/pi/examples`; `/gondolin` reports the active VM/workspace. Host SDK paths vary
+with the Pi installation; use the actual harness paths when developing.
 
 Design Pi changes toward these goals:
 
 - Keep the configuration small, focused, terminal-native, and self-contained.
 - Prefer official Pi APIs and focused extensions over parallel frameworks or
   external services.
-- Keep model-facing filesystem/shell tools behind the native sandbox. Avoid
-  new host-side escape hatches; when one is necessary, make it narrow, explicit,
-  and user-approved.
+- Keep model-facing filesystem/shell tools inside Gondolin, including nested
+  and codemode calls. Never fall back to host execution. Avoid new host-side
+  escape hatches; any exception must be narrow, explicit and user-approved.
 - Track intentional configuration while keeping mutable runtime state
   Git-ignored.
-- Preserve native launch-directory write confinement, host-shell separation,
-  linked-worktree Git metadata access, and fail-closed Git identity. Use normal
-  bash Git/network commands when requested. Do not add offline mode, read-only
-  Git, or Pi-source locks as part of this migration. Stow-linked Pi source is
-  editable when inside the launch boundary; changes affect new/reloaded sessions.
+- Preserve host-shell separation, same-path worktree/common-Git mounts,
+  fail-closed identity and normal guest Git/network operations. Do not add
+  offline mode or read-only repository Git config. Protect host-executable
+  agent configuration, Git hooks and global guest Git config at the provider
+  boundary, not with model instructions alone. Keep the main checkout's live
+  Stow effects explicit; protected Pi-source edits require a user host step.
 - Use `ctx.shutdown()` for exit; never call `process.exit()`.
 - Prefer imports from `@earendil-works/pi-coding-agent` and
   `@earendil-works/pi-tui` for new code.

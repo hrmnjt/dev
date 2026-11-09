@@ -1,68 +1,96 @@
-# Claude Code
+# Claude Code in Gondolin
 
-Homebrew installs Claude; Stow manages global Mac settings, personal instructions,
-and the Gruvbox theme. Project instructions come from native `AGENTS.md`.
-
-## Mac setup
-
-```bash
-brew bundle install
-stow --no-folding --simulate --verbose -t ~ claude
-just stowall
-claude doctor
-```
-
-Existing files can conflict with Stow; individual backups leave credentials and
-runtime state intact. Plain `claude` loads global settings, which project/local
-settings can override. Optional `claude --settings "$HOME/.claude/settings.json"`
-gives the same file higher priority; organization-managed settings still win.
+Claude Code is pinned **inside the guest image**, not installed on the Mac.
+`claude` is a VM launcher. See [shared setup and branch trials](../gondolin/README.md).
+This candidate still requires image-build and real-CLI acceptance before deployment.
 
 ## Configuration
 
-- Opus, with saved `xhigh` effort for `claude-opus-5-5`.
-- Auto permission mode by default (`permissions.defaultMode: "auto"`), using
-  Claude Code's classifier for approval decisions rather than bypassing checks.
-  Requires auto mode to be available for the session; CLI flags and higher-priority
-  settings can override this global default.
-- Native Gruvbox Dark Hard; Ghostty owns the terminal background.
-- Host personal/work Git identity, no Mac attribution, Remote Control mobile
-  notifications, and Herdr's generated `~/.claude/hooks/herdr-agent-state.sh`.
-- Rex's `SessionStart` hook supplies session/pane context for terminal control
-  when running inside Rex, not activity notifications. It has a five-second
-  timeout and ignores failures if Rex is unavailable.
-- Outside-read blocking and mandatory Bash sandboxing, without exclusions or
-  unsandboxed retries. Hooks/plugins/MCP are outside the Bash sandbox; workspace
-  secrets and remote-service effects are not isolated by filesystem confinement.
+Stow deploys `claude/.config/agent-vm/claude/` to
+`~/.config/agent-vm/claude/`. It deliberately does **not** deploy bypass settings
+to the host's `~/.claude`: a legacy Mac CLI must never inherit this VM policy.
 
-`just doctor` and `claude doctor` cover setup checks. `/sandbox`, `/permissions`,
-`/memory`, and `/theme` expose session configuration; checks alone do not prove
-live enforcement.
+The shared launcher copies only tracked settings, instructions and theme bytes
+into a read-only guest provider. No Mac Claude credentials, plugins, hooks,
+sessions or configuration directory are mounted.
+
+- Runs as UID 1000 with `--dangerously-skip-permissions`.
+- Permission mode `bypassPermissions`; nested Claude Bash sandboxing is off
+  because Gondolin is the boundary.
+- Opus and the saved `claude-opus-5-5/xhigh` preference are retained.
+- Gruvbox Dark Hard, no Claude Git attribution, Remote Control notifications.
+- Auto-updates disabled; upgrades mean pin bumps, image rebuild and acceptance.
+- Host Herdr/Rex command hooks removed. Native OSC 7501 goes directly through the
+  PTY to Rex; no host RPC/socket access is given to the guest.
+- Global settings/instructions/themes are read-only. Runtime history and memory
+  live in a separate per-primary-project `claude-state` directory, shared across
+  that project's worktrees. Workspace `.claude` trees remain read-only.
+
+## Use
+
+```bash
+claude
+claude --resume
+claude --preview 3000
+claude setup-token
+```
+
+`setup-token` is the one explicit exception for credential setup: a throwaway VM
+with no mounts or supplied tokens, not a login in the work VM. Open its URL on
+the Mac yourself; put the resulting token and actual expiry into Keychain Access
+as described in the shared guide. Never run `claude login` in a work VM.
+
+Inside a session, edits, commits, branch pushes and PR creation operate on the
+live worktree. GitHub uses the scoped placeholder token and HTTPS, with no SSH
+agent. The user reviews and merges under an enforced main-branch ruleset.
+`Ctrl+V` uses the images-only host proxy; Playwright/Chromium and opt-in ingress
+are provided by the shared image. These actual CLI workflows still need a host trial.
+
+Rex **Cmd+Alt+C** opens a Claude pane in the current worktree tab; it never types
+into the running foreground program or enables previews. Preserve one tab per
+worktree, using panes for programs. Amp and Pi have sibling shortcuts.
+
+## Retire Mac agents after acceptance
+
+Do not uninstall anything until the VM's authentication, image paste, status,
+history/memory, preview, commit/push/PR and clean shutdown have passed on the Mac.
+Then quit old Mac CLI sessions and run these yourself in a host terminal:
+
+```bash
+brew uninstall --cask claude-code
+# No documented setting was found that disables all local desktop Code sessions.
+# The chosen fail-closed option is to remove the app, not assume they are disabled.
+brew uninstall --cask claude
+```
+
+The candidate Brewfile no longer installs either cask; editing it does not
+uninstall existing applications. Web chat remains available. Do not run blanket
+Brew cleanup. If Claude was installed another way, inspect/remove that install
+yourself, then confirm `whence -a claude` shows only the function/VM wrapper you
+intend. Remove only dangling old Stow links during [Pi deployment](../pi/README.md#deploy);
+leave existing credentials/runtime data alone. Existing Mac sessions are not
+stopped or migrated automatically.
 
 ## Web sessions
 
-Cloud environments are account-scoped and reusable across Macs. They are managed
-at [claude.ai/code](https://claude.ai/code), in the cloud selector above the
-message box → **Cloud → Add cloud environment**.
+Claude Code on the web remains a complement for phone, browser and unattended
+work. Configure reusable account-scoped environments at
+[claude.ai/code](https://claude.ai/code), independently of this VM:
 
 | Environment | Identity source |
-|---|---|
+| --- | --- |
 | `hrmnjt-personal` | `git/.config/git/config.personal` |
 | `hrmnjt-work` | `git/.config/git/config.work` |
 
-Each uses `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`, `GIT_COMMITTER_NAME`, and
-`GIT_COMMITTER_EMAIL`. The selected identity applies to every repo in the session,
-not Mac path rules. `/remote-env` selects the CLI cloud default on each Mac;
-browser sessions have their own environment selector.
+Set `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`, `GIT_COMMITTER_NAME` and
+`GIT_COMMITTER_EMAIL` explicitly there. Web environments do not inherit Mac
+path-based identity or local VM settings/themes. Provide personal instructions in
+the environment setup when needed; use the repository's shared `AGENTS.md`.
+Check `git var GIT_AUTHOR_IDENT`/`GIT_COMMITTER_IDENT` rather than rewriting old
+commits. An explicit branch name follows this repo's Conventional Commit-style
+branch naming; names are not enforcement.
 
-Mac settings and attribution do not carry over. An environment's **Setup script**
-can supply personal `~/.claude/CLAUDE.md` instructions; `/context` lists loaded
-instructions. `git var GIT_AUTHOR_IDENT` and `git var GIT_COMMITTER_IDENT` show
-current identities, without changing existing commits.
-
-Cloud sessions may start on generated `claude/...` branches. An explicit branch
-name helps align work with `AGENTS.md` conventions; naming instructions are not
-enforcement. The PR head is separate from a local branch rename.
-
-References: [settings](https://code.claude.com/docs/en/settings),
-[permission modes](https://code.claude.com/docs/en/permission-modes),
-[palette](../GRUVBOX.md), [web environments](https://code.claude.com/docs/en/cloud-environments).
+References: [devcontainer](https://code.claude.com/docs/en/devcontainer),
+[settings](https://code.claude.com/docs/en/settings),
+[terminal config](https://code.claude.com/docs/en/terminal-config),
+[cloud environments](https://code.claude.com/docs/en/cloud-environments).
