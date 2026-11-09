@@ -299,6 +299,17 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202611
 
+- 20261109: Fixed the first live Gondolin failure: bindfs now mounts with
+  `nonempty` over Gondolin's existing binds. Gave the VM agent user passwordless
+  `sudo` (keeping Gondolin's CA variables) and ran Pi's write/edit tools as that
+  user. Carried host Git excludes, rerere, `zdiff3` and branch sort into the
+  guest. Seeded Claude's per-project state past onboarding and skipped its
+  bypass-mode prompt; dropped Remote Control notifications, which inference-only
+  `setup-token` tokens cannot use. Rex agent panes now start through a `zsh`
+  login shell for Homebrew's `node`. Added an `fd` command and `wl-paste -l` to
+  the image, removed the Codex cask, made policy tests independent of
+  symlinked `TMPDIR` and let Pi tests find the installed SDK. Requires an image
+  rebuild; live VM enforcement remains unproven.
 - 20261108: Added bounded, escaped startup-step diagnostics for Gondolin's
   mount/state/non-root probes, redacting known credentials and placeholders
   before truncation while retaining fail-closed cleanup. The first live fixture

@@ -151,7 +151,7 @@ All decided on 2026-11-01. IDs match the tracker.
 
 Status: `[ ]` to do, `[~]` in progress, `[x]` done, `[-]` dropped (say why).
 
-**2026-11-08: candidate implementation, not deployed or host-accepted.** Source
+**2026-11-09: candidate implementation, not deployed or host-accepted.** Source
 work and fixture checks are distinguished below from live behavior. Do not merge
 or retire this tracker until the user completes the host acceptance in
 [gondolin/README.md](gondolin/README.md#checks-and-remaining-acceptance).
@@ -165,7 +165,9 @@ fingerprint and its manifest is present. No Stow/live npm operation,
 Keychain/login, GitHub setting, Mac agent removal, push or merge has been
 performed. The first live fixture booted far enough to read the guest image
 marker, then failed a bindfs re-export command before non-root/enforcement checks.
-Bounded/redacted setup diagnostics are added; the cause awaits a host rerun.
+The rerun with diagnostics showed libfuse 2 refusing Gondolin's non-empty bind
+targets; bindfs now uses `nonempty`. Image inputs changed on 2026-11-09 (sudo,
+`fd`, `wl-paste -l`), so rebuild before rerunning the live fixture.
 Successful VM enforcement and real-agent acceptance remain pending.
 
 ### 1. Prepare
@@ -234,8 +236,11 @@ Successful VM enforcement and real-agent acceptance remain pending.
 - [~] UID 1000 entry point, bypass mode, nested sandbox/update controls,
   read-only VM-only settings and mutable history separation are implemented
   (W-18). Gondolin sandboxfs needs the candidate bindfs ownership remapping;
-  the first live attempt failed during bindfs setup before non-root probes.
-  This remains a deployment blocker; rerun with the added diagnostics.
+  the first live attempt failed during bindfs setup before non-root probes
+  (non-empty mountpoint, now mounted with `nonempty`). This remains a
+  deployment blocker until the rebuilt image passes the live fixture. Claude
+  state is seeded past onboarding, the bypass prompt is skipped by setting, and
+  the agent user has passwordless guest `sudo`.
 - [x] Rex action/shortcut and typed `claude` route through the shared
   launcher; mocked wiring and branch Rex config checks pass (W-03).
 - [~] Direct PTY/terminal metadata should preserve OSC 7501; removed host
@@ -253,7 +258,11 @@ Successful VM enforcement and real-agent acceptance remain pending.
   VM acceptance and is a user operation (W-03).
 - [ ] Remove desktop app after acceptance: no documented reliable setting to
   disable every local Code session was found. Candidate Brewfile omits both
-  Claude casks; installed apps remain untouched (W-19).
+  Claude casks and Codex; installed apps remain untouched and doctor warns
+  while they remain (W-19).
+- [-] Remote Control push notifications: Claude requires a full-scope login
+  token, and `setup-token` tokens are inference-only (W-02). Use Claude Code on
+  the web for phone/remote work (W-19).
 
 ### 5. Amp
 
@@ -316,6 +325,13 @@ Successful VM enforcement and real-agent acceptance remain pending.
 
 ## Verification evidence
 
+- 2026-11-09, inside the Claude Code sandbox with a scratch Pi 1.4.0 SDK and a
+  symlinked `TMPDIR`: **80 tests, 75 passed, 1 skipped, 4 failed**. The failures
+  are sandbox limits only: three clipboard tests cannot bind a local port, and one
+  Pi test hits the SDK's host `realpath` on `/home` (unreadable there; ENOENT on
+  the Mac). The clipboard adapter was checked separately with a stubbed fetch.
+  Rex config check passes (7 actions, 7 bindings); the Rex fixture needs the Rex
+  socket and was not run.
 - Node VM/Pi suites (2026-11-08): **78 tests, 77 passed, 1 skipped, 0 failed**. They use
   synthetic tokens, real VFS/HTTP hooks, the installed Pi SDK, fake VM transports
   and disposable Git projects. Includes bounded guest
@@ -357,6 +373,16 @@ Successful VM enforcement and real-agent acceptance remain pending.
   discarded stderr, so no root cause is established. Startup errors now include
   the stage, exit status and bounded/escaped/redacted command output. No image
   inputs changed; rerun the fixture without rebuilding. Enforcement is unproven.
+- 2026-11-09: The diagnostic rerun failed at `bindfs /pi-output` with libfuse 2's
+  "mountpoint is not empty": Gondolin bind-mounts every VFS mount before bindfs
+  runs. bindfs now passes `nonempty`. Verified against the installed Gondolin
+  SDK, the Pi 1.4.0 package and the Mac's Claude Code 2.1.311 binary (the image
+  pins 2.1.316): option names, attach raw mode/resize, symlink
+  handling for the state links, Pi CLI flags/`PI_CODING_AGENT_SESSION_DIR`, Pi's
+  in-place `auth.json` writes (lock lives beside the trial link), Claude's
+  `skipDangerousModePermissionPrompt`/`hasCompletedOnboarding` keys and its
+  full-scope requirement for Remote Control. Pi's write tool still calls host
+  `realpath` on guest paths to key its mutation queue (SDK behaviour, metadata only).
 
 - 2026-11-02: Gondolin 0.14.0's sandboxfs is root-only (guest source). The
   candidate image uses bindfs to re-export the same guarded providers for UID

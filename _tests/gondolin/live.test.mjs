@@ -33,6 +33,16 @@ test("live QEMU: non-root tools, linked mounts, locked paths, overflow mount, ca
     await assert.rejects(session.vm.fs.writeFile(path.posix.resolve(session.project.cwd,target),"unsafe"));
   }
   assert.notEqual((await bash("mv .pi moved-config")).exitCode,0);
+  // Guest root is available to the agent, but host-side protections still apply to it.
+  assert.equal((await bash("sudo -n id -u 2>/dev/null")).output.trim(),"0");
+  for (const target of [".pi/policy",path.join(session.project.common,"hooks/pre-commit"),"/etc/agent-config/gitconfig"]) {
+    assert.notEqual((await bash(`sudo -n sh -c ${quote(`printf unsafe > ${quote(target)}`)} 2>/dev/null`)).exitCode,0,"root: "+target);
+  }
+  assert.equal(fs.readFileSync(path.join(linked,".pi/policy"),"utf8"),"locked");
+  // Pi's write tool creates agent-owned files; host global excludes apply to guest Git.
+  await session.writeFile("/tmp/pi-write.txt","pi");
+  assert.equal((await bash("stat -c %u /tmp/pi-write.txt && rm /tmp/pi-write.txt")).output.trim(),"1000");
+  assert.equal((await bash("git check-ignore -q editor.swp")).exitCode,0);
   assert.notEqual((await bash("cat _models/anything")).exitCode,0);
   assert.equal((await bash("cat /pi-output/fixture.log")).output,"host-owned-output\n");
   assert.equal(await session.vm.fs.readFile("/pi-output/fixture.log",{encoding:"utf8"}),"host-owned-output\n");

@@ -11,9 +11,10 @@ export async function createSession(options) {
     access:async p => {f.calls.push(["access",p]);missing(p);},
     stat:async p => {missing(p);return {isFile:() => !f.nonregular,size:f.sizeOverride ?? files.get(p).length};},
     readFileStream:async p => {f.calls.push(["read",p]);missing(p);return Readable.from([files.get(p)]);},
-    mkdir:async p => {f.calls.push(["mkdir",p]);},
-    writeFile:async (p,content) => {f.calls.push(["write",p]);files.set(p,Buffer.from(content));},
   }},project:{workspace:process.cwd(),common:"/guest-common"},
+  // Writes use the session's non-root helpers; the fake vm.fs has none.
+  mkdir:async p => {f.calls.push(["mkdir",p]);},
+  writeFile:async (p,content) => {f.calls.push(["write",p]);files.set(p,Buffer.from(content));},
   bash:async (command,cwd,options) => {
     f.calls.push(["bash",command,cwd]);
     options.onData(Buffer.from(f.output ?? "guest output"));

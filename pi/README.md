@@ -247,8 +247,9 @@ node --test _tests/pi/*.test.mjs _tests/gondolin/*.test.mjs
 just doctor --only-check
 ```
 
-Set `PI_TEST_SDK_ROOT` to the installed Pi package directory when not using the
-Homebrew SDK default. Current fixture evidence is recorded in `TODO.md`; native
+Pi suites find the SDK through `~/.pi/agent/bin/pi`, then Homebrew; otherwise set
+`PI_TEST_SDK_ROOT` to the installed `@earendil-works/pi-coding-agent` directory.
+Current fixture evidence is recorded in `TODO.md`; native
 Seatbelt tests are retired, not re-labelled as VM enforcement proof. Host-only
 VM integration is opt-in with `AGENT_VM_LIVE_TEST=1`; see the shared guide.
 Remaining real checks include tool images, overflow reads/codemode, shutdown,
