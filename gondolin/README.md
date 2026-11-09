@@ -95,7 +95,8 @@ fallback), so add them before the first launch after deployment.
 
 Before deployment use `node "$config/cli.mjs" claude setup-token`. After deployment
 use `claude setup-token`. This one explicit setup command runs in a throwaway VM
-with **no mounts, state, clipboard proxy or supplied credentials**. Open the URL
+with **no host mounts, state, clipboard proxy or supplied credentials**; only
+Gondolin's read-only TLS interception CA is mounted. Open the URL
 on the Mac yourself and complete its flow; transfer the resulting token straight
 into Keychain Access. Record its actual reported expiry (normally one year),
 then discard terminal output. Do not use `claude login`/`amp login` inside a work
@@ -175,6 +176,13 @@ State is under `~/.local/state/agent-vm/<primary-hash>/<agent>/`:
   sourced from `.config/agent-vm/amp/`, not the Mac CLI's default config path.
 - All other root-disk changes are discarded on exit. Parallel sessions have
   separate VMs but intentionally share their project's agent history/memory.
+
+Gondolin intercepts guest HTTPS with its own host-generated CA, mounted read-only
+into every VM (root-only). Its init trusts that CA system-wide and writes a
+world-readable bundle at `/run/gondolin/ca-certificates.crt`, which `curl`, Git,
+`pip` and `gh` use; the launcher points `NODE_EXTRA_CA_CERTS` (Claude, Amp, npm)
+there too. Chromium keeps its own NSS store, so Playwright needs
+`ignoreHTTPSErrors` for external HTTPS sites; local HTTP previews are unaffected.
 
 Public HTTP(S) internet access follows Gondolin's default policy. Internal/private
 IP destinations and Mac services are blocked, with only the images-only clipboard

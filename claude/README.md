@@ -44,7 +44,7 @@ claude setup-token
 ```
 
 `setup-token` is the one explicit exception for credential setup: a throwaway VM
-with no mounts or supplied tokens, not a login in the work VM. Open its URL on
+with no host mounts or supplied tokens, not a login in the work VM. Open its URL on
 the Mac yourself; put the resulting token and actual expiry into Keychain Access
 as described in the shared guide. Never run `claude login` in a work VM.
 

@@ -50,6 +50,8 @@ test("guest env is an allowlist: no host tokens, SSH agent, proxies or identity 
   const env = guestEnv({GH_TOKEN:"github_pat_fixture-placeholder"},{TERM:"xterm-test",TERM_PROGRAM:"rex",REX_SOCKET:"/private/socket",SSH_AUTH_SOCK:"private",ANTHROPIC_API_KEY:"private",GIT_AUTHOR_NAME:"wrong",BASH_ENV:"evil",HTTPS_PROXY:"evil"});
   for (const key of ["SSH_AUTH_SOCK","ANTHROPIC_API_KEY","GIT_AUTHOR_NAME","BASH_ENV","HTTPS_PROXY","REX_SOCKET"]) assert.equal(env[key],undefined);
   assert.equal(env.TERM_PROGRAM,"rex");assert.equal(env.GIT_CONFIG_VALUE_0,"true");assert.equal(env.AMP_FORCE_BEL,"1");
+  // Node trusts Gondolin's CA through the world-readable runtime bundle, not the root-only mount.
+  assert.equal(env.NODE_EXTRA_CA_CERTS,"/run/gondolin/ca-certificates.crt");
   assert.match(globalGitConfig(null),/insteadOf = git@github.com:/);
   assert.match(globalGitConfig(null),/password=%s/);
   // Host Git behaviour carried into the guest: global excludes and conflict style.
