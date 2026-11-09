@@ -331,6 +331,9 @@ Successful VM enforcement and real-agent acceptance remain pending.
 
 ## Verification evidence
 
+- 2026-11-09, user host run after commit `0ace255`: **80 tests, 79 passed,
+  1 skipped (the opt-in live QEMU test), 0 failed**, including the Pi SDK and
+  clipboard suites.
 - 2026-11-09, inside the Claude Code sandbox with a scratch Pi 1.4.0 SDK and a
   symlinked `TMPDIR`: **80 tests, 75 passed, 1 skipped, 4 failed**. The failures
   are sandbox limits only: three clipboard tests cannot bind a local port, and one
