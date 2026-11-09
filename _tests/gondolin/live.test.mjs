@@ -41,6 +41,8 @@ test("live QEMU: non-root tools, linked mounts, locked paths, overflow mount, ca
   assert.equal((await bash("sudo -n id -u 2>&1")).output.trim(),"0","sudo works without hostname warnings");
   assert.equal((await bash("hostname")).output.trim(),"pi-vm");
   assert.match((await bash("getent ahostsv4 localhost")).output,/^127\.0\.0\.1\s/,"localhost resolves locally");
+  // Gondolin's intercepted certificates tolerate only five minutes of guest clock lag.
+  const skew = Number((await bash("date +%s.%N")).output)-Date.now()/1000;assert.ok(Math.abs(skew) < 2,`guest clock skew ${skew}s`);
   // Gondolin intercepts guest HTTPS; Node (agents, npm) and curl must trust its CA as UID 1000.
   const https = await bash(trustsHttps);assert.equal(https.exitCode,0,https.output);
   assert.equal((await bash("test -d /var/cache/apt && test -d /var/cache/debconf")).exitCode,0,"apt/debconf state is not hidden by tmpfs");

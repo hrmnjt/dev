@@ -114,6 +114,25 @@ test("bindfs tolerates Gondolin's binds, Git excludes are read-only and Claude s
   assert.equal(fs.existsSync(path.join(f.root,".claude.json")),false);
 });
 
+test("guest clock follows the Mac from boot and, for Claude and Amp, through Mac sleep",async t => {
+  t.mock.timers.enable({apis:["setInterval"]});
+  const syncs = f => f.calls.filter(c => c.command?.[0] === "/bin/date");
+  const settle = () => new Promise(resolve => setImmediate(resolve));
+  for (const agent of ["claude","amp","pi"]) {
+    const f = mock(t);
+    const session = await createSession({agent,cwd:path.join(f.root,"workspace")},f.deps);
+    const [boot] = syncs(f);
+    assert.equal(f.calls.indexOf(boot),0,"the clock is set before any other guest command");
+    assert.deepEqual(boot.command.slice(0,3),["/bin/date","-u","-s"]);assert.equal(boot.opts?.env,undefined);
+    assert.ok(Math.abs(Number(boot.command[3].slice(1))-Date.now()/1000) < 5);
+    t.mock.timers.tick(30_000);await settle();
+    // Pi's idle VM is paused and re-synced by Gondolin; polling would keep waking it.
+    const expected = agent === "pi" ? 1:2;assert.equal(syncs(f).length,expected,agent);
+    await session.close();t.mock.timers.tick(60_000);await settle();
+    assert.equal(syncs(f).length,expected,"no sync after close");
+  }
+});
+
 test("Pi file writes run as the guest's non-root user and report guest errors",async t => {
   const f = mock(t);
   const session = await createSession({agent:"pi",cwd:path.join(f.root,"workspace")},f.deps);
@@ -161,7 +180,7 @@ test("initialization failure identifies its stage and bounds, escapes and redact
     stdout:"x".repeat(10000)+"github_pat_fake-real"+"y".repeat(4096-tail.length-9)+tail,
   })});
   await assert.rejects(createSession({agent:"claude",cwd:path.join(f.root,"workspace")},f.deps),error => {
-    assert.match(error.message,/Guest initialization failed during "bindfs .*exit 1; no host fallback/);
+    assert.match(error.message,/Guest initialization failed during "guest clock sync" \(exit 1; no host fallback/);
     assert.match(error.message,/stderr:.*fixture mount failure/);assert.match(error.message,/stdout:.*fixture output tail/);
     assert.match(error.message,/\[truncated\]/);assert.match(error.message,/\[redacted\]/);
     for (const token of ["github_pat_fake-real","sk-ant-oat01-fake-real",f.specs[0].env.GH_TOKEN,f.specs[0].env.CLAUDE_CODE_OAUTH_TOKEN]) assert.ok(!error.message.includes(token));
