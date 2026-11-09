@@ -86,6 +86,9 @@ export async function createSession(options, dependencies = {}) {
       memory:config.memory,cpus:config.cpus,startTimeoutMs:60000,
       sessionLabel:`${agent} ${project ? path.basename(project.workspace) : "setup-token (no mounts)"}`,
       env,httpHooks,dns:{mode:"synthetic",syntheticHostMapping:"per-host"},
+      // Gondolin's default set also hides /var/cache and /var/log behind tmpfs,
+      // leaving apt/debconf without their directories. The cow root is discarded.
+      tmpfs:{"/tmp":{},"/var/tmp":{},"/root":{mode:"0700"}},
       ...(clipboard ? {tcp:{hosts:{"clipboard.agent.internal:18765":`127.0.0.1:${clipboard.port}`}}} : {}),
       vfs:project ? {mounts,fuseMount:"/mnt/agent-host"} : null,
     });
@@ -118,6 +121,9 @@ export async function createSession(options, dependencies = {}) {
       for (const target of Object.keys(mounts).sort((a,b) => a.length-b.length)) {
         await checked(`bindfs ${target}`,["/usr/bin/bindfs","--force-user=1000","--force-group=1000","-o","allow_other,nonempty","/mnt/agent-host"+target,target]);
       }
+      // Restore the image's recorded setuid/setgid/sticky and writable modes (see
+      // Dockerfile). A path that no longer exists, e.g. under tmpfs, is ignored.
+      await checked("guest mode restore",["/bin/bash","-c","while IFS=$'\\t' read -r mode file; do chmod \"$mode\" \"$file\" 2>/dev/null || true; done < /etc/agent-image-modes"]);
       await checked("guest state/config setup",["/bin/bash","-c",`mkdir -p ${HOME}/claude-state ${HOME}/.cache ${HOME}/.local/share /etc/claude-code; ln -sfn /etc/agent-config/claude/CLAUDE.md ${HOME}/claude-state/CLAUDE.md; ln -sfn /etc/agent-config/claude/themes ${HOME}/claude-state/themes; ln -sfn /etc/agent-config/claude/settings.json /etc/claude-code/managed-settings.json`]);
       // These probes must actually fail, not merely be configured read-only.
       await checked("non-root access/write-denial probes",["/usr/local/bin/agent-enter","/bin/bash","-c",`test "$(id -u)" = 1000 && test -r "$1" && test -w "$1" && test -w "$HOME" && ! touch /etc/agent-config/.write-probe && ! touch "$HOME/.pi/.write-probe" && ! touch "$HOME/.claude/.write-probe"`,"probe",project.workspace]);

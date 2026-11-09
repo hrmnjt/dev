@@ -166,8 +166,11 @@ Keychain/login, GitHub setting, Mac agent removal, push or merge has been
 performed. The first live fixture booted far enough to read the guest image
 marker, then failed a bindfs re-export command before non-root/enforcement checks.
 The rerun with diagnostics showed libfuse 2 refusing Gondolin's non-empty bind
-targets; bindfs now uses `nonempty`. Image inputs changed on 2026-11-09 (sudo,
-`fd`, `wl-paste -l`), so rebuild before rerunning the live fixture.
+targets; bindfs now uses `nonempty`. The rebuilt image (`cc0189b33c067e3a`)
+then passed bindfs, non-root access, write-denial probes, live worktree/Git
+config writes, fail-closed identity, protected-path denials (bash and root
+`vm.fs`) and protected-ancestor moves, but `sudo` lacked its setuid bit. Image
+inputs changed again (recorded special modes), so rebuild before rerunning.
 Successful VM enforcement and real-agent acceptance remain pending.
 
 ### 1. Prepare
@@ -206,8 +209,11 @@ Successful VM enforcement and real-agent acceptance remain pending.
   Keychain placeholders, fail-closed identity and canonical common-Git-dir
   selection (W-02, W-05, W-08). Real VFS/HTTP-hook fixtures pass.
 - [~] Read-only paths/global Git config have provider, alias, hardlink and
-  protected-ancestor fixture coverage (W-20). Non-root kernel/FUSE enforcement
-  is not proven. Keep the accepted writable `.git/config` execution risk.
+  protected-ancestor fixture coverage (W-20). On 2026-11-09 the live fixture
+  confirmed non-root bindfs access and denied writes/moves for `.pi`, `.claude`,
+  common hooks, guest Git config and `/pi-output`, through bash and root
+  `vm.fs`. Root-via-`sudo` denials and the rest of the fixture are still pending.
+  Keep the accepted writable `.git/config` execution risk.
 - [ ] Claude, Amp and GitHub tokens in Keychain (W-02, W-12); services, expiry
   metadata and token acquisition are documented, not provisioned.
 - [~] One labelled VM/session, explicit image, no host fallback, failure
@@ -383,6 +389,15 @@ Successful VM enforcement and real-agent acceptance remain pending.
   `skipDangerousModePermissionPrompt`/`hasCompletedOnboarding` keys and its
   full-scope requirement for Remote Control. Pi's write tool still calls host
   `realpath` on guest paths to key its mutation queue (SDK behaviour, metadata only).
+- 2026-11-09 (second run, image `cc0189b33c067e3a`): everything up to the new
+  `sudo` assertion passed; `sudo -n id -u` failed. Gondolin extracts the OCI
+  export with macOS `tar -xf` as non-root, which drops setuid/setgid/sticky bits
+  and applies the umask; its debugfs fix-up restores only uid/gid. The root is
+  not `nosuid` and sandboxd sets no no-new-privs. The image now records such
+  modes and launch restores them. Gondolin's default tmpfs set also hid
+  `/var/cache`/`/var/log` (apt archives, debconf), so only `/tmp`, `/var/tmp` and
+  `/root` stay tmpfs. The host Pi SDK suites could not find a Node SDK; the
+  locator now accepts a disposable `_scratch/pi-sdk` copy. Rebuild, then rerun.
 
 - 2026-11-02: Gondolin 0.14.0's sandboxfs is root-only (guest source). The
   candidate image uses bindfs to re-export the same guarded providers for UID

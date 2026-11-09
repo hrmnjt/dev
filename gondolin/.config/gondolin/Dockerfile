@@ -29,6 +29,12 @@ RUN chmod 755 /usr/local/bin/agent-enter /usr/local/lib/agent-clipboard.mjs \
     && ln -s /usr/local/lib/agent-clipboard.mjs /usr/local/bin/xclip \
     && ln -s /usr/local/lib/agent-clipboard.mjs /usr/local/bin/wl-paste \
     && node /usr/local/lib/agent-check-clis.mjs
+# Gondolin's macOS build extracts this image with non-root bsdtar, which drops
+# setuid/setgid/sticky bits and applies the umask. Record those modes for the
+# launcher to restore at boot; sudo must be among them.
+RUN find / -xdev \( -path /home -o -path /etc/agent-config -o -path /agent-state \) -prune \
+      -o \( -type f -o -type d \) -perm /7022 -printf '%m\t%p\n' > /etc/agent-image-modes \
+    && awk -F '\t' '$1 == "4755" && $2 == "/usr/bin/sudo" {found = 1} END {exit !found}' /etc/agent-image-modes
 COPY agent-image.json /etc/agent-image.json
 ENV HOME=/home/agent PATH=/usr/local/bin:/usr/bin:/bin \
     AMP_FORCE_BEL=1
