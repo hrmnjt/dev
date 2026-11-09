@@ -216,8 +216,9 @@ acceptance, credentials, rulesets and deployment remain pending.
   common hooks, guest Git config and `/pi-output`, through bash, root `vm.fs`
   and root via `sudo`; `_models` is hidden. Keep the accepted writable
   `.git/config` execution risk.
-- [ ] Claude, Amp and GitHub tokens in Keychain (W-02, W-12); services, expiry
-  metadata and token acquisition are documented, not provisioned.
+- [~] Claude, Amp and GitHub tokens in Keychain (W-02, W-12). On 2026-11-09 the
+  user added the GitHub token, Claude token and its expiry; doctor passes
+  them (expiry in 356 days). The Amp token is still to add.
 - [~] One labelled VM/session, explicit image, no host fallback, failure
   messages, cancellation and cleanup are implemented/tested with fake VM
   transports (W-04, W-09, W-15). The live fixture confirms real boot, timeout,
@@ -428,6 +429,12 @@ acceptance, credentials, rulesets and deployment remain pending.
   runtime bundle. The live fixture now checks Node and curl HTTPS as UID 1000
   in both VM kinds. No image change. The user reported the retry worked
   (`claude setup-token` through Gondolin's CA, and the live fixture).
+- 2026-11-09: first real Claude Code launch in a work VM (this worktree).
+  Asked to list `~/Downloads`, it reported only the worktree path is visible,
+  `/mnt/agent-host` is root-only, and suggested copying files into the
+  worktree. Note: `/mnt/agent-host` is Gondolin's view of the same guarded
+  mounts, so root sees nothing more there. Other Claude acceptance checks are
+  still to report.
 
 - 2026-11-02: Gondolin 0.14.0's sandboxfs is root-only (guest source). The
   candidate image uses bindfs to re-export the same guarded providers for UID
