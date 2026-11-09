@@ -320,7 +320,8 @@ expanded month by month. Full history lives in `git log`.
   to `*.ampcode.com`. Launch sets the guest clock from the Mac, and Claude/Amp
   sessions re-sync it every 30 seconds: after Mac sleep a busy guest fell
   behind Gondolin's five-minute certificate backdating, failing HTTPS to new
-  hosts and apt date checks. Requires an image rebuild. The
+  hosts and apt date checks. Bumped Amp to 0.0.1794225648-g45053b after its
+  server refused the November 1 build. Requires an image rebuild. The
   opt-in live VM fixture passes; real-agent acceptance remains pending.
 - 20261108: Added bounded, escaped startup-step diagnostics for Gondolin's
   mount/state/non-root probes, redacting known credentials and placeholders

@@ -303,7 +303,10 @@ acceptance, credentials, rulesets and deployment remain pending.
   confirmed the bell (W-06).
 - [~] Shared image-paste/preview/Git/state plumbing is implemented. Amp image
   paste showed a Rex `rex-clipboard-*.png` Mac temp path, which the VM cannot
-  read; retest with `Ctrl+V`. Playwright, pushes/PRs and per-project history
+  read; retest with `Ctrl+V`. A later upload failed with Bun's `EPROTO` "TLS
+  handshake failed" (not a certificate-date error) while the VPN was on and
+  Amp's server was refusing the November 1 CLI; Amp is now bumped. Retest after
+  the rebuild without the VPN. Playwright, pushes/PRs and per-project history
   pending, as for Claude.
 
 ### 6. Ship

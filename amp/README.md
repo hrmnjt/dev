@@ -20,7 +20,10 @@ its help. The image build checks the setting/custom-settings interface and exact
 package versions. Failures report the command/status/output or missing interface
 instead of silently failing a grep. Real prompt-free execution still needs testing.
 
-- Auto-update is disabled in settings and by `AMP_SKIP_UPDATE_CHECK=1`.
+- Auto-update is disabled in settings and by `AMP_SKIP_UPDATE_CHECK=1`; the
+  root disk is discarded anyway. Amp's server refuses old CLIs ("needs to be
+  updated"), so bump `amp` in `gondolin/.config/gondolin/pins.json` to npm's
+  latest `@ampcode/cli` and rebuild the image when it asks.
 - `AMP_API_KEY` is a fresh `sgamp_`-shaped placeholder, substituted only for
   `ampcode.com` and its subdomains (the docs name no API host). Get the real
   token from Amp's Settings (access token, `/settings/security`) and store it

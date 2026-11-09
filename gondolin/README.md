@@ -221,7 +221,7 @@ Cloud Claude/Amp executors remain complements, not part of this local launcher.
 ## Build, upgrade, deploy
 
 Pins live in `pins.json`: Gondolin 0.14.0, a digest-pinned Debian Node image,
-Claude Code 2.1.316, `@ampcode/cli` 0.0.1793548828-ge47c64 and Playwright 1.64.1.
+Claude Code 2.1.316, `@ampcode/cli` 0.0.1794225648-g45053b and Playwright 1.64.1.
 The build verifier checks installed versions and requires `amp --help` to
 advertise `amp.dangerouslyAllowAll` and `--settings-file`; it does not assume a
 CLI bypass flag. Command failures include status/output, and missing interfaces
