@@ -169,9 +169,10 @@ The rerun with diagnostics showed libfuse 2 refusing Gondolin's non-empty bind
 targets; bindfs now uses `nonempty`. The rebuilt image (`cc0189b33c067e3a`)
 then passed bindfs, non-root access, write-denial probes, live worktree/Git
 config writes, fail-closed identity, protected-path denials (bash and root
-`vm.fs`) and protected-ancestor moves, but `sudo` lacked its setuid bit. Image
-inputs changed again (recorded special modes), so rebuild before rerunning.
-Successful VM enforcement and real-agent acceptance remain pending.
+`vm.fs`) and protected-ancestor moves, but `sudo` lacked its setuid bit. After
+restoring recorded modes (image `dfa8dbbdc1278dce`) and setting a guest hostname,
+the **opt-in live fixture passes** end to end in about 1 s. Real-agent
+acceptance, credentials, rulesets and deployment remain pending.
 
 ### 1. Prepare
 
@@ -181,7 +182,8 @@ Successful VM enforcement and real-agent acceptance remain pending.
   QEMU 11.1.3; no deployed Gondolin, Docker or Podman. Branch-local Gondolin
   dependencies are pinned to 0.14.0. Repository-only doctor before and after:
   **12 passed, 0 failed, 1 warning** (Python TOML validator unavailable).
-  Full deployment doctor, VM boot/RSS and parallel-agent sizing remain pending.
+  The live fixture boots a VM and runs all its checks in 995 ms (2026-11-09).
+  Full deployment doctor, RSS and parallel-agent sizing remain pending.
   The candidate's 4 GiB/2 CPUs is provisional, not a measured budget.
 - [x] Branch-only entry points documented: `trial-pi`, direct branch
   `cli.mjs claude|amp`, and Rex `REX_CONFIG` / `rex do <file> --action`.
@@ -208,17 +210,19 @@ Successful VM enforcement and real-agent acceptance remain pending.
 - [x] Shared `gondolin/` package centralizes mounts, network, host-scoped
   Keychain placeholders, fail-closed identity and canonical common-Git-dir
   selection (W-02, W-05, W-08). Real VFS/HTTP-hook fixtures pass.
-- [~] Read-only paths/global Git config have provider, alias, hardlink and
+- [x] Read-only paths/global Git config have provider, alias, hardlink and
   protected-ancestor fixture coverage (W-20). On 2026-11-09 the live fixture
   confirmed non-root bindfs access and denied writes/moves for `.pi`, `.claude`,
-  common hooks, guest Git config and `/pi-output`, through bash and root
-  `vm.fs`. Root-via-`sudo` denials and the rest of the fixture are still pending.
-  Keep the accepted writable `.git/config` execution risk.
+  common hooks, guest Git config and `/pi-output`, through bash, root `vm.fs`
+  and root via `sudo`; `_models` is hidden. Keep the accepted writable
+  `.git/config` execution risk.
 - [ ] Claude, Amp and GitHub tokens in Keychain (W-02, W-12); services, expiry
   metadata and token acquisition are documented, not provisioned.
 - [~] One labelled VM/session, explicit image, no host fallback, failure
   messages, cancellation and cleanup are implemented/tested with fake VM
-  transports (W-04, W-09, W-15). Real list/attach/boot/exit remain pending.
+  transports (W-04, W-09, W-15). The live fixture confirms real boot, timeout,
+  continued use and idempotent close; `gondolin list`/`attach` and real agent
+  launches remain pending.
 - [ ] GitHub ruleset on `main` for each repo agents push to; confirm private
   repository support/enforcement on the current plan (W-12).
 
@@ -230,7 +234,9 @@ Successful VM enforcement and real-agent acceptance remain pending.
   tldraw interaction remain pending.
 - [~] SDK-owned host Bash overflow logs get a private read-only `/pi-output`
   mount; model/codemode paths and successful cleanup have real-SDK coverage.
-  Actual Pi-over-VM reads, timeout/abort and reload need host verification.
+  The live fixture confirms the mount is readable and read-only, Pi-style writes
+  are UID 1000 and bash timeouts recover. Real Pi sessions, codemode and reload
+  still need host verification.
 - [x] Retired `sandbox`, `uv`, `wal-writer` and native-only tests;
   disabled MCP. The explicit launcher keeps only the agreed extension set.
   Existing model/thinking/theme/tool settings are preserved (W-17).
@@ -243,10 +249,10 @@ Successful VM enforcement and real-agent acceptance remain pending.
   read-only VM-only settings and mutable history separation are implemented
   (W-18). Gondolin sandboxfs needs the candidate bindfs ownership remapping;
   the first live attempt failed during bindfs setup before non-root probes
-  (non-empty mountpoint, now mounted with `nonempty`). This remains a
-  deployment blocker until the rebuilt image passes the live fixture. Claude
-  state is seeded past onboarding, the bypass prompt is skipped by setting, and
-  the agent user has passwordless guest `sudo`.
+  (non-empty mountpoint, now mounted with `nonempty`). The live fixture now
+  passes the non-root bindfs/probe path on the rebuilt image; the real Claude
+  CLI in the VM is untested. Claude state is seeded past onboarding, the bypass
+  prompt is skipped by setting, and the agent user has passwordless guest `sudo`.
 - [x] Rex action/shortcut and typed `claude` route through the shared
   launcher; mocked wiring and branch Rex config checks pass (W-03).
 - [~] Direct PTY/terminal metadata should preserve OSC 7501; removed host
@@ -359,9 +365,11 @@ Successful VM enforcement and real-agent acceptance remain pending.
 - Disposable shell fixtures: **11 repository doctor**, **7 Stow diagnostic**,
   **8 SSH setup** checks pass. A separate Stow simulation checks npm state
   stays out of deployment; no links are created.
-- The live QEMU test is opt-in and skipped here. No container runtime/image
-  was available; fixtures are not evidence of FUSE/kernel isolation or real
-  authentication, clipboard/terminal/browser behavior.
+- 2026-11-09, user host run of the opt-in live QEMU test on image
+  `dfa8dbbdc1278dce`: **1 passed** (VM startup plus fixture checks 995 ms). It
+  covers real FUSE/bindfs enforcement, non-root and sudo behaviour, mounts,
+  identity, excludes, overflow and timeout, using synthetic tokens. It is not
+  evidence of real authentication or clipboard/terminal/browser behavior.
 - Before acceptance, run the opt-in VM fixture, all three real agent day-in-
   the-life trials and full doctor from a host terminal. Record boot/RSS,
   parallel sizing, authenticated Git/PR/rulesets, image paste, status/bells,
@@ -406,6 +414,9 @@ Successful VM enforcement and real-agent acceptance remain pending.
   "unable to resolve host (none)": Gondolin sets no hostname or `/etc/hosts`.
   Launch now sets `<agent>-vm`, adds it to `/etc/hosts` and ensures `localhost`
   resolves locally rather than via synthetic DNS. No image change; rerun only.
+- 2026-11-09 (fourth run, same image): the live fixture passed end to end.
+  Next are real agent launches with Keychain tokens, RSS/parallel sizing and
+  the day-in-the-life trials.
 
 - 2026-11-02: Gondolin 0.14.0's sandboxfs is root-only (guest source). The
   candidate image uses bindfs to re-export the same guarded providers for UID
