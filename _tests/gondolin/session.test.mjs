@@ -95,6 +95,8 @@ test("bindfs tolerates Gondolin's binds, Git excludes are read-only and Claude s
   const restore = f.calls.findIndex(c => c.command?.[2]?.includes("< /etc/agent-image-modes"));
   assert.ok(restore > f.calls.indexOf(binds.at(-1)) && !f.calls[restore].command.includes("/usr/local/bin/agent-enter"));
   assert.deepEqual(f.specs[0].tmpfs,{"/tmp":{},"/var/tmp":{},"/root":{mode:"0700"}});
+  const hostnameSetup = f.calls.find(c => c.command?.[2]?.startsWith("hostname "));
+  assert.match(hostnameSetup.command[2],/^hostname claude-vm && .*localhost.*127\.0\.1\.1\\t%s\\n' claude-vm >> \/etc\/hosts$/);
   const config = f.specs[0].vfs.mounts["/etc/agent-config"];
   const read = async file => {const handle = await config.open(file,"r");try {return Buffer.from(await handle.readFile()).toString("utf8");} finally {await handle.close();}};
   assert.match(await read("/gitconfig"),/excludesFile = \/etc\/agent-config\/gitignore/);
