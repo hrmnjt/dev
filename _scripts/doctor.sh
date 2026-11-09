@@ -518,6 +518,9 @@ EOF
   if [ -d /Applications/Claude.app ] || [ -d /opt/homebrew/Caskroom/claude-code ]; then
     warn "Legacy Mac Claude install remains; remove after VM acceptance (see claude/README.md)"
   fi
+  if [ -d /opt/homebrew/Caskroom/codex ]; then
+    warn "Codex remains installed on the Mac; agents run only in VMs (see Brewfile)"
+  fi
 }
 
 check_aerospace() {

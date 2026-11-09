@@ -77,8 +77,9 @@ for _, item in ipairs({ {"pi", "cmd+alt+p"}, {"claude", "cmd+alt+c"}, {"amp", "c
   assert(pane.layout.block.options.cwd == wiring.directory)
   local command = pane.layout.block.options.command
   assert(command[1] == "/usr/bin/env" and command[2]:match("^AGENT_VM_CONFIG="))
-  assert(command[3] == "node" and command[4]:match("/gondolin/cli.mjs$") and command[5] == item[1])
-  assert(#command == 5, "shortcut never enables previews or a host CLI fallback")
+  assert(command[3] == "/bin/zsh" and command[4] == "-lc" and command[5] == 'exec node "$1" "$2"')
+  assert(command[6] == "agent-vm" and command[7]:match("/gondolin/cli.mjs$") and command[8] == item[1])
+  assert(#command == 8, "shortcut never enables previews or a host CLI fallback")
 end
 wiring.host = "remote"
 assert(not pcall(wiring.actions.agent_claude.run, context) and #wiring.splits == 3)

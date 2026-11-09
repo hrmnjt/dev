@@ -46,15 +46,25 @@ export function projectInfo(cwd, home = os.homedir()) {
   return {cwd, workspace, common, primary, identity, key:createHash("sha256").update(primary).digest("hex").slice(0,24)};
 }
 
+// Mirrors the tracked host Git settings (git/.config/git/config) except includes,
+// helpers and identity files; the session serves the excludes file read-only.
 export function globalGitConfig(identity) {
   const escaped = text => JSON.stringify(text);
   return `[user]\n\tuseConfigOnly = true\n${identity ? `\tname = ${escaped(identity.name)}\n\temail = ${escaped(identity.email)}\n` : ""}
+[core]
+\texcludesFile = /etc/agent-config/gitignore
 [init]
 \tdefaultBranch = main
 [pull]
 \tff = only
 [fetch]
 \tprune = true
+[branch]
+\tsort = -committerdate
+[rerere]
+\tenabled = true
+[merge]
+\tconflictStyle = zdiff3
 [safe]
 \tdirectory = *
 [url "https://github.com/"]

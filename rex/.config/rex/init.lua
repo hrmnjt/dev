@@ -97,7 +97,9 @@ local function agent_pane(agent, ctx)
       flavor = "com.superlogical.terminal.shell", label = agent,
       options = {
         cwd = directory,
-        command = { "/usr/bin/env", "AGENT_VM_CONFIG=" .. config, "node", config .. "/cli.mjs", agent },
+        -- A login shell gives the Homebrew PATH from ~/.zprofile, as a typed command has.
+        command = { "/usr/bin/env", "AGENT_VM_CONFIG=" .. config, "/bin/zsh", "-lc",
+          'exec node "$1" "$2"', "agent-vm", config .. "/cli.mjs", agent },
         exit = { on_completion = false },
       },
     },

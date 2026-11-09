@@ -58,18 +58,19 @@ export default function(pi:ExtensionAPI) {
       detectImageMimeType:async p => ({".png":"image/png",".jpg":"image/jpeg",".jpeg":"image/jpeg",".gif":"image/gif",".webp":"image/webp",".bmp":"image/bmp"}[path.extname(p).toLowerCase()] ?? null),
     }}).execute(id,{...params,path:guestPath(params.path)},signal,onUpdate,ctx);
   }});
+  // Writes run as the guest's non-root user, like bash; reads use the SDK file API.
   pi.registerTool({...createWriteToolDefinition(cwd),async execute(id,params,signal,onUpdate,ctx) {
-    const {vm} = await ready();
+    const active = await ready();
     return createWriteToolDefinition(cwd,{operations:{
-      mkdir:p => vm.fs.mkdir(p,{recursive:true,signal}),
-      writeFile:(p,content) => vm.fs.writeFile(p,content,{signal}),
+      mkdir:p => active.mkdir(p,{signal}),
+      writeFile:(p,content) => active.writeFile(p,content,{signal}),
     }}).execute(id,{...params,path:guestPath(params.path)},signal,onUpdate,ctx);
   }});
   pi.registerTool({...createEditToolDefinition(cwd),async execute(id,params,signal,onUpdate,ctx) {
-    const {vm} = await ready();
+    const active = await ready();
     return createEditToolDefinition(cwd,{operations:{
-      access:p => vm.fs.access(p,{signal}), readFile:p => readGuestFile(vm,p,signal),
-      writeFile:(p,content) => vm.fs.writeFile(p,content,{signal}),
+      access:p => active.vm.fs.access(p,{signal}), readFile:p => readGuestFile(active.vm,p,signal),
+      writeFile:(p,content) => active.writeFile(p,content,{signal}),
     }}).execute(id,{...params,path:guestPath(params.path)},signal,onUpdate,ctx);
   }});
   pi.registerTool({...createBashToolDefinition(cwd),async execute(id,params,signal,onUpdate,ctx) {
@@ -92,7 +93,7 @@ export default function(pi:ExtensionAPI) {
   }});
   pi.on("before_agent_start",async event => {
     const active = await ready();
-    return {systemPrompt:event.systemPrompt+`\n\nGondolin VM tool environment:\n- read/write/edit/bash (also nested/codemode calls) run only in Linux, never on the Mac. Use bash for rg/find/ls and normal Git/network/package commands.\n- Workspace: ${active.project.workspace}; initial cwd: ${cwd}. Paths are identical to host paths inside the mounted worktree. The common Git directory is also mounted for linked worktrees.\n- .pi/, .claude/, Git hooks, tracked agent configuration and the guest global Git config are read-only. Do not work around these protections. Repo .git/config remains writable; do not change core.hooksPath to bypass review.\n- Git identity is selected from the primary repository, with user.useConfigOnly=true and no fallback. Real credentials stay in the Mac Keychain; guest tokens are placeholders scoped to their API hosts. No SSH agent or host environment is forwarded. GitHub SSH URLs are rewritten to HTTPS.\n- Public internet is open; Mac/private-network services are blocked. No agent may invoke host services to bypass the VM. tldraw is the deliberate narrow canvas exception: use its registered tools and tldraw_guide.\n- Bash overflow is readable at /pi-output/... and is read-only. Never use host temp paths. VM changes outside the worktree and per-project state are discarded on exit.\n- Pi docs: /pi/docs; examples: /pi/examples. Pi's sign-in and model requests stay on the host; there is no login inside the VM.\n- Brew, Stow, live npm installs, image builds, Keychain, host services, and GitHub settings are deliberate user operations. !/!! are user-only Mac shell commands, not an agent escape hatch.`};
+    return {systemPrompt:event.systemPrompt+`\n\nGondolin VM tool environment:\n- read/write/edit/bash (also nested/codemode calls) run only in Linux, never on the Mac. Use bash for rg/fd/find/ls and normal Git/network/package commands. Passwordless sudo is available for guest packages and system changes; root in the VM does not lift host protections.\n- Workspace: ${active.project.workspace}; initial cwd: ${cwd}. Paths are identical to host paths inside the mounted worktree. The common Git directory is also mounted for linked worktrees.\n- .pi/, .claude/, Git hooks, tracked agent configuration and the guest global Git config are read-only. Do not work around these protections. Repo .git/config remains writable; do not change core.hooksPath to bypass review.\n- Git identity is selected from the primary repository, with user.useConfigOnly=true and no fallback. Real credentials stay in the Mac Keychain; guest tokens are placeholders scoped to their API hosts. No SSH agent or host environment is forwarded. GitHub SSH URLs are rewritten to HTTPS.\n- Public internet is open; Mac/private-network services are blocked. No agent may invoke host services to bypass the VM. tldraw is the deliberate narrow canvas exception: use its registered tools and tldraw_guide.\n- Bash overflow is readable at /pi-output/... and is read-only. Never use host temp paths. VM changes outside the worktree and per-project state are discarded on exit.\n- Pi docs: /pi/docs; examples: /pi/examples. Pi's sign-in and model requests stay on the host; there is no login inside the VM.\n- Brew, Stow, live npm installs, image builds, Keychain, host services, and GitHub settings are deliberate user operations. !/!! are user-only Mac shell commands, not an agent escape hatch.`};
   });
   // No user_bash hook: the user's ! and !! intentionally keep host semantics.
 }

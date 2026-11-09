@@ -5,7 +5,7 @@ const name = path.basename(process.argv[1]);
 const args = process.argv.slice(2);
 const typeIndex = args.findIndex(a => ["-t", "-target", "--type"].includes(a));
 const type = typeIndex >= 0 ? args[typeIndex + 1] : undefined;
-const listing = type === "TARGETS" || args.includes("--list-types");
+const listing = type === "TARGETS" || args.includes("--list-types") || (name === "wl-paste" && args.includes("-l"));
 const reading = args.includes("-o") || args.includes("-out") || name === "wl-paste";
 if (!reading && !listing) process.exitCode = 1;
 else if (!listing && type !== "image/png") process.exitCode = 1;

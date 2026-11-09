@@ -49,11 +49,23 @@ export async function createSession(options, dependencies = {}) {
       fs.mkdirSync(state,{recursive:true,mode:0o700});
       if (fs.lstatSync(state).isSymbolicLink()) throw new Error("Agent state root must not be a symlink; repair it on the Mac.");
       for (const directory of [".pi",".claude"]) fs.mkdirSync(path.join(state,directory),{recursive:true,mode:0o700});
+      if (agent === "claude") {
+        // A project's shared state starts past first-run onboarding. The guest can
+        // replace this directory, so never follow a symlink or overwrite Claude's file.
+        const claudeState = path.join(state,"claude-state");
+        fs.mkdirSync(claudeState,{recursive:true,mode:0o700});
+        if (fs.lstatSync(claudeState).isSymbolicLink()) throw new Error("Agent state root must not be a symlink; repair it on the Mac.");
+        try { fs.writeFileSync(path.join(claudeState,".claude.json"),JSON.stringify({hasCompletedOnboarding:true})+"\n",{flag:"wx",mode:0o600}); }
+        catch (error) { if (error.code !== "EEXIST") throw error; }
+      }
       mounts[HOME] = real(state);
       mounts[HOME+"/.pi"] = new ReadonlyProvider(new MemoryProvider());
       mounts[HOME+"/.claude"] = new ReadonlyProvider(new MemoryProvider());
       await put("/gitconfig",globalGitConfig(project.identity));
       const checkout = path.resolve(CONFIG_DIR,"../../..");
+      // Host Git's global excludes keep editor and agent scratch files out of guest commits.
+      const ignore = [path.join(checkout,"git/.config/git/ignore"),path.join(os.homedir(),".config/git/ignore")].find(file => fs.existsSync(file));
+      await put("/gitignore",ignore ? fs.readFileSync(ignore) : "");
       const source = fs.existsSync(path.join(checkout,"claude/.config/agent-vm/claude/settings.json")) ? path.join(checkout,"claude/.config/agent-vm/claude") : path.join(os.homedir(),".config/agent-vm/claude");
       const amp = fs.existsSync(path.join(checkout,"amp/.config/agent-vm/amp/settings.json")) ? path.join(checkout,"amp/.config/agent-vm/amp") : path.join(os.homedir(),".config/agent-vm/amp");
       roPaths.push(fs.realpathSync(source),fs.realpathSync(amp),path.join(checkout,"gondolin/.local/bin"));
@@ -101,8 +113,10 @@ export async function createSession(options, dependencies = {}) {
     if (project) {
       // Gondolin 0.14 sandboxfs is mounted root-only. bindfs re-exports the same
       // guarded providers to UID 1000; it grants no new host paths or permissions.
+      // Gondolin has already bind-mounted each target, and Debian's bindfs uses
+      // libfuse 2, which refuses a non-empty mountpoint without `nonempty`.
       for (const target of Object.keys(mounts).sort((a,b) => a.length-b.length)) {
-        await checked(`bindfs ${target}`,["/usr/bin/bindfs","--force-user=1000","--force-group=1000","-o","allow_other","/mnt/agent-host"+target,target]);
+        await checked(`bindfs ${target}`,["/usr/bin/bindfs","--force-user=1000","--force-group=1000","-o","allow_other,nonempty","/mnt/agent-host"+target,target]);
       }
       await checked("guest state/config setup",["/bin/bash","-c",`mkdir -p ${HOME}/claude-state ${HOME}/.cache ${HOME}/.local/share /etc/claude-code; ln -sfn /etc/agent-config/claude/CLAUDE.md ${HOME}/claude-state/CLAUDE.md; ln -sfn /etc/agent-config/claude/themes ${HOME}/claude-state/themes; ln -sfn /etc/agent-config/claude/settings.json /etc/claude-code/managed-settings.json`]);
       // These probes must actually fail, not merely be configured read-only.
@@ -123,6 +137,16 @@ export async function createSession(options, dependencies = {}) {
       // The SDK merges VM defaults (including its CA path) with this allowlisted
       // environment. Never pass options.env supplied by Pi's host Bash tool.
       exec(command,opts = {}) { return vm.exec(["/usr/local/bin/agent-enter",...command],{...opts,env,cwd:opts.cwd ?? project?.cwd ?? HOME}); },
+      // Pi's write/edit tools create files as the same non-root user as its bash
+      // tool. The SDK's vm.fs runs as root and would leave root-owned guest files.
+      async writeFile(file,content,{signal} = {}) {
+        const result = await vm.exec(["/usr/local/bin/agent-enter","/bin/sh","-c",'cat > "$1"',"sh",file],{env,signal,cwd:project?.cwd ?? HOME,stdin:Buffer.from(content)});
+        if (result.exitCode !== 0) throw new Error(`Guest write failed: ${String(result.stderr ?? "").trim() || "exit "+result.exitCode}`);
+      },
+      async mkdir(directory,{signal} = {}) {
+        const result = await vm.exec(["/usr/local/bin/agent-enter","/bin/mkdir","-p","--",directory],{env,signal,cwd:project?.cwd ?? HOME});
+        if (result.exitCode !== 0) throw new Error(`Guest mkdir failed: ${String(result.stderr ?? "").trim() || "exit "+result.exitCode}`);
+      },
       async bash(command,directory,{onData,signal,timeout} = {}) {
         signal?.throwIfAborted();
         const controller = new AbortController();

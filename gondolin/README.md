@@ -54,8 +54,10 @@ node "$config/cli.mjs" amp
 `trial-pi` uses a mode-0700 temporary agent directory with branch settings/themes,
 explicit branch extensions and the three retained built-ins. Discovered extensions
 (including the deployed native backend), project extensions, MCP and skills are
-not loaded. Host auth is linked, not mounted in the VM; Pi may refresh its existing
-host login. The temporary directory is removed on exit. Normal `pi` also selects
+not loaded. Host auth is linked, not mounted in the VM; Pi writes refreshed tokens
+through the link to the host file, but its lock lives in the temporary directory,
+so quit other Pi sessions before a trial to avoid concurrent token refreshes.
+The temporary directory is removed on exit. Normal `pi` also selects
 only the reviewed extension set explicitly, but preserves host settings/skills.
 Both use per-primary-project Pi session storage.
 
@@ -86,6 +88,10 @@ image build arguments, or environment exports.
 | `dev.agent-vm.claude-expires` | token expiry as `YYYY-MM-DD` | doctor renewal warning, 30 days ahead |
 | `dev.agent-vm.amp` | `sgamp_…` access token from Amp account settings | `ampcode.com` only |
 | `dev.agent-vm.github` | `github_pat_…` fine-grained token | `github.com`, `api.github.com` only |
+
+Every launch, including `pi`, requires the GitHub item, plus the agent's own
+item for Claude/Amp. A missing item stops launch with the item name (no
+fallback), so add them before the first launch after deployment.
 
 Before deployment use `node "$config/cli.mjs" claude setup-token`. After deployment
 use `claude setup-token`. This one explicit setup command runs in a throwaway VM
@@ -119,6 +125,9 @@ The provider rejects writes through aliases/hardlinks and destructive moves of
 protected ancestors. `_models` is unavailable when under the worktree. Guest
 home `.pi`/`.claude` are read-only empty mounts. Global Git config is generated
 from only the selected personal/work name/email, not host helpers or includes.
+It mirrors the tracked host settings (rerere, `zdiff3`, branch sort, pull/fetch)
+and serves the host global excludes read-only, so guest `git add -A` skips the
+same editor swap and Claude scratch files as host Git.
 Unknown primary paths have no identity; Git uses `user.useConfigOnly=true`.
 Linked worktrees select identity using their primary common directory.
 
@@ -135,9 +144,16 @@ the selected checkout; do not store other host credentials in a workspace.
 Gondolin 0.14's `sandboxfs` mount is root-only. The pinned image includes `bindfs`,
 which re-exports the **same guarded providers**, remapping file ownership to UID
 1000 so non-root Claude can read/write them. It exposes no additional host path.
-Startup checks non-root workspace/home access and attempts denied writes before
-starting an agent. Failure stops launch; there is no native/unsandboxed fallback.
-Real FUSE behavior still needs the opt-in host test below.
+Gondolin has already bind-mounted each target, and Debian's bindfs uses libfuse 2,
+so it mounts with `nonempty`. Startup checks non-root workspace/home access and
+attempts denied writes before starting an agent. Failure stops launch; there is
+no native/unsandboxed fallback. Real FUSE behavior still needs the opt-in host test.
+
+Agents run as `agent` (UID 1000) with passwordless `sudo`, so they can install
+guest packages without asking; Gondolin's CA variables are kept for `sudo`.
+Root in the VM gains no host access: read-only and hidden paths are enforced by
+the host provider, the root disk is discarded on exit, and credentials are only
+placeholders. Pi's write/edit tools also run as `agent`, matching its bash tool.
 
 State is under `~/.local/state/agent-vm/<primary-hash>/<agent>/`:
 
@@ -176,8 +192,8 @@ agent-vm doctor
 
 Ingress binds **host loopback only** on an ephemeral port, printed at launch.
 The image has pinned Playwright/Chromium for guest-side screenshots/tests. Install
-project dependencies in the worktree/home normally; host Brew and image changes
-remain deliberate user operations. Claude/Pi terminal OSC 7501 reaches Rex
+project dependencies in the worktree/home normally, or guest system packages
+with `sudo apt-get`; host Brew and image changes remain deliberate user operations. Claude/Pi terminal OSC 7501 reaches Rex
 without a tmux wrapper. Amp uses `AMP_FORCE_BEL=1`; an OSC adapter is deferred.
 Cloud Claude/Amp executors remain complements, not part of this local launcher.
 
@@ -222,8 +238,9 @@ node --test _tests/gondolin/*.test.mjs _tests/pi/*.test.mjs
 just doctor --only-check
 ```
 
-Set `PI_TEST_SDK_ROOT` to the installed Pi package directory when outside the
-Homebrew default. Unit tests use real VFS providers and HTTP substitution hooks,
+Pi suites find the SDK through `~/.pi/agent/bin/pi`, then Homebrew; otherwise set
+`PI_TEST_SDK_ROOT` to the installed `@earendil-works/pi-coding-agent` directory.
+Unit tests use real VFS providers and HTTP substitution hooks,
 synthetic tokens, fake VM transports, isolated Git repositories and synthetic
 clipboard images. They do **not** prove kernel isolation, CLI authentication,
 host clipboard/CLI image-paste compatibility, or live agent/TUI behavior.
