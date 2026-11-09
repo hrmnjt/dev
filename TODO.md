@@ -251,21 +251,26 @@ acceptance, credentials, rulesets and deployment remain pending.
   (W-18). Gondolin sandboxfs needs the candidate bindfs ownership remapping;
   the first live attempt failed during bindfs setup before non-root probes
   (non-empty mountpoint, now mounted with `nonempty`). The live fixture now
-  passes the non-root bindfs/probe path on the rebuilt image; the real Claude
-  CLI in the VM is untested. Claude state is seeded past onboarding, the bypass
-  prompt is skipped by setting, and the agent user has passwordless guest `sudo`.
+  passes the non-root bindfs/probe path on the rebuilt image. On 2026-11-09 the
+  real Claude CLI started in the VM with only the folder-trust prompt (no
+  onboarding or bypass warning) and installed a package with `sudo apt-get`.
 - [x] Rex action/shortcut and typed `claude` route through the shared
   launcher; mocked wiring and branch Rex config checks pass (W-03).
-- [~] Direct PTY/terminal metadata should preserve OSC 7501; removed host
-  command hooks and tmux/CLI escape interception. Real status pending (W-06).
-- [~] Images-only bounded/random-route clipboard proxy and guest adapters
-  have transport tests; actual Ctrl+V detection/decoding pending (W-07).
+- [x] Direct PTY/terminal metadata preserves OSC 7501; removed host command
+  hooks and tmux/CLI escape interception. User confirmed Rex status (W-06).
+- [x] Images-only bounded/random-route clipboard proxy and guest adapters work:
+  `Ctrl+V` in Claude reads the Mac clipboard image directly, so copying is
+  enough; no terminal paste is needed (user-confirmed, W-07).
 - [~] Opt-in loopback ingress and pinned Playwright are implemented;
   actual preview/browser use pending (W-10).
-- [~] HTTPS rewrite/helper and selected-repo identity are implemented;
-  actual authenticated commit/push/PR plus ruleset refusal pending (W-12).
-- [~] Per-primary-project state is implemented; actual history/memory across
-  worktrees, parallel sessions and restart pending (W-14).
+- [~] HTTPS rewrite/helper and selected-repo identity are implemented. A real
+  VM commit used the right identity, but the push failed: the guest credential
+  helper was unquoted, so Git truncated it at `;`. Fixed and covered by a real
+  `git credential fill` test; authenticated push/PR and ruleset refusal pending
+  (W-12).
+- [~] Per-primary-project state is implemented; `claude --resume` after restart
+  works (user-confirmed). History/memory across worktrees and parallel
+  sessions pending (W-14).
 - [~] Mac-only package settings were repurposed into VM-only config, so legacy
   Mac Claude cannot inherit bypass mode. Actual Mac install removal awaits
   VM acceptance and is a user operation (W-03).
@@ -433,8 +438,13 @@ acceptance, credentials, rulesets and deployment remain pending.
   Asked to list `~/Downloads`, it reported only the worktree path is visible,
   `/mnt/agent-host` is root-only, and suggested copying files into the
   worktree. Note: `/mnt/agent-host` is Gondolin's view of the same guarded
-  mounts, so root sees nothing more there. Other Claude acceptance checks are
-  still to report.
+  mounts, so root sees nothing more there.
+- 2026-11-09: Claude acceptance in that session: folder-trust prompt only
+  (expected once per worktree path), Rex status, clipboard image via `Ctrl+V`,
+  `sudo apt-get` and `--resume` work. The VM Claude made local branch
+  `chore/meta/scratch-vm-push-test` (one empty commit on `origin/main`) and
+  found the credential helper bug; its push did not happen. Relaunch the VM to
+  pick up the fixed helper before retrying.
 
 - 2026-11-02: Gondolin 0.14.0's sandboxfs is root-only (guest source). The
   candidate image uses bindfs to re-export the same guarded providers for UID
