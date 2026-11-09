@@ -308,8 +308,11 @@ expanded month by month. Full history lives in `git log`.
   `setup-token` tokens cannot use. Rex agent panes now start through a `zsh`
   login shell for Homebrew's `node`. Added an `fd` command and `wl-paste -l` to
   the image, removed the Codex cask, made policy tests independent of
-  symlinked `TMPDIR` and let Pi tests find the installed SDK. Requires an image
-  rebuild; live VM enforcement remains unproven.
+  symlinked `TMPDIR` and let Pi tests find the installed SDK or a disposable
+  `_scratch/pi-sdk` copy. After the live fixture showed `sudo` without its
+  setuid bit (Gondolin's macOS build drops special modes), the image records
+  them and each launch restores them; `/var/cache` and `/var/log` stay off tmpfs
+  for apt. Requires an image rebuild; live VM enforcement remains unproven.
 - 20261108: Added bounded, escaped startup-step diagnostics for Gondolin's
   mount/state/non-root probes, redacting known credentials and placeholders
   before truncation while retaining fail-closed cleanup. The first live fixture
