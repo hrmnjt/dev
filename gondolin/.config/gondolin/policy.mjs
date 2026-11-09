@@ -88,6 +88,9 @@ export function guestEnv(secretEnv = {}, terminal = process.env) {
     CLAUDE_CONFIG_DIR:HOME+"/claude-state", DISABLE_AUTOUPDATER:"1",
     AMP_SKIP_UPDATE_CHECK:"1", AMP_FORCE_BEL:"1", AMP_DISABLE_AMP_THREAD_TRAILER:"1",
     PLAYWRIGHT_BROWSERS_PATH:"/opt/playwright", DISPLAY:":0",
+    // Gondolin's init points Node at its CA on the root-only VFS mount. The
+    // runtime bundle (system CAs plus that CA) is world-readable, as curl uses.
+    NODE_EXTRA_CA_CERTS:"/run/gondolin/ca-certificates.crt",
     ...secretEnv,
   };
   // Terminal detection only: never forward Rex's RPC socket or hook commands.

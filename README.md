@@ -313,8 +313,10 @@ expanded month by month. Full history lives in `git log`.
   setuid bit (Gondolin's macOS build drops special modes), the image records
   them and each launch restores them; `/var/cache` and `/var/log` stay off tmpfs
   for apt. Launch also sets a guest hostname and keeps `localhost` in
-  `/etc/hosts`, so `sudo` stops warning. Requires an image rebuild. The opt-in
-  live VM fixture now passes; real-agent acceptance remains pending.
+  `/etc/hosts`, so `sudo` stops warning. Fixed guest HTTPS trust of Gondolin's
+  interception CA: `setup-token` keeps an empty VFS so the CA is injected, and
+  Node uses the world-readable CA bundle. Requires an image rebuild. The
+  opt-in live VM fixture passes; real-agent acceptance remains pending.
 - 20261108: Added bounded, escaped startup-step diagnostics for Gondolin's
   mount/state/non-root probes, redacting known credentials and placeholders
   before truncation while retaining fail-closed cleanup. The first live fixture

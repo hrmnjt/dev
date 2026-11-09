@@ -133,7 +133,9 @@ test("setup-token is a throwaway VM with no mounts, state, supplied credentials 
   const f = mock(t);
   f.deps.keychainValue = () => {throw new Error("setup-token must not read Keychain");};
   const session = await createSession({agent:"claude",setupToken:true},f.deps);
-  assert.equal(f.specs[0].vfs,null);assert.equal(f.specs[0].tcp,undefined);
+  // No host mounts, but a VFS so Gondolin can inject its TLS interception CA.
+  assert.deepEqual(f.specs[0].vfs.mounts,{});assert.equal(f.specs[0].tcp,undefined);
+  assert.ok(!f.calls.some(c => c.command?.[0] === "/usr/bin/bindfs"));
   assert.equal(f.specs[0].env.GH_TOKEN,undefined);assert.equal(session.state,undefined);
   assert.equal(fs.existsSync(path.join(f.root,"state")),false);await session.close();
 });
