@@ -72,7 +72,7 @@ export function globalGitConfig(identity) {
 \tinsteadOf = ssh://git@github.com/
 [credential "https://github.com"]
 \thelper =
-\thelper = !f() { printf 'username=x-access-token\\npassword=%s\\n' "$GH_TOKEN"; }; f
+\thelper = "!f() { echo username=x-access-token; echo \\"password=$GH_TOKEN\\"; }; f"
 `;
 }
 
