@@ -115,6 +115,11 @@ export async function createSession(options, dependencies = {}) {
     };
     const marker = JSON.parse(await vm.fs.readFile("/etc/agent-image.json",{encoding:"utf8"}));
     if (marker.fingerprint !== spec.fingerprint) throw new Error("Guest image is stale; run agent-vm build on the Mac.");
+    // Gondolin backdates its TLS interception certificates by only five minutes
+    // and re-syncs the guest clock only when an idle VM resumes. Mac sleep leaves
+    // a busy guest behind, failing HTTPS to newly seen hosts and apt's date checks.
+    const setClock = () => ["/bin/date","-u","-s","@"+(Date.now()/1000).toFixed(3)];
+    await checked("guest clock sync",setClock());
     if (project) {
       // Gondolin 0.14 sandboxfs is mounted root-only. bindfs re-exports the same
       // guarded providers to UID 1000; it grants no new host paths or permissions.
@@ -139,11 +144,16 @@ export async function createSession(options, dependencies = {}) {
       vm.setIngressRoutes([{prefix:"/",port:preview,stripPrefix:true}]);
       ingress = await vm.enableIngress({listenHost:"127.0.0.1",listenPort:0});
     }
+    // Claude and Amp keep their VM busy for the whole session. Pi's VM idles
+    // between tool calls, and Gondolin re-syncs it when it resumes.
+    const clockTimer = agent === "pi" ? null : setInterval(() => { Promise.resolve().then(() => vm.exec(setClock())).catch(() => {}); },30_000);
+    clockTimer?.unref();
     let closed = false;
     return {
       vm, project, env, state, ingress,
       async close() {
         if (closed) return; closed = true;
+        clearInterval(clockTimer);
         try { await vm.close(); } finally { await clipboard?.close(); }
       },
       // The SDK merges VM defaults (including its CA bundle variables) with this

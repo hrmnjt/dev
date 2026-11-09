@@ -44,9 +44,9 @@ Rex **Cmd+Alt+A** opens an Amp pane in the current worktree tab without previews
 `Ctrl+V` is served by the images-only host proxy, never text clipboard access.
 Playwright/Chromium and opt-in loopback ingress are shared with Claude.
 
-Remaining real checks: placeholder acceptance, prompt-free execution, both bell
-states, image paste, preview/browser tests, commit/push/PR, project-separated
-history/memory, and clean shutdown. Fixture tests do not prove these. Amp cloud
+Confirmed on the Mac: placeholder sign-in, prompt-free `sudo apt-get` and the
+bell. Remaining real checks: image paste, preview/browser tests, commit/push/PR,
+project-separated history/memory, and clean shutdown. Amp cloud
 executors remain complementary; this launcher does not implement or proxy them.
 
 References: [CLI](https://ampcode.com/docs/cli),
