@@ -90,7 +90,9 @@ export async function createSession(options, dependencies = {}) {
       // leaving apt/debconf without their directories. The cow root is discarded.
       tmpfs:{"/tmp":{},"/var/tmp":{},"/root":{mode:"0700"}},
       ...(clipboard ? {tcp:{hosts:{"clipboard.agent.internal:18765":`127.0.0.1:${clipboard.port}`}}} : {}),
-      vfs:project ? {mounts,fuseMount:"/mnt/agent-host"} : null,
+      // setup-token mounts no host path, but keeps an (empty) VFS: Gondolin injects
+      // its read-only TLS interception CA through it, and HTTPS fails without it.
+      vfs:{mounts:project ? mounts : {},fuseMount:"/mnt/agent-host"},
     });
     signal?.throwIfAborted();
     const checked = async (stage,command,opts) => {
@@ -144,8 +146,8 @@ export async function createSession(options, dependencies = {}) {
         if (closed) return; closed = true;
         try { await vm.close(); } finally { await clipboard?.close(); }
       },
-      // The SDK merges VM defaults (including its CA path) with this allowlisted
-      // environment. Never pass options.env supplied by Pi's host Bash tool.
+      // The SDK merges VM defaults (including its CA bundle variables) with this
+      // allowlisted environment. Never pass options.env supplied by Pi's host Bash tool.
       exec(command,opts = {}) { return vm.exec(["/usr/local/bin/agent-enter",...command],{...opts,env,cwd:opts.cwd ?? project?.cwd ?? HOME}); },
       // Pi's write/edit tools create files as the same non-root user as its bash
       // tool. The SDK's vm.fs runs as root and would leave root-owned guest files.

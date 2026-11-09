@@ -310,6 +310,8 @@ acceptance, credentials, rulesets and deployment remain pending.
 - [ ] Revisit agents in the main `dev` checkout before running unattended
   (W-05).
 - [ ] Keep VMs per worktree if per-session boot or reinstalls hurt (W-04).
+- [ ] Trust Gondolin's CA in Chromium's NSS store (needs `libnss3-tools`) if
+  agents must browse external HTTPS sites with Playwright (W-10).
 
 ## Developing in a worktree
 
@@ -417,6 +419,14 @@ acceptance, credentials, rulesets and deployment remain pending.
 - 2026-11-09 (fourth run, same image): the live fixture passed end to end.
   Next are real agent launches with Keychain tokens, RSS/parallel sizing and
   the day-in-the-life trials.
+- 2026-11-09: `claude setup-token` failed twice with `SELF_SIGNED_CERT_IN_CHAIN`.
+  Gondolin injects its TLS interception CA through the VFS and skips it when
+  `vfs` is `null`, which setup-token used; HTTPS was still intercepted. Work VMs
+  had a second problem: init points `NODE_EXTRA_CA_CERTS` at the CA on the
+  root-only mount, unreadable to UID 1000. setup-token now keeps an empty VFS
+  (no host mounts) and the launcher sets `NODE_EXTRA_CA_CERTS` to the readable
+  runtime bundle. The live fixture now checks Node and curl HTTPS as UID 1000
+  in both VM kinds. No image change.
 
 - 2026-11-02: Gondolin 0.14.0's sandboxfs is root-only (guest source). The
   candidate image uses bindfs to re-export the same guarded providers for UID

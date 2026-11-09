@@ -8,6 +8,9 @@ import {test} from "node:test";
 import {createSession} from "../../gondolin/.config/gondolin/session.mjs";
 import {quote} from "../../gondolin/.config/gondolin/policy.mjs";
 
+// Needs public internet; it sends no credentials.
+const trustsHttps = `curl -sSfo /dev/null https://example.com && node -e 'fetch("https://example.com").then(r => process.exit(r.ok ? 0 : 1), e => {console.error(e.cause ?? e);process.exit(1);})'`;
+
 test("live QEMU: non-root tools, linked mounts, locked paths, overflow mount, cancellation and cleanup",{skip:process.env.AGENT_VM_LIVE_TEST !== "1" && "Run on the Mac after agent-vm build with AGENT_VM_LIVE_TEST=1"},async t => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(),"agent-vm-live-"));
   const primary = path.join(root,"primary"), linked = path.join(root,"linked"), output = path.join(root,"outputs");
@@ -38,6 +41,8 @@ test("live QEMU: non-root tools, linked mounts, locked paths, overflow mount, ca
   assert.equal((await bash("sudo -n id -u 2>&1")).output.trim(),"0","sudo works without hostname warnings");
   assert.equal((await bash("hostname")).output.trim(),"pi-vm");
   assert.match((await bash("getent ahostsv4 localhost")).output,/^127\.0\.0\.1\s/,"localhost resolves locally");
+  // Gondolin intercepts guest HTTPS; Node (agents, npm) and curl must trust its CA as UID 1000.
+  const https = await bash(trustsHttps);assert.equal(https.exitCode,0,https.output);
   assert.equal((await bash("test -d /var/cache/apt && test -d /var/cache/debconf")).exitCode,0,"apt/debconf state is not hidden by tmpfs");
   for (const target of [".pi/policy",path.join(session.project.common,"hooks/pre-commit"),"/etc/agent-config/gitconfig"]) {
     assert.notEqual((await bash(`sudo -n sh -c ${quote(`printf unsafe > ${quote(target)}`)} 2>/dev/null`)).exitCode,0,"root: "+target);
@@ -54,4 +59,10 @@ test("live QEMU: non-root tools, linked mounts, locked paths, overflow mount, ca
   assert.equal((await bash("printf survived")).output,"survived");
   console.log(`VM startup plus fixture checks: ${Date.now()-before} ms; memory budget configured in gondolin/config.json (measure RSS separately).`);
   await session.close();await session.close();
+  // setup-token mounts no host path but still needs Gondolin's CA for its OAuth flow.
+  const setup = await createSession({agent:"claude",setupToken:true},{keychainValue:() => {throw new Error("setup-token must not read Keychain");}});
+  try {
+    let output = "";const result = await setup.bash(`${trustsHttps} && test ! -e ${quote(linked)}`,"/home/agent",{onData:b => {output += b;}});
+    assert.equal(result.exitCode,0,output);
+  } finally {await setup.close();}
 });
