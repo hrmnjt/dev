@@ -3,8 +3,9 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
+import { piSdkRoot } from "./fixtures/sdk.mjs";
 
-const sdk = process.env.PI_TEST_SDK_ROOT ?? "/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent";
+const sdk = piSdkRoot();
 const require = createRequire(path.join(sdk, "package.json"));
 const { createJiti } = require("jiti");
 const { Check } = require("typebox/value");

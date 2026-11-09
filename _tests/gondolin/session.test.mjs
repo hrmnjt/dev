@@ -15,17 +15,17 @@ function mock(t,{failCreate = false,failProbe = false,startupOutput} = {}) {
   fs.mkdirSync(path.join(root,"workspace"));
   execFileSync("git",["init","-q",path.join(root,"workspace")]);
   t.after(() => fs.rmSync(root,{recursive:true,force:true}));
-  const calls = [], specs = [];let closed = 0, clipboardClosed = 0;
+  const calls = [], specs = [];let closed = 0, clipboardClosed = 0, nextResult = null;
   const vm = {id:"fixture-vm",fs:{readFile:async () => JSON.stringify({fingerprint:"fixture"})},
     exec(command,opts) {
       calls.push({command,opts});
-      const result = {exitCode:failProbe ? 1:0,...startupOutput?.(specs.at(-1))};
+      const result = nextResult ?? {exitCode:failProbe ? 1:0,...startupOutput?.(specs.at(-1))};nextResult = null;
       return {then:(resolve,reject) => Promise.resolve(result).then(resolve,reject),async *output() {opts?.signal?.throwIfAborted();yield {data:Buffer.from("guest-output")};}};
     },
     close:async () => {closed++;}, setIngressRoutes:routes => {calls.push({routes});},
     enableIngress:async options => {calls.push({ingress:options});return {host:"127.0.0.1",port:4567};},
   };
-  return {root,calls,specs,get closed(){return closed;},get clipboardClosed(){return clipboardClosed;},deps:{
+  return {root,calls,specs,set nextResult(value){nextResult = value;},get closed(){return closed;},get clipboardClosed(){return clipboardClosed;},deps:{
     requireImage:() => ({spec:{fingerprint:"fixture"},directory:"/explicit/pinned/image"}),
     keychainValue:name => ({github:"github_pat_fake-real",claude:"sk-ant-oat01-fake-real",amp:"sgamp_fake-real"}[name]),
     stateRoot:path.join(root,"state"),
@@ -80,7 +80,46 @@ test("Pi gets docs and output mount but no clipboard service, preview or host en
   assert.equal(spec.env.AMP_API_KEY,undefined);assert.equal(spec.env.CLAUDE_CODE_OAUTH_TOKEN,undefined);
   assert.equal(spec.vfs.mounts["/pi-output"].readonly,true);
   assert.equal(spec.vfs.mounts["/pi/docs"].readonly,true);
-  assert.ok(!f.calls.some(c => c.ingress));await session.close();
+  assert.ok(!f.calls.some(c => c.ingress));
+  assert.equal(fs.existsSync(path.join(session.state,"claude-state")),false,"only Claude state is seeded");
+  await session.close();
+});
+
+test("bindfs tolerates Gondolin's binds, Git excludes are read-only and Claude state is seeded once",async t => {
+  const f = mock(t), cwd = path.join(f.root,"workspace");
+  const session = await createSession({agent:"claude",cwd},f.deps);
+  const binds = f.calls.filter(c => c.command?.[0] === "/usr/bin/bindfs");
+  assert.ok(binds.length > 0 && binds.every(c => c.command.includes("allow_other,nonempty")));
+  const config = f.specs[0].vfs.mounts["/etc/agent-config"];
+  const read = async file => {const handle = await config.open(file,"r");try {return Buffer.from(await handle.readFile()).toString("utf8");} finally {await handle.close();}};
+  assert.match(await read("/gitconfig"),/excludesFile = \/etc\/agent-config\/gitignore/);
+  assert.equal(await read("/gitignore"),fs.readFileSync("git/.config/git/ignore","utf8"));
+  await assert.rejects(async () => config.open("/gitignore","w"),error => Math.abs(error.errno) === 30);
+  const claudeState = path.join(session.state,"claude-state"), seeded = path.join(claudeState,".claude.json");
+  assert.deepEqual(JSON.parse(fs.readFileSync(seeded,"utf8")),{hasCompletedOnboarding:true});
+  await session.close();
+  fs.writeFileSync(seeded,'{"numStartups":3}');
+  await (await createSession({agent:"claude",cwd},f.deps)).close();
+  assert.equal(fs.readFileSync(seeded,"utf8"),'{"numStartups":3}',"Claude's own state is never overwritten");
+  // The guest can replace its state directory; the host must not follow it.
+  fs.rmSync(claudeState,{recursive:true});fs.symlinkSync(f.root,claudeState);
+  await assert.rejects(createSession({agent:"claude",cwd},f.deps),/must not be a symlink/);
+  assert.equal(fs.existsSync(path.join(f.root,".claude.json")),false);
+});
+
+test("Pi file writes run as the guest's non-root user and report guest errors",async t => {
+  const f = mock(t);
+  const session = await createSession({agent:"pi",cwd:path.join(f.root,"workspace")},f.deps);
+  await session.mkdir("/tmp/fixture dir");await session.writeFile("/tmp/fixture dir/a.txt","guest text");
+  const [mkdir,write] = f.calls.slice(-2);
+  assert.deepEqual(mkdir.command,["/usr/local/bin/agent-enter","/bin/mkdir","-p","--","/tmp/fixture dir"]);
+  assert.deepEqual(write.command.slice(0,2),["/usr/local/bin/agent-enter","/bin/sh"]);assert.equal(write.command.at(-1),"/tmp/fixture dir/a.txt");
+  assert.equal(write.opts.stdin.toString(),"guest text");assert.equal(write.opts.env.HOME,"/home/agent");
+  f.nextResult = {exitCode:1,stderr:"sh: 1: cannot create /etc/fixture: Permission denied\n"};
+  await assert.rejects(session.writeFile("/etc/fixture","no"),/Guest write failed: sh: 1: cannot create/);
+  f.nextResult = {exitCode:1,stderr:""};
+  await assert.rejects(session.mkdir("/etc/fixture"),/Guest mkdir failed: exit 1/);
+  await session.close();
 });
 
 test("setup-token is a throwaway VM with no mounts, state, supplied credentials or clipboard",async t => {

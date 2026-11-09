@@ -36,6 +36,7 @@ test("guest xclip/wl-paste adapters return image types/data only, never plain-te
   assert.equal((await run("xclip",["-selection","clipboard","-t","TARGETS","-o"])).stdout.toString(),"image/png\n");
   assert.deepEqual((await run("xclip",["-selection","clipboard","-t","image/png","-o"])).stdout,png);
   assert.deepEqual((await run("wl-paste",["--type","image/png"])).stdout,png);
+  assert.equal((await run("wl-paste",["-l"])).stdout.toString(),"image/png\n");
   await assert.rejects(run("xclip",["-selection","clipboard","-o"]));
   await assert.rejects(run("wl-paste",["--type","text/plain"]));
 });

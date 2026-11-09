@@ -6,7 +6,8 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
-const sdk = process.env.PI_TEST_SDK_ROOT ?? "/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent";
+import { piSdkRoot } from "./fixtures/sdk.mjs";
+const sdk = piSdkRoot();
 const require = createRequire(path.join(sdk, "package.json"));
 const jiti = require("jiti").createJiti(import.meta.url, { fsCache: false, alias: {
   "@earendil-works/pi-coding-agent": path.join(sdk, "dist/index.js"),

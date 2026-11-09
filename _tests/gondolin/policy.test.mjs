@@ -9,7 +9,8 @@ import {secretDefinitions,credentialStatus} from "../../gondolin/.config/gondoli
 import {createHttpHooks,RealFSProvider,SandboxVfsProvider} from "../../gondolin/.config/gondolin/node_modules/@earendil-works/gondolin/dist/src/index.js";
 
 function fixture(t) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(),"agent-vm-policy-"));
+  // macOS TMPDIR (/var/folders) is a symlink; the policy compares canonical paths.
+  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),"agent-vm-policy-")));
   t.after(() => fs.rmSync(dir,{recursive:true,force:true}));return dir;
 }
 function git(cwd,...args) {return execFileSync("git",["-C",cwd,...args],{encoding:"utf8",env:{PATH:process.env.PATH,HOME:cwd,GIT_CONFIG_GLOBAL:"/dev/null",GIT_CONFIG_NOSYSTEM:"1"},stdio:["ignore","pipe","pipe"]}).trim();}
@@ -51,6 +52,9 @@ test("guest env is an allowlist: no host tokens, SSH agent, proxies or identity 
   assert.equal(env.TERM_PROGRAM,"rex");assert.equal(env.GIT_CONFIG_VALUE_0,"true");assert.equal(env.AMP_FORCE_BEL,"1");
   assert.match(globalGitConfig(null),/insteadOf = git@github.com:/);
   assert.match(globalGitConfig(null),/password=%s/);
+  // Host Git behaviour carried into the guest: global excludes and conflict style.
+  assert.match(globalGitConfig(null),/excludesFile = \/etc\/agent-config\/gitignore/);
+  assert.match(globalGitConfig(null),/conflictStyle = zdiff3/);assert.match(globalGitConfig(null),/\[rerere\]\n\tenabled = true/);
 });
 
 test("real Gondolin provider rejects config/hook mutations, symlink and hardlink aliases and protected ancestor moves",async t => {

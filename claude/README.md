@@ -18,7 +18,14 @@ sessions or configuration directory are mounted.
 - Permission mode `bypassPermissions`; nested Claude Bash sandboxing is off
   because Gondolin is the boundary.
 - Opus and the saved `claude-opus-5-5/xhigh` preference are retained.
-- Gruvbox Dark Hard, no Claude Git attribution, Remote Control notifications.
+- Gruvbox Dark Hard and no Claude Git attribution. Remote Control and its push
+  notifications need a full-scope `/login` token; `setup-token` tokens are
+  inference-only, so they are not configured. Use Claude Code on the web instead.
+- Per-project state is seeded past first-run onboarding, and
+  `skipDangerousModePermissionPrompt` skips the bypass-mode confirmation.
+  Claude's folder-trust dialog still appears once per new worktree path.
+- Claude's built-in `--worktree` writes under `.claude/worktrees/`, which is
+  read-only in the VM; create worktrees with the Rex shortcuts instead.
 - Auto-updates disabled; upgrades mean pin bumps, image rebuild and acceptance.
 - Host Herdr/Rex command hooks removed. Native OSC 7501 goes directly through the
   PTY to Rex; no host RPC/socket access is given to the guest.
