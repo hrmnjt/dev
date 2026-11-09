@@ -22,8 +22,12 @@ instead of silently failing a grep. Real prompt-free execution still needs testi
 
 - Auto-update is disabled in settings and by `AMP_SKIP_UPDATE_CHECK=1`.
 - `AMP_API_KEY` is a fresh `sgamp_`-shaped placeholder, substituted only for
-  `ampcode.com`. Get the real token in the web account UI and store it in the
-  Mac Keychain; no guest `amp login`.
+  `ampcode.com` and its subdomains (the docs name no API host). Get the real
+  token from Amp's Settings (access token, `/settings/security`) and store it
+  in the Mac Keychain; no guest `amp login`. Amp honours `NODE_EXTRA_CA_CERTS`
+  for Gondolin's TLS interception.
+- Images: `Ctrl+V` reads the Mac clipboard through the images-only proxy.
+  Dragging a file in types its path, which works only inside the worktree.
 - Completion/blocked notifications use `AMP_FORCE_BEL=1`; an OSC 7501 plugin
   remains deferred. Git coauthor/thread trailers are disabled.
 - Mutable home/XDG data persist per primary project, shared by its worktrees

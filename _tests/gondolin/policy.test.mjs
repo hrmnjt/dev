@@ -97,6 +97,14 @@ test("secrets are host-scoped, including Basic auth and redirected real credenti
   assert.equal(Buffer.from(rewritten.headers.get("Authorization").slice(6),"base64").toString(),"x-access-token:github_pat_fake-real");
   await assert.rejects(httpHooks.onRequest(request("https://example.com/")),/secret|allowed/i);
   await assert.rejects(httpHooks.onRequest(new Request("https://example.com/",{headers:{Authorization:"Bearer github_pat_fake-real"}})),/secret|allowed/i);
+  // Amp's token reaches ampcode.com and its subdomains only, never lookalike domains.
+  const amp = secretDefinitions("amp",name => ({github:"github_pat_fake-real",amp:"sgamp_fake-real"}[name])).AMP_API_KEY;
+  const ampHooks = createHttpHooks({secrets:{AMP_API_KEY:{...amp,placeholder:"sgamp_fake-placeholder"}},blockInternalRanges:true});
+  const bearer = url => new Request(url,{headers:{Authorization:"Bearer sgamp_fake-placeholder"}});
+  for (const url of ["https://ampcode.com/api","https://production.ampcode.com/api"]) {
+    assert.equal((await ampHooks.httpHooks.onRequest(bearer(url))).headers.get("Authorization"),"Bearer sgamp_fake-real");
+  }
+  await assert.rejects(ampHooks.httpHooks.onRequest(bearer("https://evilampcode.com/api")),/secret|allowed/i);
   for (const ip of ["127.0.0.1","10.0.0.1","192.168.1.1","169.254.169.254","::1"]) assert.equal(await httpHooks.isIpAllowed({hostname:"example.com",ip,family:ip.includes(":") ? 6:4,port:443,protocol:"https"}),false);
   assert.equal(await httpHooks.isIpAllowed({hostname:"example.com",ip:"93.184.216.34",family:4,port:443,protocol:"https"}),true);
 });

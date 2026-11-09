@@ -450,6 +450,14 @@ acceptance, credentials, rulesets and deployment remain pending.
   that host. Agent panes are local, so a dropped Mac path is visible in the VM
   only inside the mounted worktree. Keep the images-only clipboard proxy (W-07);
   a Rex server per VM would add an inbound service. *Source: Rex llms-full.txt.*
+- 2026-11-09: Amp docs confirm `--settings-file`, `amp.updates.mode: disabled`,
+  `amp.notifications.enabled`, both commit-trailer keys, `AMP_API_KEY`
+  (`sgamp_`, overrides saved logins), `AMP_SKIP_UPDATE_CHECK`, `AMP_FORCE_BEL`,
+  `AMP_DISABLE_AMP_THREAD_TRAILER` and `NODE_EXTRA_CA_CERTS`.
+  `amp.dangerouslyAllowAll` is absent from the public docs but present in the
+  pinned binary's help (build check). No API host is documented, so the token
+  placeholder now also covers `*.ampcode.com`. *Source: ampcode.com/docs/cli
+  and /settings.*
 
 - 2026-11-02: Gondolin 0.14.0's sandboxfs is root-only (guest source). The
   candidate image uses bindfs to re-export the same guarded providers for UID
