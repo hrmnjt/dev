@@ -90,6 +90,11 @@ test("bindfs tolerates Gondolin's binds, Git excludes are read-only and Claude s
   const session = await createSession({agent:"claude",cwd},f.deps);
   const binds = f.calls.filter(c => c.command?.[0] === "/usr/bin/bindfs");
   assert.ok(binds.length > 0 && binds.every(c => c.command.includes("allow_other,nonempty")));
+  // The macOS image build drops setuid bits; boot restores the recorded modes,
+  // and apt/debconf keep /var/cache and /var/log on the disposable root disk.
+  const restore = f.calls.findIndex(c => c.command?.[2]?.includes("< /etc/agent-image-modes"));
+  assert.ok(restore > f.calls.indexOf(binds.at(-1)) && !f.calls[restore].command.includes("/usr/local/bin/agent-enter"));
+  assert.deepEqual(f.specs[0].tmpfs,{"/tmp":{},"/var/tmp":{},"/root":{mode:"0700"}});
   const config = f.specs[0].vfs.mounts["/etc/agent-config"];
   const read = async file => {const handle = await config.open(file,"r");try {return Buffer.from(await handle.readFile()).toString("utf8");} finally {await handle.close();}};
   assert.match(await read("/gitconfig"),/excludesFile = \/etc\/agent-config\/gitignore/);
@@ -198,6 +203,8 @@ test("image identity is pinned and command publication is opt-in",() => {
   const recipe = fs.readFileSync("gondolin/.config/gondolin/Dockerfile","utf8");
   assert.match(recipe,/usermod --login agent/);assert.match(recipe,/groupmod --new-name agent node/);
   assert.doesNotMatch(recipe,/useradd.*--uid 1000/);
+  assert.match(recipe,/-perm \/7022 -printf '%m\\t%p\\n' > \/etc\/agent-image-modes/);
+  assert.match(recipe,/"4755" && \$2 == "\/usr\/bin\/sudo"/);
   assert.match(imageSpec().pins.nodeImage,/@sha256:[a-f0-9]{64}$/);
   assert.deepEqual(launchOptions(["--preview","3000","--","-p","fixture"]),{preview:3000,args:["-p","fixture"]});
   assert.deepEqual(launchOptions(["-p","fixture"]),{preview:undefined,args:["-p","fixture"]});

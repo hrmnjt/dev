@@ -151,6 +151,12 @@ no native/unsandboxed fallback. Real FUSE behavior still needs the opt-in host t
 
 Agents run as `agent` (UID 1000) with passwordless `sudo`, so they can install
 guest packages without asking; Gondolin's CA variables are kept for `sudo`.
+Gondolin's macOS image build extracts the root filesystem with non-root `tar`,
+dropping setuid/setgid/sticky bits and applying the umask. The image records
+those modes in `/etc/agent-image-modes` and every launch restores them as guest
+root before the agent starts. Only `/tmp`, `/var/tmp` and `/root` are tmpfs;
+`/var/cache` and `/var/log` stay on the disposable root disk so `apt`/debconf work.
+That disk has roughly 20% free headroom over the image; large installs may not fit.
 Root in the VM gains no host access: read-only and hidden paths are enforced by
 the host provider, the root disk is discarded on exit, and credentials are only
 placeholders. Pi's write/edit tools also run as `agent`, matching its bash tool.
@@ -238,8 +244,15 @@ node --test _tests/gondolin/*.test.mjs _tests/pi/*.test.mjs
 just doctor --only-check
 ```
 
-Pi suites find the SDK through `~/.pi/agent/bin/pi`, then Homebrew; otherwise set
-`PI_TEST_SDK_ROOT` to the installed `@earendil-works/pi-coding-agent` directory.
+Pi suites need Pi's Node SDK. They use `PI_TEST_SDK_ROOT`, a Node install behind
+`~/.pi/agent/bin/pi`, `_scratch/pi-sdk`, then Homebrew. A Bun-binary Pi ships no
+Node SDK; install a disposable, Git-ignored copy matching it:
+
+```bash
+npm install --ignore-scripts --prefix _scratch/pi-sdk \
+  "@earendil-works/pi-coding-agent@$(~/.pi/agent/bin/pi --version)"
+```
+
 Unit tests use real VFS providers and HTTP substitution hooks,
 synthetic tokens, fake VM transports, isolated Git repositories and synthetic
 clipboard images. They do **not** prove kernel isolation, CLI authentication,
