@@ -86,7 +86,7 @@ image build arguments, or environment exports.
 | --- | --- | --- |
 | `dev.agent-vm.claude` | `sk-ant-oat01-…` from `claude setup-token` | `api.anthropic.com` only |
 | `dev.agent-vm.claude-expires` | token expiry as `YYYY-MM-DD` | doctor renewal warning, 30 days ahead |
-| `dev.agent-vm.amp` | `sgamp_…` access token from Amp account settings | `ampcode.com` only |
+| `dev.agent-vm.amp` | `sgamp_…` access token from Amp account settings | `ampcode.com` and `*.ampcode.com` only |
 | `dev.agent-vm.github` | `github_pat_…` fine-grained token | `github.com`, `api.github.com` only |
 
 Every launch, including `pi`, requires the GitHub item, plus the agent's own

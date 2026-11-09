@@ -316,7 +316,8 @@ expanded month by month. Full history lives in `git log`.
   `/etc/hosts`, so `sudo` stops warning. Fixed guest HTTPS trust of Gondolin's
   interception CA: `setup-token` keeps an empty VFS so the CA is injected, and
   Node uses the world-readable CA bundle. Quoted the guest Git credential
-  helper, which Git had truncated at `;`. Requires an image rebuild. The
+  helper, which Git had truncated at `;`, and extended Amp's token placeholder
+  to `*.ampcode.com`. Requires an image rebuild. The
   opt-in live VM fixture passes; real-agent acceptance remains pending.
 - 20261108: Added bounded, escaped startup-step diagnostics for Gondolin's
   mount/state/non-root probes, redacting known credentials and placeholders

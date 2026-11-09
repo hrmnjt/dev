@@ -20,7 +20,8 @@ export function secretDefinitions(agent, lookup = keychainValue) {
   };
   add("github","GH_TOKEN","github_pat_",["github.com","api.github.com"]);
   if (agent === "claude") add("claude","CLAUDE_CODE_OAUTH_TOKEN","sk-ant-oat01-",["api.anthropic.com"]);
-  if (agent === "amp") add("amp","AMP_API_KEY","sgamp_",["ampcode.com"]);
+  // Amp's docs name no API host; substitute only within Amp's own domain.
+  if (agent === "amp") add("amp","AMP_API_KEY","sgamp_",["ampcode.com","*.ampcode.com"]);
   return definitions;
 }
 export function credentialStatus(now = Date.now(), lookup = keychainValue) {
