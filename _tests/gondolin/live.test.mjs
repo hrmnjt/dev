@@ -35,7 +35,9 @@ test("live QEMU: non-root tools, linked mounts, locked paths, overflow mount, ca
   assert.notEqual((await bash("mv .pi moved-config")).exitCode,0);
   // Guest root is available to the agent, but host-side protections still apply to it.
   assert.equal((await bash("stat -c %a /usr/bin/sudo")).output.trim(),"4755","boot restores setuid modes");
-  assert.equal((await bash("sudo -n id -u 2>&1")).output.trim(),"0");
+  assert.equal((await bash("sudo -n id -u 2>&1")).output.trim(),"0","sudo works without hostname warnings");
+  assert.equal((await bash("hostname")).output.trim(),"pi-vm");
+  assert.match((await bash("getent ahostsv4 localhost")).output,/^127\.0\.0\.1\s/,"localhost resolves locally");
   assert.equal((await bash("test -d /var/cache/apt && test -d /var/cache/debconf")).exitCode,0,"apt/debconf state is not hidden by tmpfs");
   for (const target of [".pi/policy",path.join(session.project.common,"hooks/pre-commit"),"/etc/agent-config/gitconfig"]) {
     assert.notEqual((await bash(`sudo -n sh -c ${quote(`printf unsafe > ${quote(target)}`)} 2>/dev/null`)).exitCode,0,"root: "+target);

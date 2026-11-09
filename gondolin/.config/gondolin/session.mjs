@@ -124,6 +124,10 @@ export async function createSession(options, dependencies = {}) {
       // Restore the image's recorded setuid/setgid/sticky and writable modes (see
       // Dockerfile). A path that no longer exists, e.g. under tmpfs, is ignored.
       await checked("guest mode restore",["/bin/bash","-c","while IFS=$'\\t' read -r mode file; do chmod \"$mode\" \"$file\" 2>/dev/null || true; done < /etc/agent-image-modes"]);
+      // Gondolin leaves the hostname "(none)", which sudo warns it cannot resolve.
+      // localhost must also resolve from /etc/hosts, never from synthetic DNS.
+      const hostname = `${agent}-vm`;
+      await checked("guest hostname setup",["/bin/bash","-c",`hostname ${hostname} && { grep -qw localhost /etc/hosts 2>/dev/null || printf '127.0.0.1\\tlocalhost\\n::1\\tlocalhost ip6-localhost ip6-loopback\\n' >> /etc/hosts; } && printf '127.0.1.1\\t%s\\n' ${hostname} >> /etc/hosts`]);
       await checked("guest state/config setup",["/bin/bash","-c",`mkdir -p ${HOME}/claude-state ${HOME}/.cache ${HOME}/.local/share /etc/claude-code; ln -sfn /etc/agent-config/claude/CLAUDE.md ${HOME}/claude-state/CLAUDE.md; ln -sfn /etc/agent-config/claude/themes ${HOME}/claude-state/themes; ln -sfn /etc/agent-config/claude/settings.json /etc/claude-code/managed-settings.json`]);
       // These probes must actually fail, not merely be configured read-only.
       await checked("non-root access/write-denial probes",["/usr/local/bin/agent-enter","/bin/bash","-c",`test "$(id -u)" = 1000 && test -r "$1" && test -w "$1" && test -w "$HOME" && ! touch /etc/agent-config/.write-probe && ! touch "$HOME/.pi/.write-probe" && ! touch "$HOME/.claude/.write-probe"`,"probe",project.workspace]);

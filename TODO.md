@@ -401,6 +401,11 @@ Successful VM enforcement and real-agent acceptance remain pending.
   `/var/cache`/`/var/log` (apt archives, debconf), so only `/tmp`, `/var/tmp` and
   `/root` stay tmpfs. The host Pi SDK suites could not find a Node SDK; the
   locator now accepts a disposable `_scratch/pi-sdk` copy. Rebuild, then rerun.
+- 2026-11-09 (third run, image `dfa8dbbdc1278dce`): the setuid restore worked
+  (`/usr/bin/sudo` is 4755) and `sudo -n id -u` returned 0, but printed
+  "unable to resolve host (none)": Gondolin sets no hostname or `/etc/hosts`.
+  Launch now sets `<agent>-vm`, adds it to `/etc/hosts` and ensures `localhost`
+  resolves locally rather than via synthetic DNS. No image change; rerun only.
 
 - 2026-11-02: Gondolin 0.14.0's sandboxfs is root-only (guest source). The
   candidate image uses bindfs to re-export the same guarded providers for UID

@@ -154,7 +154,9 @@ guest packages without asking; Gondolin's CA variables are kept for `sudo`.
 Gondolin's macOS image build extracts the root filesystem with non-root `tar`,
 dropping setuid/setgid/sticky bits and applying the umask. The image records
 those modes in `/etc/agent-image-modes` and every launch restores them as guest
-root before the agent starts. Only `/tmp`, `/var/tmp` and `/root` are tmpfs;
+root before the agent starts. Launch also sets the hostname (`pi-vm`,
+`claude-vm`, `amp-vm`; Gondolin leaves `(none)`, which `sudo` warns about) and
+keeps `localhost` in `/etc/hosts`. Only `/tmp`, `/var/tmp` and `/root` are tmpfs;
 `/var/cache` and `/var/log` stay on the disposable root disk so `apt`/debconf work.
 That disk has roughly 20% free headroom over the image; large installs may not fit.
 Root in the VM gains no host access: read-only and hidden paths are enforced by
