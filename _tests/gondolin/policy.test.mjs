@@ -53,10 +53,18 @@ test("guest env is an allowlist: no host tokens, SSH agent, proxies or identity 
   // Node trusts Gondolin's CA through the world-readable runtime bundle, not the root-only mount.
   assert.equal(env.NODE_EXTRA_CA_CERTS,"/run/gondolin/ca-certificates.crt");
   assert.match(globalGitConfig(null),/insteadOf = git@github.com:/);
-  assert.match(globalGitConfig(null),/password=%s/);
+  assert.match(globalGitConfig(null),/password=\$GH_TOKEN/);
   // Host Git behaviour carried into the guest: global excludes and conflict style.
   assert.match(globalGitConfig(null),/excludesFile = \/etc\/agent-config\/gitignore/);
   assert.match(globalGitConfig(null),/conflictStyle = zdiff3/);assert.match(globalGitConfig(null),/\[rerere\]\n\tenabled = true/);
+});
+
+test("guest credential helper survives Git config parsing and returns the placeholder",t => {
+  // Unquoted `;` starts a Git config comment and bare quotes are stripped.
+  const config = path.join(fixture(t),"guest-gitconfig");fs.writeFileSync(config,globalGitConfig(null));
+  const output = execFileSync("git",["credential","fill"],{encoding:"utf8",input:"protocol=https\nhost=github.com\n\n",
+    env:{PATH:process.env.PATH,HOME:path.dirname(config),GIT_CONFIG_GLOBAL:config,GIT_CONFIG_NOSYSTEM:"1",GIT_TERMINAL_PROMPT:"0",GH_TOKEN:"github_pat_fixture-placeholder"},stdio:["pipe","pipe","pipe"]});
+  assert.match(output,/^username=x-access-token$/m);assert.match(output,/^password=github_pat_fixture-placeholder$/m);
 });
 
 test("real Gondolin provider rejects config/hook mutations, symlink and hardlink aliases and protected ancestor moves",async t => {
