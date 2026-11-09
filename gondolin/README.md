@@ -183,6 +183,10 @@ world-readable bundle at `/run/gondolin/ca-certificates.crt`, which `curl`, Git,
 `pip` and `gh` use; the launcher points `NODE_EXTRA_CA_CERTS` (Claude, Amp, npm)
 there too. Chromium keeps its own NSS store, so Playwright needs
 `ignoreHTTPSErrors` for external HTTPS sites; local HTTP previews are unaffected.
+Its per-host certificates are backdated only five minutes, so a lagging guest
+clock rejects newly seen hosts. Gondolin re-syncs the clock only when an idle VM
+resumes, and Claude/Amp keep theirs busy (Mac sleep stops guest time), so the
+launcher sets the clock at boot and those sessions re-sync it every 30 seconds.
 
 Public HTTP(S) internet access follows Gondolin's default policy. Internal/private
 IP destinations and Mac services are blocked, with only the images-only clipboard

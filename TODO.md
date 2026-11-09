@@ -218,7 +218,8 @@ acceptance, credentials, rulesets and deployment remain pending.
   `.git/config` execution risk.
 - [~] Claude, Amp and GitHub tokens in Keychain (W-02, W-12). On 2026-11-09 the
   user added the GitHub token, Claude token and its expiry; doctor passes
-  them (expiry in 356 days). The Amp token is still to add.
+  them (expiry in 356 days), and the Amp token, which Amp accepted without a
+  login prompt.
 - [~] One labelled VM/session, explicit image, no host fallback, failure
   messages, cancellation and cleanup are implemented/tested with fake VM
   transports (W-04, W-09, W-15). The live fixture confirms real boot, timeout,
@@ -285,19 +286,25 @@ acceptance, credentials, rulesets and deployment remain pending.
 ### 5. Amp
 
 - [~] `@ampcode/cli` is pinned and the image build passed its version/interface
-  checks. `sgamp_` Keychain placeholder flow is implemented; real sign-in is
-  unverified (W-01/02).
+  checks. On 2026-11-09 the `sgamp_` Keychain placeholder signed Amp in with
+  no login prompt and prompts worked (W-01/02). Amp and Claude both showed a TLS
+  error first; Amp also did after an image paste. Amp's apt saw a Release date
+  minutes ahead of the guest clock, and Gondolin's certificates allow only five
+  minutes of lag: launch now sets the clock and Claude/Amp re-sync it. Recheck,
+  and capture the exact TLS error if it remains.
 - [~] The pinned binary's actual `--help` confirms the
   `amp.dangerouslyAllowAll` setting, not the assumed CLI flag. VM-only read-only
   settings now enable it; the launcher passes only `--settings-file` plus user
   arguments. Build checks require both advertised interfaces and print failures.
-  Rebuild passed; real prompt-free behavior remains pending (W-18).
+  Rebuild passed; `sudo apt-get install` ran without prompts (W-18).
 - [x] Rex action/shortcut and typed `amp` route through the same launcher;
   mocked wiring and branch Rex config checks pass (W-03).
-- [~] `AMP_FORCE_BEL=1` and notification settings are supplied; real
-  done/blocked bell behavior pending (W-06).
-- [~] Shared image-paste/preview/Git/state plumbing is implemented; actual
-  Playwright, pushes/PRs and per-project history pending, as for Claude.
+- [x] `AMP_FORCE_BEL=1` and notification settings are supplied; the user
+  confirmed the bell (W-06).
+- [~] Shared image-paste/preview/Git/state plumbing is implemented. Amp image
+  paste showed a Rex `rex-clipboard-*.png` Mac temp path, which the VM cannot
+  read; retest with `Ctrl+V`. Playwright, pushes/PRs and per-project history
+  pending, as for Claude.
 
 ### 6. Ship
 
