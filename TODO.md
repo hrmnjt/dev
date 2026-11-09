@@ -426,7 +426,8 @@ acceptance, credentials, rulesets and deployment remain pending.
   root-only mount, unreadable to UID 1000. setup-token now keeps an empty VFS
   (no host mounts) and the launcher sets `NODE_EXTRA_CA_CERTS` to the readable
   runtime bundle. The live fixture now checks Node and curl HTTPS as UID 1000
-  in both VM kinds. No image change.
+  in both VM kinds. No image change. The user reported the retry worked
+  (`claude setup-token` through Gondolin's CA, and the live fixture).
 
 - 2026-11-02: Gondolin 0.14.0's sandboxfs is root-only (guest source). The
   candidate image uses bindfs to re-export the same guarded providers for UID
