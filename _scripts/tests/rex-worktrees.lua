@@ -3,7 +3,7 @@
 local real, real_open = rex, io.open
 local root = assert(real.args.root, "pass root=the-repository-path")
 local fixture_root = real.args.fixture
-local wiring = { actions = {}, bindings = {}, created = {}, queued = {}, deployed = true,
+local wiring = { actions = {}, bindings = {}, created = {}, splits = {}, queued = {}, deployed = true,
   host = "local", directory = "/repo with spaces" }
 io.open = function()
   if wiring.deployed then return { close = function() end } end
@@ -14,6 +14,7 @@ rex = {
   bind = function(key, action, args) wiring.bindings[key] = { action = action, args = args } end,
   call = function(method, args)
     if method == "server.status" then return { host_id = "local" } end
+    if method == "session.new_split" then table.insert(wiring.splits, args); return {} end
     assert(method == "session.create", "unexpected operation: " .. method)
     table.insert(wiring.created, args)
     return { session_id = "menu" }
@@ -67,7 +68,21 @@ for key in pairs(wiring.bindings) do
   bound = bound + 1
   assert(not key:find("ctrl", 1, true), "leave Ctrl keys to terminal programs: " .. key)
 end
-assert(bound == 4)
+assert(bound == 7)
+for _, item in ipairs({ {"pi", "cmd+alt+p"}, {"claude", "cmd+alt+c"}, {"amp", "cmd+alt+a"} }) do
+  assert(wiring.bindings[item[2]].action == "agent_" .. item[1])
+  wiring.actions["agent_" .. item[1]].run(context)
+  local pane = wiring.splits[#wiring.splits]
+  assert(pane.session_id == "source" and pane.anchor_id == "block" and pane.focus)
+  assert(pane.layout.block.options.cwd == wiring.directory)
+  local command = pane.layout.block.options.command
+  assert(command[1] == "/usr/bin/env" and command[2]:match("^AGENT_VM_CONFIG="))
+  assert(command[3] == "node" and command[4]:match("/gondolin/cli.mjs$") and command[5] == item[1])
+  assert(#command == 5, "shortcut never enables previews or a host CLI fallback")
+end
+wiring.host = "remote"
+assert(not pcall(wiring.actions.agent_claude.run, context) and #wiring.splits == 3)
+wiring.host = "local"
 local function refused(ctx, action)
   local before = #wiring.created
   assert(not pcall(wiring.actions[action or "worktree_delete"].run, ctx))
@@ -84,7 +99,7 @@ wiring.host = "local"
 wiring.directory, wiring.deployed = "/repo with spaces", false; refused(context)
 rex, io.open = real, real_open
 local core = dofile(root .. "/rex/.config/rex/worktrees.lua")
-if not fixture_root then return { ok = true, actions = 4, rejected_contexts = 5, bindings = 4 } end
+if not fixture_root then return { ok = true, actions = 7, rejected_contexts = 6, bindings = 7 } end
 
 local function execute(argv, options)
   local result = assert(real.exec(argv, options))
@@ -802,4 +817,4 @@ for _, item in ipairs(tests) do
   passed = passed + 1
   print("PASS " .. item[1])
 end
-return { ok = true, lifecycle_tests = passed, actions = 4, bindings = 4, rejected_contexts = 5 }
+return { ok = true, lifecycle_tests = passed, actions = 7, bindings = 7, rejected_contexts = 6 }

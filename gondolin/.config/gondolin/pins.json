@@ -1,0 +1,8 @@
+{
+  "gondolin": "0.14.0",
+  "nodeImage": "node:24.22.2-bookworm-slim@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c",
+  "alpine": "3.23.7",
+  "claude": "2.1.316",
+  "amp": "0.0.1793548828-ge47c64",
+  "playwright": "1.64.1"
+}

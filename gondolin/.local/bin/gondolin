@@ -1,0 +1,3 @@
+#!/bin/sh
+# Management only. Agent entry points always use the shared policy.
+exec node "${AGENT_VM_CONFIG:-$HOME/.config/gondolin}/node_modules/@earendil-works/gondolin/dist/bin/gondolin.js" "$@"

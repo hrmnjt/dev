@@ -149,13 +149,19 @@ Verify the installation with `herdr-nvim doctor` from a herdr session.
 
 ## Agent notifications
 
-The official Pi integration reports lifecycle state to Herdr. The tracked config
+The shared VM launcher's explicit Pi extension list does not load Herdr's
+generated host integration, so automatic agent lifecycle notifications are not
+claimed for the candidate. Rex receives Pi/Claude status natively instead. The
+following Herdr notification settings/manual delivery test remain available
+independently of agent integration; see [Pi deployment](../pi/README.md).
+
+The tracked config
 uses Herdr's `terminal` delivery, so Ghostty shows a desktop notification when a
 background agent finishes or needs input. Herdr suppresses the active tab and
 waits one second to filter transient states. Herdr's separate sound is disabled,
 leaving Ghostty/macOS as the single notification sound source.
 
-Deploy and reload the config, then verify the integration:
+Deploy and reload the config, then inspect any existing integration:
 
 ```bash
 just stowall
@@ -172,8 +178,9 @@ To test, run the following and switch away from Ghostty before it fires:
 
 ## Worktree workflow
 
-Herdr is the repository's sole worktree workflow, covering creation, reopening,
-and removal through managed workspaces and their default tabs.
+Herdr is an optional worktree workflow alongside [Rex](../rex/README.md), covering
+creation, reopening and removal through managed workspaces and their default tabs.
+The plugin's `pi` command uses the shared VM launcher after deployment.
 
 Herdr's **New worktree** shortcut creates a branch from the parent workspace's
 current `HEAD`. Herdr does not currently provide a config option for changing

@@ -26,16 +26,20 @@ uses `zdiff3` conflict markers, and applies these host identity rules:
     path = ~/.config/git/config.work
 ```
 
-Pi's native sandbox uses real host paths and the same Git configuration; there
-is no guest-path identity rewrite or fallback identity. Linked worktrees inherit
-the identity of their primary repository through Git's common-directory rules.
-Unknown paths have no selected identity; sandboxed commands set
-`user.useConfigOnly=true`, so Git cannot invent one. Use ordinary bash Git
-commands for status, staging, commits, fetch, and push when requested, not direct
-file edits in `.git`. Git metadata is a writable exception when outside the launch
-directory (including linked worktrees and launches from a subdirectory); arbitrary
-primary-checkout source remains outside the boundary. New worktree/clone locations
-must be inside the write boundary or created deliberately on the host.
+The Gondolin launcher keeps these host path rules but reads only the selected
+name/email from the identity file into a read-only guest global config. Selection
+uses the canonical common Git directory, so linked worktrees inherit the primary
+repository's identity even when their checkout is elsewhere. Unknown paths get
+no identity, with `user.useConfigOnly=true` and no fallback. The complete worktree
+and linked common directory are mounted at the same absolute paths. Use ordinary
+guest Bash Git commands for status, staging, commits, fetch and push.
+
+GitHub SSH remotes are rewritten to HTTPS in the guest, using the scoped
+Keychain-backed token placeholder; no host SSH agent is forwarded. Host SSH/gh
+configuration stays unchanged. Hooks and the guest global config are read-only;
+repo `.git/config` is writable, including the accepted `core.hooksPath` risk when
+host Git later runs. See [shared policy and GitHub rulesets](../gondolin/README.md).
+This candidate requires VM acceptance before deployment.
 
 ## What this enables
 

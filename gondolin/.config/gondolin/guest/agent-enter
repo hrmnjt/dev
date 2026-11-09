@@ -1,0 +1,5 @@
+#!/bin/bash
+set -euo pipefail
+# sandboxd starts as root; all agent programs and model shell commands do not.
+# Keep the SDK's CA environment, but never inherit a host process environment.
+exec /usr/sbin/runuser -u agent -- "$@"

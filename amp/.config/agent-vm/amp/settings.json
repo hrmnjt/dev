@@ -1,0 +1,8 @@
+{
+  "$schema": "https://ampcode.com/cli-settings.schema.json",
+  "amp.dangerouslyAllowAll": true,
+  "amp.updates.mode": "disabled",
+  "amp.notifications.enabled": true,
+  "amp.git.commit.ampThread.enabled": false,
+  "amp.git.commit.coauthor.enabled": false
+}
