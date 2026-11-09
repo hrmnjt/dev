@@ -445,6 +445,11 @@ acceptance, credentials, rulesets and deployment remain pending.
   `chore/meta/scratch-vm-push-test` (one empty commit on `origin/main`) and
   found the credential helper bug; its push did not happen. Relaunch the VM to
   pick up the fixed helper before retrying.
+- 2026-11-09: Rex's file/image drop types a path after making the file readable
+  to the server (`server.apple.grant_file_access`); remote hosts get a copy on
+  that host. Agent panes are local, so a dropped Mac path is visible in the VM
+  only inside the mounted worktree. Keep the images-only clipboard proxy (W-07);
+  a Rex server per VM would add an inbound service. *Source: Rex llms-full.txt.*
 
 - 2026-11-02: Gondolin 0.14.0's sandboxfs is root-only (guest source). The
   candidate image uses bindfs to re-export the same guarded providers for UID
