@@ -1,6 +1,12 @@
 # Importing things that I want to keep locally
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 
+# Agents always enter through the shared VM launcher, even if a legacy binary
+# or a local PATH customization would otherwise shadow the Stow wrappers.
+pi() { command "$HOME/.local/bin/agent-vm" pi "$@" }
+claude() { command "$HOME/.local/bin/agent-vm" claude "$@" }
+amp() { command "$HOME/.local/bin/agent-vm" amp "$@" }
+
 # Homebrew is initialized once for login shells in ~/.zprofile.
 
 # Keep useful history across shells while removing duplicate commands. Shared

@@ -12,3 +12,11 @@ zed/.config/zed/themes/**
 
 # pi
 pi/.pi/agent/usage-data/
+
+# Branch-local dependencies, downloads and disposable fixtures
+/_scratch/
+gondolin/.config/gondolin/node_modules/
+
+# Podman package tracks intentional configuration, never generated state/auth.
+/podman/.config/containers/*
+!/podman/.config/containers/containers.conf

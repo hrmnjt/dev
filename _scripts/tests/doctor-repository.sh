@@ -30,7 +30,7 @@ assert_result() {
 
 ROOT="$tmp/checkout with spaces"
 TEMP_ROOT="$tmp"
-mkdir -p "$ROOT/zsh" "$ROOT/scripts" "$ROOT/claude/.claude"
+mkdir -p "$ROOT/zsh" "$ROOT/scripts" "$ROOT/claude/.config/agent-vm/claude"
 # Keep init independent of the caller's Git configuration and index.
 (
   unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_CONFIG_COUNT GIT_CONFIG_PARAMETERS
@@ -69,7 +69,7 @@ for kind in valid false missing invalid-count missing-slot duplicate-override un
     duplicate-override) json='{"env":{"GIT_CONFIG_COUNT":"2","GIT_CONFIG_KEY_0":"user.useConfigOnly","GIT_CONFIG_VALUE_0":"true","GIT_CONFIG_KEY_1":"user.useConfigOnly","GIT_CONFIG_VALUE_1":"false"}}' ;;
     unrelated-error) json='{"env":{"GIT_CONFIG_COUNT":"4","GIT_CONFIG_KEY_0":"user.useConfigOnly","GIT_CONFIG_VALUE_0":"true","GIT_CONFIG_KEY_1":"user.name","GIT_CONFIG_VALUE_1":"Fixture","GIT_CONFIG_KEY_2":"user.email","GIT_CONFIG_VALUE_2":"fixture@doctor.invalid","GIT_CONFIG_KEY_3":"commit.cleanup","GIT_CONFIG_VALUE_3":"invalid"}}' ;;
   esac
-  printf '%s\n' "$json" > "$ROOT/claude/.claude/settings.json"
+  printf '%s\n' "$json" > "$ROOT/claude/.config/agent-vm/claude/settings.json"
   label="Claude Git identity: $kind"
   if [ "$kind" = inherited-env ]; then
     printf '[user]\n name = Leaked fixture\n email = leak@fixture.invalid\n' > "$tmp/leaked-config"

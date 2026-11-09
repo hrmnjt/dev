@@ -1,0 +1,28 @@
+# syntax=docker/dockerfile:1
+ARG NODE_IMAGE
+FROM ${NODE_IMAGE}
+ENV DEBIAN_FRONTEND=noninteractive PLAYWRIGHT_BROWSERS_PATH=/opt/playwright \
+    DISABLE_AUTOUPDATER=1 AMP_SKIP_UPDATE_CHECK=1
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash ca-certificates curl git gh ripgrep fd-find jq python3 python3-venv \
+    unzip util-linux procps less openssh-client bindfs fuse3 \
+    && rm -rf /var/lib/apt/lists/*
+COPY pins.json /opt/agent-pins.json
+RUN node -e 'const p=require("/opt/agent-pins.json");require("node:child_process").execFileSync("npm",["install","-g","@anthropic-ai/claude-code@"+p.claude,"@ampcode/cli@"+p.amp,"playwright@"+p.playwright],{stdio:"inherit"})'
+RUN playwright install --with-deps chromium && chmod -R a+rX /opt/playwright \
+    && test "$(id -u node)" = 1000 \
+    && usermod --login agent --home /home/agent --move-home --shell /bin/bash node \
+    && groupmod --new-name agent node \
+    && mkdir -p /agent-state /etc/agent-config /home/agent/.claude /home/agent/.pi \
+    && chmod 755 /agent-state
+COPY guest/clipboard.mjs /usr/local/lib/agent-clipboard.mjs
+COPY guest/agent-enter /usr/local/bin/agent-enter
+COPY guest/check-clis.mjs /usr/local/lib/agent-check-clis.mjs
+RUN chmod 755 /usr/local/bin/agent-enter /usr/local/lib/agent-clipboard.mjs \
+    && ln -s /usr/local/lib/agent-clipboard.mjs /usr/local/bin/xclip \
+    && ln -s /usr/local/lib/agent-clipboard.mjs /usr/local/bin/wl-paste \
+    && node /usr/local/lib/agent-check-clis.mjs
+COPY agent-image.json /etc/agent-image.json
+ENV HOME=/home/agent PATH=/usr/local/bin:/usr/bin:/bin \
+    AMP_FORCE_BEL=1
+WORKDIR /home/agent

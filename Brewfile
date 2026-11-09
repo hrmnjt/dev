@@ -40,6 +40,12 @@ brew "stow"
 brew "uv"
 # Node.js (unpinned now)
 brew "node"
+# Shared agent micro-VM runtime and custom image build tools
+brew "qemu"
+brew "lz4"
+brew "e2fsprogs"
+# Container engine; initialize/start its Mac Linux machine explicitly.
+brew "podman"
 # Local LLM inference server with Metal acceleration and an OpenAI-compatible API
 brew "llama.cpp"
 # SSG for hrmnjt/sttp
@@ -65,10 +71,8 @@ brew "container"
 brew "herdr"
 # OpenAI coding agent CLI
 cask "codex"
-# Anthropic coding agent CLI (settings deployed from claude/)
-cask "claude-code"
-# Claude desktop app
-cask "claude"
+# Claude Code and Amp are pinned in the Gondolin image, never installed here.
+# No documented desktop setting disables all local Code sessions; use web chat.
 # Hex desktop app
 cask "anomalyco/tap/hex"
 # Terminal

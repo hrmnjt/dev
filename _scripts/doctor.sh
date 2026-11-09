@@ -170,7 +170,7 @@ check_toml() {
     return
   fi
 
-  toml_files=$(git -C "$ROOT" ls-files '*.toml')
+  toml_files=$(git -C "$ROOT" ls-files --cached --others --exclude-standard -- '*.toml' 'podman/.config/containers/containers.conf')
   if [ -z "$toml_files" ]; then
     pass "Tracked TOML"
     return
@@ -297,7 +297,7 @@ check_claude_git_identity() {
           ($env["GIT_CONFIG_VALUE_\($i)"] | type) == "string"))
       then $env | to_entries[] | "\(.key)=\(.value)"
       else error("invalid indexed Git environment") end
-  ' "$ROOT/claude/.claude/settings.json" 2>/dev/null) || {
+  ' "$ROOT/claude/.config/agent-vm/claude/settings.json" 2>/dev/null) || {
     fail "Claude Git identity (missing or invalid Git environment)"
     return
   }
@@ -374,7 +374,7 @@ run_repository_checks() {
 
 check_expected_commands() {
   missing_commands=""
-  for name in aerospace borders brew claude fzf gh git herdr jq just lazygit nvim node npm pi rg starship stow uv zsh; do
+  for name in aerospace agent-vm amp borders brew claude fzf gh git gondolin herdr jq just lazygit nvim node npm pi qemu-system-aarch64 rg starship stow uv zsh; do
     if ! command_exists "$name"; then
       missing_commands="$missing_commands $name"
     fi
@@ -416,7 +416,7 @@ check_stow_links() {
     case "$package_name" in
       _*|.*) continue ;;
     esac
-    find "$package" \( -type f -o -type l \) \
+    find "$package" -name node_modules -prune -o \( -type f -o -type l \) \
       ! -name 'README.md' ! -name '.gitignore' ! -name '.stow-local-ignore' \
       -print >> "$stow_tmp"
   done
@@ -488,23 +488,36 @@ check_pi() {
     fail "Pi extension dependencies (npm unavailable)"
   fi
 
-  if [ "$(uname -s)" = Darwin ] && [ -x /usr/bin/sandbox-exec ]; then
-    pass "Pi native Seatbelt launcher (enforcement needs Pi trial)"
+  if [ -e "$HOME/.pi/agent/extensions/gondolin.ts" ]; then
+    pass "Pi Gondolin extension deployment"
   else
-    fail "Pi native sandbox requires macOS sandbox-exec"
+    fail "Pi Gondolin extension missing (run: just stowall)"
   fi
-  if [ -e "$HOME/.pi/agent/extensions/gondolin.ts" ] || [ -L "$HOME/.pi/agent/extensions/gondolin.ts" ]; then
-    fail "Retired Pi extension remains (see pi/README.md deployment)"
-  elif [ -e "$HOME/.pi/agent/extensions/sandbox.ts" ] &&
-      [ -e "$HOME/.pi/agent/extensions/lib/native-policy.ts" ] &&
-      [ -e "$HOME/.pi/agent/extensions/lib/native-runtime.ts" ]; then
-    pass "Pi native-only extension deployment"
+  for retired in sandbox.ts uv.ts wal-writer.ts; do
+    if [ -e "$HOME/.pi/agent/extensions/$retired" ] || [ -L "$HOME/.pi/agent/extensions/$retired" ]; then
+      fail "Retired Pi extension $retired remains (see pi/README.md)"
+    fi
+  done
+  if command_exists node && [ -f "$HOME/.config/gondolin/cli.mjs" ]; then
+    vm_output=$(AGENT_VM_CONFIG="$HOME/.config/gondolin" node "$HOME/.config/gondolin/cli.mjs" doctor 2>&1)
+    if [ "$?" -eq 0 ]; then
+      pass "Gondolin image marker and Keychain credentials (not VM proof)"
+    else
+      warn "Gondolin setup incomplete (run: agent-vm doctor)"
+      while IFS= read -r vm_line; do
+        case "$vm_line" in WARN\ *) warn "${vm_line#WARN }" ;; esac
+      done <<EOF
+$vm_output
+EOF
+    fi
+    # The doctor subcommand emits only status/expiry, never token values.
+    debug_output "$vm_output"
   else
-    fail "Pi native extension files missing (run: just stowall)"
+    fail "Shared Gondolin launcher missing (see gondolin/README.md)"
   fi
-  # Native write confinement uses sandbox-exec directly, with no npm runtime or
-  # proxies. Node and the Seatbelt launcher are checked above; test OS enforcement
-  # with the host trial rather than treating dependency checks as proof.
+  if [ -d /Applications/Claude.app ] || [ -d /opt/homebrew/Caskroom/claude-code ]; then
+    warn "Legacy Mac Claude install remains; remove after VM acceptance (see claude/README.md)"
+  fi
 }
 
 check_aerospace() {

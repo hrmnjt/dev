@@ -1,0 +1,11 @@
+{
+  "name": "@hrmnjt/agent-vm",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@earendil-works/gondolin": "0.14.0"
+  }
+}
