@@ -2,7 +2,8 @@
 
 Claude Code is pinned **inside the guest image**, not installed on the Mac.
 `claude` is a VM launcher. See [shared setup and branch trials](../gondolin/README.md).
-This candidate still requires image-build and real-CLI acceptance before deployment.
+The image builds and the live VM fixture passes; this candidate still requires
+real-CLI acceptance before deployment.
 
 ## Configuration
 

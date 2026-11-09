@@ -147,7 +147,8 @@ which re-exports the **same guarded providers**, remapping file ownership to UID
 Gondolin has already bind-mounted each target, and Debian's bindfs uses libfuse 2,
 so it mounts with `nonempty`. Startup checks non-root workspace/home access and
 attempts denied writes before starting an agent. Failure stops launch; there is
-no native/unsandboxed fallback. Real FUSE behavior still needs the opt-in host test.
+no native/unsandboxed fallback. The opt-in live host test exercises this real
+FUSE path; it passed on 2026-11-09.
 
 Agents run as `agent` (UID 1000) with passwordless `sudo`, so they can install
 guest packages without asking; Gondolin's CA variables are kept for `sudo`.
