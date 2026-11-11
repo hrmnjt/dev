@@ -283,7 +283,7 @@ expanded month by month. Full history lives in `git log`.
 - 20261029: Added Rex's Claude Code `SessionStart` hook for session/pane context
   alongside the existing Herdr hook, with a five-second timeout and ignored failures.
 - 20261028: Routed Claude, ChatGPT, and Microsoft 365 Copilot windows to AeroSpace
-  workspace 10 (`option-0`), alongside Zed.
+  workspace 9 (`option-9`), leaving Zed on workspace 10 (`option-0`).
 - 20261028: Made auto mode the Claude Code global default, preserving outside-read
   blocking and mandatory Bash sandboxing without unsandboxed retries.
 - 20261028: Added the Claude desktop app cask to the Brewfile alongside Claude Code.

@@ -99,8 +99,8 @@ outer.right = 10
 #   5 = Microsoft Teams PWA
 #   6 = Thunderbird
 #   7-8 = ad hoc personal projects
-#   9 = spare / temporary
-#   10 = Zed / Claude / ChatGPT / Microsoft 365 Copilot (option-0)
+#   9 = Claude / ChatGPT / Microsoft 365 Copilot (option-9)
+#   10 = Zed (option-0)
 
 [mode.main.binding]
 
@@ -259,20 +259,20 @@ run = 'move-node-to-workspace 1'
 if.app-id = 'dev.zed.Zed'
 run = 'move-node-to-workspace 10'
 
-# Claude desktop -> workspace 10 (option-0).
+# Claude desktop -> workspace 9 (option-9).
 [[on-window-detected]]
 if.app-id = 'com.anthropic.claudefordesktop'
-run = 'move-node-to-workspace 10'
+run = 'move-node-to-workspace 9'
 
-# ChatGPT (app id reported by aerospace list-apps) -> workspace 10 (option-0).
+# ChatGPT (app id reported by aerospace list-apps) -> workspace 9 (option-9).
 [[on-window-detected]]
 if.app-id = 'com.openai.codex'
-run = 'move-node-to-workspace 10'
+run = 'move-node-to-workspace 9'
 
-# Microsoft 365 Copilot -> workspace 10 (option-0).
+# Microsoft 365 Copilot -> workspace 9 (option-9).
 [[on-window-detected]]
 if.app-id = 'com.microsoft.m365copilot'
-run = 'move-node-to-workspace 10'
+run = 'move-node-to-workspace 9'
 
 # Obsidian -> workspace 2.
 [[on-window-detected]]
