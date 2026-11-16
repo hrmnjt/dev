@@ -22,7 +22,7 @@ pass() { printf 'PASSED: %s\n' "$1"; }
 fail() { printf 'FAILED: %s\n' "$1"; }
 . "$tmp/check.sh"
 
-for kind in file-link folded-directory unmanaged-file missing-file dangling-link wrong-target; do
+for kind in file-link folded-directory unmanaged-file missing-file dangling-link wrong-target source-dependency; do
   ROOT="$tmp/$kind/checkout"
   HOME="$tmp/$kind/home"
   TEMP_ROOT="$tmp/$kind"
@@ -41,7 +41,7 @@ for kind in file-link folded-directory unmanaged-file missing-file dangling-link
   else
     mkdir -p "$target_dir"
     case "$kind" in
-      file-link) ln -s "$source" "$target" ;;
+      file-link|source-dependency) ln -s "$source" "$target" ;;
       unmanaged-file) printf '{}\n' > "$target" ;;
       dangling-link) ln -s "$tmp/absent" "$target" ;;
       wrong-target)
@@ -51,9 +51,14 @@ for kind in file-link folded-directory unmanaged-file missing-file dangling-link
     esac
   fi
 
+  if [ "$kind" = source-dependency ]; then
+    mkdir -p "$ROOT/glow/node_modules/dependency"
+    printf "runtime\n" > "$ROOT/glow/node_modules/dependency/index.js"
+    printf "node_modules\n" > "$ROOT/glow/.stow-local-ignore"
+  fi
   output=$(check_stow_links)
   case "$kind" in
-    file-link|folded-directory)
+    file-link|folded-directory|source-dependency)
       expected='PASSED: Stow deployment links'
       [ "$output" = "$expected" ] || {
         printf 'FAILED: %s\n%s\n' "$kind" "$output" >&2
@@ -75,4 +80,4 @@ for kind in file-link folded-directory unmanaged-file missing-file dangling-link
   esac
   printf 'PASSED: %s\n' "$kind"
 done
-printf '6 Stow regression checks passed\n'
+printf '7 Stow regression checks passed\n'

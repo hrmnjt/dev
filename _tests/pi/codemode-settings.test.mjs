@@ -12,7 +12,7 @@ test("codemode defaults keep direct filesystem/shell tools declared", () => {
   }
 });
 
-test("documented host activation preserves unrelated settings and codemode options", async () => {
+test("documented VM migration disables only MCP, preserving direct tools and codemode options", async () => {
   const docs = await fs.readFile(new URL("../../pi/README.md", import.meta.url), "utf8");
   const match = docs.match(/jq '([\s\S]*?)' \\\n  "\$settings"/);
   assert.ok(match, "Missing documented activation expression");
@@ -22,11 +22,9 @@ test("documented host activation preserves unrelated settings and codemode optio
     defaultProvider: "unchanged-provider", defaultModel: "unchanged-model",
     defaultThinkingLevel: "high", theme: "gruvbox-dark/gruvbox-dark", tuiMode: "fullscreen",
     enabledModels: ["unchanged-local-model"], unrelated: { preserve: true },
+    extensions: ["builtin:mcp", "+builtin:mcp", "custom-extension"],
   };
   const output = JSON.parse(execFileSync("jq", [match[1]], { input: JSON.stringify(input), encoding: "utf8" }));
-  assert.deepEqual(output.defaultTools, ["read", "write", "edit", "bash", "+other-tool", "+codemode"]);
-  assert.deepEqual(output.codemode, { mode: "on", inlineBudget: 500 });
-  const { defaultTools: _oldTools, codemode: _oldMode, ...original } = input;
-  const { defaultTools: _newTools, codemode: _newMode, ...preserved } = output;
-  assert.deepEqual(preserved, original);
+  assert.deepEqual(output,{...input,extensions:["custom-extension","-builtin:mcp"]});
+  assert.deepEqual(JSON.parse(execFileSync("jq",[match[1]],{input:JSON.stringify(output),encoding:"utf8"})),output);
 });

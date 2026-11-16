@@ -1,0 +1,3 @@
+# npm dependencies are installed in the real deployment prefix, never Stowed.
+node_modules
+README\.md

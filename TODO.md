@@ -12,14 +12,15 @@ source and date with each answer.
    freely within the VM's constraints.
 2. Run Claude Code in Gondolin, with quality-of-life improvements that make
    working with it excellent.
-3. Run Amp in Gondolin, to the same standard.
+3. Run Amp in Gondolin, to the same standard. **Deferred on 2026-11-16**: Amp
+   was removed to keep the image and launcher small; see tracker section 5.
 
 Gondolin is the one sandbox to manage. Inside it, agents act without asking.
 
 ## Rules
 
-- Agents never act outside the VM. Claude Code and Amp run only in the VM and
-  are not installed on the Mac; Pi's tools run only in the VM. Pi's `!` and
+- Agents never act outside the VM. Claude Code runs only in the VM and is not
+  installed on the Mac (nor is Amp); Pi's tools run only in the VM. Pi's `!` and
   `!!` are user commands and stay on the Mac.
 - Real credentials stay in the Mac's Keychain; the guest sees placeholders.
   Never log in inside the VM, and never forward the SSH agent.
@@ -33,7 +34,8 @@ Gondolin is the one sandbox to manage. Inside it, agents act without asking.
 
 ## Decisions
 
-All decided on 2026-11-01. IDs match the tracker.
+All decided on 2026-11-01. IDs match the tracker. Amp parts are historical
+since Amp was deferred on 2026-11-16.
 
 ### Setup
 
@@ -151,77 +153,180 @@ All decided on 2026-11-01. IDs match the tracker.
 
 Status: `[ ]` to do, `[~]` in progress, `[x]` done, `[-]` dropped (say why).
 
+**2026-11-09: candidate implementation, not deployed or host-accepted.** Source
+work and fixture checks are distinguished below from live behavior. Do not merge
+or retire this tracker until the user completes the host acceptance in
+[gondolin/README.md](gondolin/README.md#checks-and-remaining-acceptance).
+The user installed Podman 6.1.4 and initialized/started its machine with branch
+config; basic engine connectivity is verified. The first image build failed at
+Amp's assumed CLI-flag check. After correcting it to use the documented
+`amp.dangerouslyAllowAll` setting, the user successfully built image
+`3ae12ee30b3fd9705b9f2894b951a443cad6cff019376c37d9274a2e463ab7a1`.
+Read-only inspection confirms its completion marker matches the current source
+fingerprint and its manifest is present. No Stow/live npm operation,
+Keychain/login, GitHub setting, Mac agent removal, push or merge has been
+performed. The first live fixture booted far enough to read the guest image
+marker, then failed a bindfs re-export command before non-root/enforcement checks.
+The rerun with diagnostics showed libfuse 2 refusing Gondolin's non-empty bind
+targets; bindfs now uses `nonempty`. The rebuilt image (`cc0189b33c067e3a`)
+then passed bindfs, non-root access, write-denial probes, live worktree/Git
+config writes, fail-closed identity, protected-path denials (bash and root
+`vm.fs`) and protected-ancestor moves, but `sudo` lacked its setuid bit. After
+restoring recorded modes (image `dfa8dbbdc1278dce`) and setting a guest hostname,
+the **opt-in live fixture passes** end to end in about 1 s. Real-agent
+acceptance, credentials, rulesets and deployment remain pending.
+
 ### 1. Prepare
 
-- [ ] Create the implementation worktree from `main`.
-- [ ] Record a host baseline: Pi, Gondolin, and QEMU versions; `just doctor`;
-  VM boot time and memory per VM (W-04).
-- [ ] Find a way to try branch config without deploying it, for Pi, the
-  Claude/Amp launch command, and Rex.
+- [x] Implementation uses `feat/gondolin/sandbox-for-all` in the supplied
+  `dev-feat-gondolin-sandbox-for-all` worktree; initial status was clean.
+- [~] Record a host baseline (W-04). Initially observed: Pi 1.4.0, Node 26.13.0,
+  QEMU 11.1.3; no deployed Gondolin, Docker or Podman. Branch-local Gondolin
+  dependencies are pinned to 0.14.0. Repository-only doctor before and after:
+  **12 passed, 0 failed, 1 warning** (Python TOML validator unavailable).
+  The live fixture boots a VM and runs all its checks in 995 ms (2026-11-09)
+  and 1612 ms on the rebuilt image (2026-11-16).
+  Full deployment doctor, RSS and parallel-agent sizing remain pending.
+  The candidate's 4 GiB/2 CPUs is provisional, not a measured budget.
+- [x] Branch-only entry points documented: `trial-pi`, direct branch
+  `cli.mjs claude|amp`, and Rex `REX_CONFIG` / `rex do <file> --action`.
+  No server reload or deployment is needed; real agent trials await live VM
+  enforcement checks and credential setup.
 - [ ] Walk through a working day with each agent and confirm it with the user.
 
 ### 2. Shared Gondolin setup
 
-- [ ] Docker or Podman installed for image builds (host step, W-01).
-- [ ] Guest image with pinned Claude Code, Amp, and Playwright (W-01).
-- [ ] One place defines mounts (W-05), network (W-08), secrets (W-02), and
-  fail-closed identity.
-- [ ] Read-only paths and locked global Git config (W-20).
-- [ ] Claude, Amp, and GitHub tokens in the Keychain (W-02, W-12).
-- [ ] One VM per session, labelled for `gondolin list`/`attach`; launch fails
-  closed and names the fix (W-04, W-09, W-15).
-- [ ] GitHub ruleset on `main` for each repo agents push to; confirm rulesets
-  work for private repos on the current plan (W-12).
+- [x] User installed Podman 6.1.4 for image builds (host step, W-01).
+  Intentional machine defaults now live in `podman/`; generated state/auth are
+  excluded. User initialized `podman-machine-default` with `CONTAINERS_CONF`.
+  Read-only definition inspection confirms AppleHV, 9 vCPUs, 2048 MiB RAM,
+  100 GiB virtual disk capacity, rootless mode and an empty host-share list.
+  User started the machine; `podman info` confirms a 6.1.4 Linux/arm64 rootless
+  engine. Image-build prerequisites are available. No Docker API helper or
+  `DOCKER_HOST` override was needed. Runtime mount/workload checks remain pending.
+  Podman's inspection CLI needs a host lockfile, so configuration inspection
+  used the saved definition only. No Stow deployment from the worktree.
+- [x] Fingerprinted Debian/Alpine image pins Node, Claude,
+  Playwright/Chromium and Gondolin (Amp until 2026-11-16); user build completed with version/help
+  assertions passing (W-01). Completion marker matches the current source.
+  This proves image construction, not VM boot, enforcement or authentication.
+- [x] Shared `gondolin/` package centralizes mounts, network, host-scoped
+  Keychain placeholders, fail-closed identity and canonical common-Git-dir
+  selection (W-02, W-05, W-08). Real VFS/HTTP-hook fixtures pass.
+- [x] Read-only paths/global Git config have provider, alias, hardlink and
+  protected-ancestor fixture coverage (W-20). On 2026-11-09 the live fixture
+  confirmed non-root bindfs access and denied writes/moves for `.pi`, `.claude`,
+  common hooks, guest Git config and `/pi-output`, through bash, root `vm.fs`
+  and root via `sudo`; `_models` is hidden. Keep the accepted writable
+  `.git/config` execution risk.
+- [~] Claude and GitHub tokens in Keychain (W-02, W-12). On 2026-11-09 the
+  user added the GitHub token, Claude token and its expiry; doctor passes
+  them (expiry in 356 days). The unused `dev.agent-vm.amp` item can be deleted.
+- [~] One labelled VM/session, explicit image, no host fallback, failure
+  messages, cancellation and cleanup are implemented/tested with fake VM
+  transports (W-04, W-09, W-15). The live fixture confirms real boot, timeout,
+  continued use and idempotent close; `gondolin list`/`attach` and real agent
+  launches remain pending.
+- [ ] GitHub ruleset on `main` for each repo agents push to; confirm private
+  repository support/enforcement on the current plan (W-12).
 
 ### 3. Pi
 
-- [ ] Pi runs on the Mac with its built-in tools in the VM; `!` and `!!` stay
-  on the Mac (W-16).
-- [ ] Bash overflow logs written by host Pi are readable by the VM's tools
-  (the earlier plan's PI-03).
-- [ ] Drop `sandbox`, `uv`, and `wal-writer`; turn off `mcp` (W-17).
-- [ ] Tests and doctor checks match the new setup.
+- [x] Host Pi interface/model auth with VM-only read/write/edit/bash,
+  nested/codemode delegation and unchanged host `!`/`!!` (W-16). On 2026-11-16
+  a real `trial-pi` session confirmed: `/gondolin` status; UID 1000, `pi-vm`
+  and the worktree cwd; write/edit/read through the VM; codemode in the VM;
+  `!hostname` on the Mac; the personal Git identity; `/reload` starting a new
+  VM; and `/exit` leaving no QEMU process. Writes to `pi/.pi`, `.claude` and
+  the common hooks directory failed as read-only, also through `sudo`.
+- [ ] Optional UI checks still unobserved: `/answer`, `/review`, Ctrl+V image
+  attachment and tldraw.
+- [~] SDK-owned host Bash overflow logs get a private read-only `/pi-output`
+  mount; model/codemode paths and successful cleanup have real-SDK coverage.
+  The live fixture confirms the mount is readable and read-only, Pi-style writes
+  are UID 1000 and bash timeouts recover. On 2026-11-16 a real session read
+  `seq 1 200000` overflow back through `/pi-output` (last line `200000`).
+- [x] Retired `sandbox`, `uv`, `wal-writer` and native-only tests;
+  disabled MCP. The explicit launcher keeps only the agreed extension set.
+  Existing model/thinking/theme/tool settings are preserved (W-17).
+- [x] Tests and doctor source match the candidate; expiry warnings and
+  missing/stale setup diagnostics are included. See evidence below.
 
 ### 4. Claude Code
 
-- [ ] Runs as a non-root user without approval prompts, with tracked
-  read-only settings (W-18).
-- [ ] Rex shortcut and typed `claude` start it in the VM (W-03).
-- [ ] Status reaches Rex through OSC 7501 (W-06).
-- [ ] `Ctrl+V` image paste through the images-only proxy (W-07).
-- [ ] Opt-in previews; Playwright available (W-10).
-- [ ] Commits, pushes, and opens PRs (W-12).
-- [ ] History and memory per project (W-14).
-- [ ] Once it works in the VM, remove the Mac install and retire or repurpose
-  the Mac-only parts of the `claude/` package (W-03).
-- [ ] Turn off the desktop app's local Code sessions, or remove the app
-  (W-19).
+- [~] UID 1000 entry point, bypass mode, nested sandbox/update controls,
+  read-only VM-only settings and mutable history separation are implemented
+  (W-18). Gondolin sandboxfs needs the candidate bindfs ownership remapping;
+  the first live attempt failed during bindfs setup before non-root probes
+  (non-empty mountpoint, now mounted with `nonempty`). The live fixture now
+  passes the non-root bindfs/probe path on the rebuilt image. On 2026-11-09 the
+  real Claude CLI started in the VM with only the folder-trust prompt (no
+  onboarding or bypass warning) and installed a package with `sudo apt-get`.
+- [x] Rex action/shortcut and typed `claude` route through the shared
+  launcher; mocked wiring and branch Rex config checks pass (W-03).
+- [x] Direct PTY/terminal metadata preserves OSC 7501; removed host command
+  hooks and tmux/CLI escape interception. User confirmed Rex status (W-06).
+- [x] Images-only bounded/random-route clipboard proxy and guest adapters work:
+  `Ctrl+V` in Claude reads the Mac clipboard image directly, so copying is
+  enough; no terminal paste is needed (user-confirmed, W-07).
+- [~] Opt-in loopback ingress and pinned Playwright are implemented;
+  actual preview/browser use pending (W-10).
+- [~] HTTPS rewrite/helper and selected-repo identity are implemented. A real
+  VM commit used the right identity, but the push failed: the guest credential
+  helper was unquoted, so Git truncated it at `;`. Fixed and covered by a real
+  `git credential fill` test. On 2026-11-16, on the rebuilt Amp-free image
+  (`880cc58dbdc81bf9`), the user confirmed the VM push check works.
+  PR creation and ruleset refusal pending (W-12).
+- [~] Per-primary-project state is implemented; `claude --resume` after restart
+  works (user-confirmed). History/memory across worktrees and parallel
+  sessions pending (W-14).
+- [~] Mac-only package settings were repurposed into VM-only config, so legacy
+  Mac Claude cannot inherit bypass mode. Actual Mac install removal awaits
+  VM acceptance and is a user operation (W-03).
+- [ ] Remove desktop app after acceptance: no documented reliable setting to
+  disable every local Code session was found. Candidate Brewfile omits both
+  Claude casks and Codex; installed apps remain untouched and doctor warns
+  while they remain (W-19).
+- [-] Remote Control push notifications: Claude requires a full-scope login
+  token, and `setup-token` tokens are inference-only (W-02). Use Claude Code on
+  the web for phone/remote work (W-19).
 
-### 5. Amp
+### 5. Amp (deferred)
 
-- [ ] Pinned in the image; signs in with the `sgamp_` token (W-01, W-02).
-- [ ] Runs without approval prompts, with tracked read-only settings; confirm
-  its allow-all flag with `amp --help` (W-18).
-- [ ] Rex shortcut and typed `amp` start it in the VM (W-03).
-- [ ] Bell on done and blocked (W-06).
-- [ ] Image paste, previews, Playwright, pushes and PRs, and per-project
-  history, as for Claude (W-07, W-10, W-12, W-14).
+- [-] Removed on 2026-11-16 to keep the image and launcher simple; `95ef4ef` is
+  the last commit with Amp support. What the trial established (W-01/02/06/18):
+  - Worked: `sgamp_` Keychain placeholder sign-in (hosts `ampcode.com` and
+    `*.ampcode.com`), the `amp.dangerouslyAllowAll` setting from a read-only
+    `--settings-file` (no CLI bypass flag exists), `AMP_FORCE_BEL` bells and
+    prompt-free `sudo apt-get`.
+  - Failed: image upload with Bun's `EPROTO` "TLS handshake failed", not a
+    certificate-date error. Amp uploads straight to Google Cloud Storage, falling
+    back to `ampcode.com/api/attachments/upload-proxy`. Unresolved; the leading
+    suspect is a client insisting on HTTP/2, which Gondolin's interception does
+    not support. The VPN was on at the time.
+  - Cost: Amp's server refused an eight-day-old CLI ("needs to be updated"), so
+    every Amp bump means an image rebuild.
+  - Retry by restoring from that commit, then run the `openssl s_client -alpn h2`
+    versus `http/1.1` probe against the upload host from inside the VM.
 
 ### 6. Ship
 
-- [ ] Docs: package READMEs, root README setup, AGENTS.md **Execution
-  environment**, and the changelog.
-- [ ] Merge. The user deploys (Stow, npm, image, reload) and verifies on the
-  host.
-- [ ] Move lasting content into package READMEs and retire this file.
+- [x] Updated package READMEs, root setup/changelog, AGENTS.md execution
+  environment and related Git/Rex/Zsh/theme/local-model/Herdr documentation.
+  Lasting operational instructions live in package guides.
+- [ ] Merge only after host acceptance; the user deploys from the primary
+  checkout (Stow, npm, image, reload) and verifies on the host.
+- [~] Retain this file for pending acceptance; retire it once the live
+  evidence and deliberate host steps are complete.
 
 ### Later
 
-- [ ] An Amp plugin that turns its state events into OSC 7501 (W-06).
 - [ ] Per-project Mac service mapping, when a project needs one (W-08).
 - [ ] Revisit agents in the main `dev` checkout before running unattended
   (W-05).
 - [ ] Keep VMs per worktree if per-session boot or reinstalls hurt (W-04).
+- [ ] Trust Gondolin's CA in Chromium's NSS store (needs `libnss3-tools`) if
+  agents must browse external HTTPS sites with Playwright (W-10).
 
 ## Developing in a worktree
 
@@ -240,14 +345,139 @@ Status: `[ ]` to do, `[~]` in progress, `[x]` done, `[-]` dropped (say why).
   file>` alone would load a second sandbox backend beside the deployed one.
   Pi supports `PI_CODING_AGENT_DIR` and `--no-extensions`; the latter also
   drops built-ins, which `-e builtin:<name>` restores.
-- Rex reads its config from the deployed files; no way to try branch Rex
-  config without deploying is known yet.
+- Rex can validate a branch with `REX_CONFIG=<branch-init.lua> rex
+  --autostart=false config check`, and execute a file's actions with `rex do`.
+  This does not reload/bind the branch config; see the shared package guide.
 - Merging is deploying. After pulling `main`, new sessions see changed files at
   once; new files need `just stowall` from `main`; deleted files leave broken
   links until restowed; running Pi sessions keep old code until `/reload`.
 
+## Verification evidence
+
+- 2026-11-09, user host run after commit `0ace255`: **80 tests, 79 passed,
+  1 skipped (the opt-in live QEMU test), 0 failed**, including the Pi SDK and
+  clipboard suites.
+- 2026-11-09, inside the Claude Code sandbox with a scratch Pi 1.4.0 SDK and a
+  symlinked `TMPDIR`: **80 tests, 75 passed, 1 skipped, 4 failed**. The failures
+  are sandbox limits only: three clipboard tests cannot bind a local port, and one
+  Pi test hits the SDK's host `realpath` on `/home` (unreadable there; ENOENT on
+  the Mac). The clipboard adapter was checked separately with a stubbed fetch.
+  Rex config check passes (7 actions, 7 bindings); the Rex fixture needs the Rex
+  socket and was not run.
+- Node VM/Pi suites (2026-11-08): **78 tests, 77 passed, 1 skipped, 0 failed**. They use
+  synthetic tokens, real VFS/HTTP hooks, the installed Pi SDK, fake VM transports
+  and disposable Git projects. Includes bounded guest
+  reads, image handling, startup/shutdown races, SDK overflow serialization,
+  settings preservation and Stow-prefix dependency resolution. Added coverage
+  for Amp's setting-vs-flag interface, diagnostic CLI failures/version mismatches,
+  and bypass-enabled settings delivered only through a read-only VM provider.
+  Startup-failure fixtures also verify stage/status diagnostics, escaped controls,
+  cleanup and credential/placeholder redaction before output truncation.
+- Podman config TOML, Git exclusions and Stow simulation pass. With the installed
+  Python 3.14 explicitly selected for TOML validation, repository doctor reports
+  **13 passed, 0 failed, 0 warnings**. No Podman machine was created or started.
+- Strict TypeScript check of the current Pi extensions against Pi 1.4.0 passes.
+- Rex branch config: **7 actions, 7 bindings**. Mocked regression suite:
+  **58 lifecycle cases, 6 refused contexts**, plus agent wiring assertions.
+- Disposable shell fixtures: **11 repository doctor**, **7 Stow diagnostic**,
+  **8 SSH setup** checks pass. A separate Stow simulation checks npm state
+  stays out of deployment; no links are created.
+- 2026-11-09, user host run of the opt-in live QEMU test on image
+  `dfa8dbbdc1278dce`: **1 passed** (VM startup plus fixture checks 995 ms). It
+  covers real FUSE/bindfs enforcement, non-root and sudo behaviour, mounts,
+  identity, excludes, overflow and timeout, using synthetic tokens. It is not
+  evidence of real authentication or clipboard/terminal/browser behavior.
+- 2026-11-16, user rebuild (Podman 6.2.0, image `53f03932afefc8cf`, Amp
+  0.0.1794225648-g45053b) after an earlier attempt timed out downloading
+  Chromium with the VPN on. The live test, now also checking guest clock skew
+  under two seconds, **1 passed** (VM startup plus fixture checks 1612 ms).
+- Before acceptance, run the opt-in VM fixture, all three real agent day-in-
+  the-life trials and full doctor from a host terminal. Record boot/RSS,
+  parallel sizing, authenticated Git/PR/rulesets, image paste, status/bells,
+  preview/Playwright, history/memory and Pi overflow/codemode/reload/UI results.
+  The command sequence is in the shared package README.
+
 ## Notes
 
+- 2026-11-07: User image build failed at the old `--dangerously-allow-all`
+  help grep. A network-disabled run of the cached Linux image returned help
+  successfully and advertised `amp.dangerouslyAllowAll` in settings. Source
+  now uses that setting in VM-only config, with a diagnostic build verifier.
+  CLI-help evidence does not prove authenticated prompt-free agent behavior.
+  The subsequent user rebuild completed for fingerprint `3ae12ee30b3fd970`;
+  marker/manifest inspection passed.
+- 2026-11-08: The user ran the opt-in live QEMU fixture. Guest image-marker
+  reading succeeded, but bindfs setup returned nonzero; the original error
+  discarded stderr, so no root cause is established. Startup errors now include
+  the stage, exit status and bounded/escaped/redacted command output. No image
+  inputs changed; rerun the fixture without rebuilding. Enforcement is unproven.
+- 2026-11-09: The diagnostic rerun failed at `bindfs /pi-output` with libfuse 2's
+  "mountpoint is not empty": Gondolin bind-mounts every VFS mount before bindfs
+  runs. bindfs now passes `nonempty`. Verified against the installed Gondolin
+  SDK, the Pi 1.4.0 package and the Mac's Claude Code 2.1.311 binary (the image
+  pins 2.1.316): option names, attach raw mode/resize, symlink
+  handling for the state links, Pi CLI flags/`PI_CODING_AGENT_SESSION_DIR`, Pi's
+  in-place `auth.json` writes (lock lives beside the trial link), Claude's
+  `skipDangerousModePermissionPrompt`/`hasCompletedOnboarding` keys and its
+  full-scope requirement for Remote Control. Pi's write tool still calls host
+  `realpath` on guest paths to key its mutation queue (SDK behaviour, metadata only).
+- 2026-11-09 (second run, image `cc0189b33c067e3a`): everything up to the new
+  `sudo` assertion passed; `sudo -n id -u` failed. Gondolin extracts the OCI
+  export with macOS `tar -xf` as non-root, which drops setuid/setgid/sticky bits
+  and applies the umask; its debugfs fix-up restores only uid/gid. The root is
+  not `nosuid` and sandboxd sets no no-new-privs. The image now records such
+  modes and launch restores them. Gondolin's default tmpfs set also hid
+  `/var/cache`/`/var/log` (apt archives, debconf), so only `/tmp`, `/var/tmp` and
+  `/root` stay tmpfs. The host Pi SDK suites could not find a Node SDK; the
+  locator now accepts a disposable `_scratch/pi-sdk` copy. Rebuild, then rerun.
+- 2026-11-09 (third run, image `dfa8dbbdc1278dce`): the setuid restore worked
+  (`/usr/bin/sudo` is 4755) and `sudo -n id -u` returned 0, but printed
+  "unable to resolve host (none)": Gondolin sets no hostname or `/etc/hosts`.
+  Launch now sets `<agent>-vm`, adds it to `/etc/hosts` and ensures `localhost`
+  resolves locally rather than via synthetic DNS. No image change; rerun only.
+- 2026-11-09 (fourth run, same image): the live fixture passed end to end.
+  Next are real agent launches with Keychain tokens, RSS/parallel sizing and
+  the day-in-the-life trials.
+- 2026-11-09: `claude setup-token` failed twice with `SELF_SIGNED_CERT_IN_CHAIN`.
+  Gondolin injects its TLS interception CA through the VFS and skips it when
+  `vfs` is `null`, which setup-token used; HTTPS was still intercepted. Work VMs
+  had a second problem: init points `NODE_EXTRA_CA_CERTS` at the CA on the
+  root-only mount, unreadable to UID 1000. setup-token now keeps an empty VFS
+  (no host mounts) and the launcher sets `NODE_EXTRA_CA_CERTS` to the readable
+  runtime bundle. The live fixture now checks Node and curl HTTPS as UID 1000
+  in both VM kinds. No image change. The user reported the retry worked
+  (`claude setup-token` through Gondolin's CA, and the live fixture).
+- 2026-11-09: first real Claude Code launch in a work VM (this worktree).
+  Asked to list `~/Downloads`, it reported only the worktree path is visible,
+  `/mnt/agent-host` is root-only, and suggested copying files into the
+  worktree. Note: `/mnt/agent-host` is Gondolin's view of the same guarded
+  mounts, so root sees nothing more there.
+- 2026-11-09: Claude acceptance in that session: folder-trust prompt only
+  (expected once per worktree path), Rex status, clipboard image via `Ctrl+V`,
+  `sudo apt-get` and `--resume` work. The VM Claude made local branch
+  `chore/meta/scratch-vm-push-test` (one empty commit on `origin/main`) and
+  found the credential helper bug; its push did not happen. Relaunch the VM to
+  pick up the fixed helper before retrying.
+- 2026-11-09: Rex's file/image drop types a path after making the file readable
+  to the server (`server.apple.grant_file_access`); remote hosts get a copy on
+  that host. Agent panes are local, so a dropped Mac path is visible in the VM
+  only inside the mounted worktree. Keep the images-only clipboard proxy (W-07);
+  a Rex server per VM would add an inbound service. *Source: Rex llms-full.txt.*
+- 2026-11-09: Amp docs confirm `--settings-file`, `amp.updates.mode: disabled`,
+  `amp.notifications.enabled`, both commit-trailer keys, `AMP_API_KEY`
+  (`sgamp_`, overrides saved logins), `AMP_SKIP_UPDATE_CHECK`, `AMP_FORCE_BEL`,
+  `AMP_DISABLE_AMP_THREAD_TRAILER` and `NODE_EXTRA_CA_CERTS`.
+  `amp.dangerouslyAllowAll` is absent from the public docs but present in the
+  pinned binary's help (build check). No API host is documented, so the token
+  placeholder now also covers `*.ampcode.com`. *Source: ampcode.com/docs/cli
+  and /settings.*
+
+- 2026-11-02: Gondolin 0.14.0's sandboxfs is root-only (guest source). The
+  candidate image uses bindfs to re-export the same guarded providers for UID
+  1000 and probes access/denials before launch; live behavior is still pending.
+  `@ampcode/cli` is the current npm package, not the redirecting
+  `@sourcegraph/amp`. Stow `--no-folding` requires dependency resolution
+  from the real install prefix, plus an ignore rule for branch node_modules.
 - 2026-11-01: Gondolin 0.14.0 is current (the old setup used 0.12.0); Pi 1.4.0
   is current on npm. Gondolin's CLI uses `Ctrl-]` to force-close a session,
   which Claude Code also binds; the SDK's `vm.exec` attaches a terminal

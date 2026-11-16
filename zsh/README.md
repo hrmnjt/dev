@@ -92,6 +92,14 @@ Notable commands and aliases include:
 | `gbclean` | Remove merged local branches whose upstream is gone |
 | `histedit` | Edit and reload shell history after closing other shells |
 | `llm` | Manage and inspect the host llama.cpp router service |
+| `pi` | Host Pi interface with Gondolin-only model tools |
+| `claude` | Start Claude Code in a fresh Gondolin VM, never a Mac agent binary |
+
+The agent functions invoke the shared `~/.local/bin/agent-vm` explicitly, even
+if Homebrew or `.zshrc.local` puts a legacy agent binary earlier on PATH. There
+is no host fallback if the launcher/image/credentials are missing. See
+[VM setup and branch trials](../gondolin/README.md); host installs/deployment
+remain user actions. `!`/`!!` inside Pi remain deliberate host commands.
 
 `GLOW_STYLE` points Glow to the Stow-deployed Gruvbox Markdown stylesheet using
 `$HOME`; see [the Glow package](../glow/README.md). Homebrew is initialized once

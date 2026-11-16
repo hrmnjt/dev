@@ -5,8 +5,8 @@ import { test } from "node:test";
 
 const template = JSON.parse(await fs.readFile(new URL("../../pi/.pi/agent/settings.template.json", import.meta.url), "utf8"));
 const docs = await fs.readFile(new URL("../../pi/README.md", import.meta.url), "utf8");
-const match = docs.match(/jq '(\.defaultProvider = "openai"[\s\S]*?)' "\$settings"/);
-assert.ok(match, "Missing documented minimal model-settings delta");
+const match = docs.match(/jq '([\s\S]*?)' \\\n  "\$settings"/);
+assert.ok(match, "Missing documented MCP-only migration delta");
 const apply = input => JSON.parse(execFileSync("jq", [match[1]], { input: JSON.stringify(input), encoding: "utf8" }));
 
 test("template selects the exact requested provider/model/high and retains local shortlist", () => {
@@ -21,7 +21,7 @@ test("template selects the exact requested provider/model/high and retains local
   ]);
 });
 
-test("host delta changes only requested defaults, exact thinking override and list inclusion", () => {
+test("VM migration preserves existing defaults, thinking overrides and model shortlist", () => {
   const input = {
     defaultProvider: "old", defaultModel: "old", defaultThinkingLevel: "medium",
     modelThinkingLevels: { "openai/gpt-6.1-sol": "low", "fixture/local": "off" },
@@ -31,17 +31,14 @@ test("host delta changes only requested defaults, exact thinking override and li
     codemode: { mode: "on", inlineBudget: 500 }, unrelated: { keep: true },
   };
   const output = apply(input);
-  assert.deepEqual(output, { ...input,
-    defaultProvider: "openai", defaultModel: "gpt-6.1-sol", defaultThinkingLevel: "high",
-    modelThinkingLevels: { ...input.modelThinkingLevels, "openai/gpt-6.1-sol": "high" },
-    enabledModels: ["fixture/local", "old/cloud", "openai/gpt-6.1-sol"],
-  });
+  assert.deepEqual(output, { ...input, extensions: ["-builtin:mcp"] });
   assert.deepEqual(apply(output), output, "Delta is idempotent");
 });
 
-test("absent unrestricted enabled-model selection is not narrowed by activation", () => {
+test("absent unrestricted enabled-model selection is not narrowed by VM migration", () => {
   const output = apply({ unrelated: true });
   assert.ok(!("enabledModels" in output));
   assert.equal(output.unrelated, true);
-  assert.equal(output.defaultModel, "gpt-6.1-sol");
+  assert.ok(!("defaultProvider" in output));
+  assert.ok(!("defaultModel" in output));
 });

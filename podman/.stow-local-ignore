@@ -1,0 +1,6 @@
+# Package documentation and any accidentally generated host state stay local.
+README\.md
+\.gitignore
+podman
+podman-connections\.json
+auth\.json

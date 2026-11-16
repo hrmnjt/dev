@@ -20,6 +20,11 @@ Borrowed from [XKCD 149](https://xkcd.com/149/), BTW.
 
 ### Complete the macOS first-run tasks
 
+The Gondolin migration is currently a **candidate**, not host-accepted. Use the
+[branch trial and acceptance guide](gondolin/README.md) before merging/deploying;
+Stow links in the primary checkout are live source. The steps below describe
+the target setup, not host operations already performed.
+
 ```bash
 # 1. Sign in to iCloud.
 
@@ -51,7 +56,7 @@ mkdir -p _models
 brew bundle install
 
 # 8. Deploy the dotfiles
-# Review existing ~/.claude files for conflicts first; see claude/README.md
+# For migration, inspect retired links and existing agent files first; see pi/README.md
 just stowall
 
 # 9. Install and configure Pi
@@ -62,7 +67,12 @@ npm install --prefix ~/.pi/agent
 if [[ ! -f ~/.pi/agent/settings.json ]]; then
   cp ~/.pi/agent/settings.template.json ~/.pi/agent/settings.json
 fi
-# 9.4. Pi uses the native macOS sandbox; see pi/README.md for migration and checks
+# 9.4. Shared Gondolin runtime for Pi tools and Claude Code
+npm ci --prefix ~/.config/gondolin
+# Initialize/start Podman's machine deliberately before building; see podman/README.md.
+# Apple's container cannot build this image.
+agent-vm build podman  # or: agent-vm build docker
+# See gondolin/README.md for acceptance and pi/README.md for safe migration.
 # Restart the login shell, then continue with step 10
 exec zsh -l
 
@@ -77,12 +87,15 @@ git remote set-url origin git@github.com:hrmnjt/dev.git
 # 10.1. Authenticate the GitHub CLI over SSH; see gh/README.md
 gh auth login
 
-# 10.2. Configure Claude Code (installed by brew bundle; see claude/README.md)
-# Sign in, then check the installation:
-claude
-claude doctor
-# 10.3. Cloud environments and identity: claude/README.md#web-sessions.
-# /remote-env selects the CLI cloud default on this Mac.
+# 10.2. Configure guest credentials through Mac Keychain Access; see gondolin/README.md.
+# This setup command runs in a throwaway VM with nothing mounted:
+claude setup-token
+# Store its token/expiry and a scoped GitHub fine-grained token
+# in the documented Keychain entries; never log in inside a work VM.
+# Configure/verify main-branch GitHub rulesets yourself, including private-repo support.
+agent-vm doctor
+# 10.3. Claude cloud execution remains complementary; see claude/README.md.
+# Remove legacy Mac Claude Code/desktop installs only after VM acceptance.
 
 # 11. Complete required app permissions
 # 11.1. Grant AeroSpace Accessibility permission; see the aerospace/README.md
@@ -104,10 +117,9 @@ llm start
 # 13.3. Use /llama to download or load a model, then select it with /model
 
 # 14. Enable optional integrations
-# 14.1. Install Pi's generated Herdr integration when using Herdr workspaces:
-herdr integration install pi
-herdr integration status
-# 14.2. Activate the Stow-deployed Herdr default-tabs plugin:
+# 14.1. Pi/Claude status reaches Rex natively; no host command hooks are needed.
+# The explicit Pi extension list does not load Herdr's generated integration.
+# 14.2. Activate the Stow-deployed Herdr default-tabs plugin when using Herdr:
 herdr plugin link ~/.config/herdr/local-plugins/default-tabs
 herdr plugin list --plugin hrmnjt.default-tabs
 # 14.3. Brave configuration
@@ -125,7 +137,9 @@ herdr plugin list --plugin hrmnjt.default-tabs
 - [AeroSpace](aerospace/README.md)
 - [Ghostty](ghostty/README.md)
 - [Glow](glow/README.md)
-- [Claude Code (Mac and web sessions)](claude/README.md)
+- [Shared Gondolin agent VMs](gondolin/README.md)
+- [Podman](podman/README.md)
+- [Claude Code (VM and web sessions)](claude/README.md)
 - [Gh](gh/README.md)
 - [Git](git/README.md)
 - [Herdr](herdr/README.md)
@@ -164,8 +178,9 @@ just doctor
 
 The full mode runs the same repository checks, then inspects Brew packages,
 expected commands, Stow links, the deployed Git identity, Pi dependencies and
-settings, native Seatbelt prerequisites, AeroSpace, Herdr, and GitHub CLI
-authentication.
+settings, Gondolin launchers/image markers/Keychain expiry, legacy Mac Claude
+installs, AeroSpace, Herdr, and host GitHub CLI authentication. This does not boot
+a VM, prove isolation, or test a push/PR.
 It reports remediation commands but never installs, rewrites, reloads, or
 repairs the setup. Add `--verbose` (or `-v`) to either mode to show the commands
 and captured output behind integration checks:
@@ -181,7 +196,7 @@ When changing the Stow diagnostic, run its small shell regression check:
 ./_scripts/tests/doctor-stow.sh
 ```
 
-It tests six disposable healthy/broken link layouts without Node, Homebrew, or
+It tests seven disposable healthy/broken link and ignored-dependency layouts without Node, Homebrew, or
 changes to your real home directory. Other focused script regressions are:
 
 ```bash
@@ -193,7 +208,15 @@ changes to your real home directory. Other focused script regressions are:
 These cover shell discovery, Claude Git identity refusal, SSH setup with fake
 keygen/agent/Keychain/clipboard commands, and Rex worktree lifecycle safety with
 real disposable Git repositories and mocked Rex/menu operations. Normal doctor
-runs do not run these fixtures. See [Rex checks](rex/README.md#checks) for its
+runs do not run these fixtures. VM/Pi tests (after branch-local shared dependency
+installation) run separately:
+
+```bash
+node --test _tests/gondolin/*.test.mjs _tests/pi/*.test.mjs
+```
+
+The real-VM test is skipped unless explicitly enabled on the Mac after building;
+see [VM acceptance](gondolin/README.md#checks-and-remaining-acceptance). See [Rex checks](rex/README.md#checks) for its
 mocked Lua action check and remaining interactive verification.
 
 #### Managing macOS defaults
@@ -275,7 +298,61 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202611
 
+- 20261116: Deferred Amp to keep the agent VM image and launcher small. Removed
+  the Amp CLI from the image, the `amp` launcher, zsh function and Rex shortcut,
+  its Keychain placeholder, VM settings package and build checks. The trial
+  signed in and ran prompt-free, but image upload failed with an unresolved TLS
+  handshake error and Amp's server refuses CLIs more than about a week old.
+  `TODO.md` records the findings for a later retry. Requires an image rebuild.
+- 20261109: Fixed the first live Gondolin failure: bindfs now mounts with
+  `nonempty` over Gondolin's existing binds. Gave the VM agent user passwordless
+  `sudo` (keeping Gondolin's CA variables) and ran Pi's write/edit tools as that
+  user. Carried host Git excludes, rerere, `zdiff3` and branch sort into the
+  guest. Seeded Claude's per-project state past onboarding and skipped its
+  bypass-mode prompt; dropped Remote Control notifications, which inference-only
+  `setup-token` tokens cannot use. Rex agent panes now start through a `zsh`
+  login shell for Homebrew's `node`. Added an `fd` command and `wl-paste -l` to
+  the image, removed the Codex cask, made policy tests independent of
+  symlinked `TMPDIR` and let Pi tests find the installed SDK or a disposable
+  `_scratch/pi-sdk` copy. After the live fixture showed `sudo` without its
+  setuid bit (Gondolin's macOS build drops special modes), the image records
+  them and each launch restores them; `/var/cache` and `/var/log` stay off tmpfs
+  for apt. Launch also sets a guest hostname and keeps `localhost` in
+  `/etc/hosts`, so `sudo` stops warning. Fixed guest HTTPS trust of Gondolin's
+  interception CA: `setup-token` keeps an empty VFS so the CA is injected, and
+  Node uses the world-readable CA bundle. Quoted the guest Git credential
+  helper, which Git had truncated at `;`, and extended Amp's token placeholder
+  to `*.ampcode.com`. Launch sets the guest clock from the Mac, and Claude/Amp
+  sessions re-sync it every 30 seconds: after Mac sleep a busy guest fell
+  behind Gondolin's five-minute certificate backdating, failing HTTPS to new
+  hosts and apt date checks. Bumped Amp to 0.0.1794225648-g45053b after its
+  server refused the November 1 build. Requires an image rebuild. The
+  opt-in live VM fixture passes; real-agent acceptance remains pending.
+- 20261108: Added bounded, escaped startup-step diagnostics for Gondolin's
+  mount/state/non-root probes, redacting known credentials and placeholders
+  before truncation while retaining fail-closed cleanup. The first live fixture
+  fails at bindfs setup; VM enforcement acceptance remains blocked.
+- 20261107: Corrected Amp's VM bypass to use its documented
+  `amp.dangerouslyAllowAll` setting rather than an assumed CLI flag. Moved Amp
+  settings into VM-only configuration, added diagnostic build-interface/version
+  checks and regression coverage. The image rebuild now completes; live VM
+  enforcement and real-agent acceptance remain pending.
 - 20261106: Added the Hex desktop app cask (`anomalyco/tap/hex`) to the Brewfile.
+- 20261102: Implemented a candidate shared Gondolin launcher/image policy for
+  Pi tools, non-root Claude Code and Amp: pinned guest agents/Chromium,
+  same-path linked-worktree mounts, fail-closed identity, read-only agent config
+  and hooks, Keychain-backed host-scoped placeholders, per-project state,
+  images-only clipboard proxy and opt-in loopback previews. Added isolated branch
+  trials, Stow-safe dependency resolution, Rex agent panes, VM/Pi fixtures and
+  doctor renewal checks; retired
+  Seatbelt, uv and WAL extensions and disabled MCP. Moved Claude bypass settings
+  to VM-only config, added Podman for image builds and removed Mac Claude casks
+  from the candidate Brewfile. Track general-purpose Podman machine defaults
+  without automatic Mac directory shares; generated state/auth stay out of
+  Git/Stow. Podman machine
+  initialization/start remain manual.
+  Image build, kernel/CLI acceptance, rulesets, Mac retirement and deployment
+  remain deliberate pending user steps, not verified results.
 - 20261101: Added the Tailscale desktop app cask to the Brewfile.
 
 ### 202610
