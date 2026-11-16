@@ -39,15 +39,12 @@ dependencies in the real deployed directory.
 
 Run these commands yourself in a **host terminal** in the implementation worktree.
 Do not Stow from a worktree or install dependencies into live Pi to try the branch.
-For Podman, first follow the [tracked Podman configuration](../podman/README.md#try-the-branch-without-deploying)
-to select the branch config and initialize/start its machine in that terminal.
+Start a Docker or Podman engine first; Apple's `container` cannot build the image.
 
 ```bash
 config="$PWD/gondolin/.config/gondolin"
 # Branch-local dependencies only, not ~/.pi/agent or the deployed shared package:
 npm ci --prefix "$config"
-# Install Podman from Brewfile, then initialize/start its machine deliberately.
-# Docker is also supported; Apple's container is not.
 node "$config/cli.mjs" build podman     # or: build docker
 node "$config/cli.mjs" trial-pi
 node "$config/cli.mjs" claude
@@ -226,10 +223,8 @@ Auto-update is disabled.
 The Alpine kernel/boot layer is separate from the Debian OCI root filesystem.
 
 Build prerequisites: Node 24+, QEMU, Docker or Podman, `lz4`, `e2fsprogs` and
-macOS `cpio` (Brewfile tracks Podman and the other non-system prerequisites).
-Installing Podman does not initialize or start its Mac machine; those remain
-explicit user steps. The [Podman package](../podman/README.md) tracks general
-machine defaults separately from generated state and registry credentials.
+macOS `cpio`. Brewfile tracks QEMU, `lz4` and `e2fsprogs`; installing and
+starting a container engine is a separate user step.
 Images are kept at
 `~/.local/share/agent-vm/images/<fingerprint>/`. A missing/stale marker or a
 mismatched guest marker stops launch and names `agent-vm build`. No default image

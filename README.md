@@ -69,8 +69,7 @@ if [[ ! -f ~/.pi/agent/settings.json ]]; then
 fi
 # 9.4. Shared Gondolin runtime for Pi tools and Claude Code
 npm ci --prefix ~/.config/gondolin
-# Initialize/start Podman's machine deliberately before building; see podman/README.md.
-# Apple's container cannot build this image.
+# Start a Docker or Podman engine first; Apple's container cannot build this image.
 agent-vm build podman  # or: agent-vm build docker
 # See gondolin/README.md for acceptance and pi/README.md for safe migration.
 # Restart the login shell, then continue with step 10
@@ -138,7 +137,6 @@ herdr plugin list --plugin hrmnjt.default-tabs
 - [Ghostty](ghostty/README.md)
 - [Glow](glow/README.md)
 - [Shared Gondolin agent VMs](gondolin/README.md)
-- [Podman](podman/README.md)
 - [Claude Code (VM and web sessions)](claude/README.md)
 - [Gh](gh/README.md)
 - [Git](git/README.md)
@@ -349,11 +347,8 @@ expanded month by month. Full history lives in `git log`.
   trials, Stow-safe dependency resolution, Rex agent panes, VM/Pi fixtures and
   doctor renewal checks; retired
   Seatbelt, uv and WAL extensions and disabled MCP. Moved Claude bypass settings
-  to VM-only config, added Podman for image builds and removed Mac Claude casks
-  from the candidate Brewfile. Track general-purpose Podman machine defaults
-  without automatic Mac directory shares; generated state/auth stay out of
-  Git/Stow. Podman machine
-  initialization/start remain manual.
+  to VM-only config and removed Mac Claude casks from the candidate Brewfile;
+  image builds need a Docker or Podman engine.
   Image build, kernel/CLI acceptance, rulesets, Mac retirement and deployment
   remain deliberate pending user steps, not verified results.
 - 20261101: Added the Tailscale desktop app cask to the Brewfile.
