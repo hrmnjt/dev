@@ -56,7 +56,7 @@ export async function runPi(args, trial = false) {
 export async function main(argv = process.argv.slice(2)) {
   const [agent,...rest] = argv;
   if (!agent || ["--help","help"].includes(agent)) {
-    console.log("agent-vm build docker|podman\nagent-vm doctor\nagent-vm pi [Pi options]\nagent-vm trial-pi [Pi options]  # isolated branch config, no Stow\nclaude [--preview PORT] [Claude options]\namp [--preview PORT] [Amp options]\nclaude setup-token  # throwaway VM, no host mounts or supplied credentials");return 0;
+    console.log("agent-vm build docker|podman\nagent-vm doctor\nagent-vm pi [Pi options]\nagent-vm trial-pi [Pi options]  # isolated branch config, no Stow\nclaude [--preview PORT] [Claude options]\nclaude setup-token  # throwaway VM, no host mounts or supplied credentials");return 0;
   }
   if (agent === "build") {await buildImage(rest[0]);return 0;}
   if (agent === "doctor") {

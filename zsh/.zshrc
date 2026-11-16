@@ -5,7 +5,6 @@
 # or a local PATH customization would otherwise shadow the Stow wrappers.
 pi() { command "$HOME/.local/bin/agent-vm" pi "$@" }
 claude() { command "$HOME/.local/bin/agent-vm" claude "$@" }
-amp() { command "$HOME/.local/bin/agent-vm" amp "$@" }
 
 # Homebrew is initialized once for login shells in ~/.zprofile.
 

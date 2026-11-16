@@ -1,3 +1,0 @@
-#!/bin/sh
-export AGENT_VM_CONFIG="${AGENT_VM_CONFIG:-$HOME/.config/gondolin}"
-exec node "$AGENT_VM_CONFIG/cli.mjs" amp "$@"

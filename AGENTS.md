@@ -8,8 +8,8 @@ on instructions that add to those guides rather than repeating them.
 
 The target deployment uses Gondolin as the shared sandbox. Pi's interface and
 provider/OAuth connection stay on the Mac; its model filesystem/shell tools run
-only in the VM. Claude Code and Amp run entirely in separate session VMs; their
-Mac commands are launchers, not host agent installs. Pi's user `!`/`!!` remain
+only in the VM. Claude Code runs entirely in separate session VMs; its Mac
+command is a launcher, not a host agent install. Pi's user `!`/`!!` remain
 host commands. See `gondolin/README.md` and the agent package guides.
 
 The complete worktree and linked common Git directory are mounted at the same
@@ -26,7 +26,7 @@ Homebrew, Stow, live npm installs, image builds, Keychain, GitHub rulesets,
 launchd, VPN and local-model services remain deliberate user steps. Do not merge
 or deploy before host VM acceptance. This worktree/harness may still have the
 previous native sandbox loaded; honor its actual tools and boundary, never route
-blocked writes through host services. Claude/Amp cloud sessions remain separate;
+blocked writes through host services. Claude cloud sessions remain separate;
 see `claude/README.md` for web Git identity.
 
 ## Git workflow
