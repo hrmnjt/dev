@@ -197,8 +197,8 @@ acceptance, credentials, rulesets and deployment remain pending.
 ### 2. Shared Gondolin setup
 
 - [x] User installed Podman 6.1.4 for image builds (host step, W-01).
-  Intentional machine defaults now live in `podman/`; generated state/auth are
-  excluded. User initialized `podman-machine-default` with `CONTAINERS_CONF`.
+  Its machine defaults moved to the `podman` package (#219) on 2026-11-16.
+  User initialized `podman-machine-default` with `CONTAINERS_CONF`.
   Read-only definition inspection confirms AppleHV, 9 vCPUs, 2048 MiB RAM,
   100 GiB virtual disk capacity, rootless mode and an empty host-share list.
   User started the machine; `podman info` confirms a 6.1.4 Linux/arm64 rootless
