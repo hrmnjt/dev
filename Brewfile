@@ -60,6 +60,8 @@ brew "ffmpeg"
 
 # MacOS containers - trying out
 brew "container"
+# Linux containers in a Podman machine; see podman/README.md
+brew "podman"
 
 # Agent-aware terminal workspace manager
 brew "herdr"
