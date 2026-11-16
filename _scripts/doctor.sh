@@ -170,7 +170,7 @@ check_toml() {
     return
   fi
 
-  toml_files=$(git -C "$ROOT" ls-files '*.toml')
+  toml_files=$(git -C "$ROOT" ls-files '*.toml' 'podman/.config/containers/containers.conf')
   if [ -z "$toml_files" ]; then
     pass "Tracked TOML"
     return

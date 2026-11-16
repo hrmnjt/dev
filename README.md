@@ -134,6 +134,7 @@ herdr plugin list --plugin hrmnjt.default-tabs
 - [Local llama.cpp inference](llama/README.md)
 - [Neovim](nvim/README.md)
 - [Pi agent package](pi/README.md)
+- [Podman](podman/README.md)
 - [Rex configuration](rex/README.md)
 - [Starship](starship/README.md)
 - [Wallpapers](wallpapers/README.md)
@@ -275,6 +276,8 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202611
 
+- 20261116: Added a Podman package and Brewfile entry. Its only setting stops
+  new Podman machines from sharing Mac directories; doctor validates it as TOML.
 - 20261106: Added the Hex desktop app cask (`anomalyco/tap/hex`) to the Brewfile.
 - 20261101: Added the Tailscale desktop app cask to the Brewfile.
 
