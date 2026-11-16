@@ -182,7 +182,8 @@ acceptance, credentials, rulesets and deployment remain pending.
   QEMU 11.1.3; no deployed Gondolin, Docker or Podman. Branch-local Gondolin
   dependencies are pinned to 0.14.0. Repository-only doctor before and after:
   **12 passed, 0 failed, 1 warning** (Python TOML validator unavailable).
-  The live fixture boots a VM and runs all its checks in 995 ms (2026-11-09).
+  The live fixture boots a VM and runs all its checks in 995 ms (2026-11-09)
+  and 1612 ms on the rebuilt image (2026-11-16).
   Full deployment doctor, RSS and parallel-agent sizing remain pending.
   The candidate's 4 GiB/2 CPUs is provisional, not a measured budget.
 - [x] Branch-only entry points documented: `trial-pi`, direct branch
@@ -388,6 +389,10 @@ acceptance, credentials, rulesets and deployment remain pending.
   covers real FUSE/bindfs enforcement, non-root and sudo behaviour, mounts,
   identity, excludes, overflow and timeout, using synthetic tokens. It is not
   evidence of real authentication or clipboard/terminal/browser behavior.
+- 2026-11-16, user rebuild (Podman 6.2.0, image `53f03932afefc8cf`, Amp
+  0.0.1794225648-g45053b) after an earlier attempt timed out downloading
+  Chromium with the VPN on. The live test, now also checking guest clock skew
+  under two seconds, **1 passed** (VM startup plus fixture checks 1612 ms).
 - Before acceptance, run the opt-in VM fixture, all three real agent day-in-
   the-life trials and full doctor from a host terminal. Record boot/RSS,
   parallel sizing, authenticated Git/PR/rulesets, image paste, status/bells,
