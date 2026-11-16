@@ -232,15 +232,20 @@ acceptance, credentials, rulesets and deployment remain pending.
 
 ### 3. Pi
 
-- [~] Host Pi interface/model auth with VM-only read/write/edit/bash,
-  nested/codemode delegation and unchanged host `!`/`!!` are implemented
-  and SDK-fixture-tested (W-16). Real VM, reload, retained UI commands and
-  tldraw interaction remain pending.
+- [x] Host Pi interface/model auth with VM-only read/write/edit/bash,
+  nested/codemode delegation and unchanged host `!`/`!!` (W-16). On 2026-11-16
+  a real `trial-pi` session confirmed: `/gondolin` status; UID 1000, `pi-vm`
+  and the worktree cwd; write/edit/read through the VM; codemode in the VM;
+  `!hostname` on the Mac; the personal Git identity; `/reload` starting a new
+  VM; and `/exit` leaving no QEMU process. Writes to `pi/.pi`, `.claude` and
+  the common hooks directory failed as read-only, also through `sudo`.
+- [ ] Optional UI checks still unobserved: `/answer`, `/review`, Ctrl+V image
+  attachment and tldraw.
 - [~] SDK-owned host Bash overflow logs get a private read-only `/pi-output`
   mount; model/codemode paths and successful cleanup have real-SDK coverage.
   The live fixture confirms the mount is readable and read-only, Pi-style writes
-  are UID 1000 and bash timeouts recover. Real Pi sessions, codemode and reload
-  still need host verification.
+  are UID 1000 and bash timeouts recover. On 2026-11-16 a real session read
+  `seq 1 200000` overflow back through `/pi-output` (last line `200000`).
 - [x] Retired `sandbox`, `uv`, `wal-writer` and native-only tests;
   disabled MCP. The explicit launcher keeps only the agreed extension set.
   Existing model/thinking/theme/tool settings are preserved (W-17).
