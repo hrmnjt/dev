@@ -56,7 +56,7 @@ are provided by the shared image. These actual CLI workflows still need a host t
 
 Rex **Cmd+Alt+C** opens a Claude pane in the current worktree tab; it never types
 into the running foreground program or enables previews. Preserve one tab per
-worktree, using panes for programs. Amp and Pi have sibling shortcuts.
+worktree, using panes for programs. Pi has a sibling shortcut.
 
 ## Retire Mac agents after acceptance
 

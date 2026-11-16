@@ -27,7 +27,7 @@ function mock(t,{failCreate = false,failProbe = false,startupOutput} = {}) {
   };
   return {root,calls,specs,set nextResult(value){nextResult = value;},get closed(){return closed;},get clipboardClosed(){return clipboardClosed;},deps:{
     requireImage:() => ({spec:{fingerprint:"fixture"},directory:"/explicit/pinned/image"}),
-    keychainValue:name => ({github:"github_pat_fake-real",claude:"sk-ant-oat01-fake-real",amp:"sgamp_fake-real"}[name]),
+    keychainValue:name => ({github:"github_pat_fake-real",claude:"sk-ant-oat01-fake-real"}[name]),
     stateRoot:path.join(root,"state"),
     startClipboard:async () => ({port:9876,route:"/image-fixture",close:async () => {clipboardClosed++;}}),
     sdk:{...sdk,VM:{create:async options => {specs.push(options);if (failCreate) throw new Error("untrusted upstream failure");return vm;}}},
@@ -58,26 +58,11 @@ test("one explicit VM per session, exact mounts, guest-only bash, loopback opt-i
   await session.close();await session.close();assert.equal(f.closed,1);assert.equal(f.clipboardClosed,1);
 });
 
-test("Amp bypass lives in read-only VM-only settings, never the Mac default settings file",async t => {
-  const f = mock(t);
-  assert.equal(fs.existsSync("amp/.config/amp/settings.json"),false);
-  const session = await createSession({agent:"amp",cwd:path.join(f.root,"workspace")},f.deps);
-  const config = f.specs[0].vfs.mounts["/etc/agent-config"];
-  const handle = await config.open("/amp/settings.json","r");
-  let settings;
-  try {settings = JSON.parse(Buffer.from(await handle.readFile()).toString("utf8"));} finally {await handle.close();}
-  assert.equal(settings["amp.dangerouslyAllowAll"],true);
-  assert.equal(settings["amp.updates.mode"],"disabled");
-  await assert.rejects(async () => config.open("/amp/settings.json","w"),error => Math.abs(error.errno) === 30);
-  assert.ok(f.specs[0].env.AMP_API_KEY.startsWith("sgamp_"));
-  await session.close();
-});
-
 test("Pi gets docs and output mount but no clipboard service, preview or host environment",async t => {
   const f = mock(t);
   const session = await createSession({agent:"pi",cwd:path.join(f.root,"workspace"),resources:{"/pi/docs":f.root},outputDirectory:f.root},f.deps);
   const spec = f.specs[0];assert.equal(spec.tcp,undefined);
-  assert.equal(spec.env.AMP_API_KEY,undefined);assert.equal(spec.env.CLAUDE_CODE_OAUTH_TOKEN,undefined);
+  assert.equal(spec.env.CLAUDE_CODE_OAUTH_TOKEN,undefined);
   assert.equal(spec.vfs.mounts["/pi-output"].readonly,true);
   assert.equal(spec.vfs.mounts["/pi/docs"].readonly,true);
   assert.ok(!f.calls.some(c => c.ingress));
@@ -114,11 +99,11 @@ test("bindfs tolerates Gondolin's binds, Git excludes are read-only and Claude s
   assert.equal(fs.existsSync(path.join(f.root,".claude.json")),false);
 });
 
-test("guest clock follows the Mac from boot and, for Claude and Amp, through Mac sleep",async t => {
+test("guest clock follows the Mac from boot and, for Claude, through Mac sleep",async t => {
   t.mock.timers.enable({apis:["setInterval"]});
   const syncs = f => f.calls.filter(c => c.command?.[0] === "/bin/date");
   const settle = () => new Promise(resolve => setImmediate(resolve));
-  for (const agent of ["claude","amp","pi"]) {
+  for (const agent of ["claude","pi"]) {
     const f = mock(t);
     const session = await createSession({agent,cwd:path.join(f.root,"workspace")},f.deps);
     const [boot] = syncs(f);

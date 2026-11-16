@@ -67,7 +67,7 @@ npm install --prefix ~/.pi/agent
 if [[ ! -f ~/.pi/agent/settings.json ]]; then
   cp ~/.pi/agent/settings.template.json ~/.pi/agent/settings.json
 fi
-# 9.4. Shared Gondolin runtime for Pi tools, Claude Code and Amp
+# 9.4. Shared Gondolin runtime for Pi tools and Claude Code
 npm ci --prefix ~/.config/gondolin
 # Initialize/start Podman's machine deliberately before building; see podman/README.md.
 # Apple's container cannot build this image.
@@ -90,11 +90,11 @@ gh auth login
 # 10.2. Configure guest credentials through Mac Keychain Access; see gondolin/README.md.
 # This setup command runs in a throwaway VM with nothing mounted:
 claude setup-token
-# Store its token/expiry, an Amp sgamp_ token, and a scoped GitHub fine-grained token
+# Store its token/expiry and a scoped GitHub fine-grained token
 # in the documented Keychain entries; never log in inside a work VM.
 # Configure/verify main-branch GitHub rulesets yourself, including private-repo support.
 agent-vm doctor
-# 10.3. Claude/Amp cloud execution remains complementary; see their package guides.
+# 10.3. Claude cloud execution remains complementary; see claude/README.md.
 # Remove legacy Mac Claude Code/desktop installs only after VM acceptance.
 
 # 11. Complete required app permissions
@@ -140,7 +140,6 @@ herdr plugin list --plugin hrmnjt.default-tabs
 - [Shared Gondolin agent VMs](gondolin/README.md)
 - [Podman](podman/README.md)
 - [Claude Code (VM and web sessions)](claude/README.md)
-- [Amp (VM and cloud complement)](amp/README.md)
 - [Gh](gh/README.md)
 - [Git](git/README.md)
 - [Herdr](herdr/README.md)
@@ -299,6 +298,12 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202611
 
+- 20261116: Deferred Amp to keep the agent VM image and launcher small. Removed
+  the Amp CLI from the image, the `amp` launcher, zsh function and Rex shortcut,
+  its Keychain placeholder, VM settings package and build checks. The trial
+  signed in and ran prompt-free, but image upload failed with an unresolved TLS
+  handshake error and Amp's server refuses CLIs more than about a week old.
+  `TODO.md` records the findings for a later retry. Requires an image rebuild.
 - 20261109: Fixed the first live Gondolin failure: bindfs now mounts with
   `nonempty` over Gondolin's existing binds. Gave the VM agent user passwordless
   `sudo` (keeping Gondolin's CA variables) and ran Pi's write/edit tools as that

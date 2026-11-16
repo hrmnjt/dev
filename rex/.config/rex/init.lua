@@ -85,7 +85,7 @@ local function worktree_menu(mode, ctx)
 end
 
 -- A new program is a pane in the current worktree tab, never a duplicate tab.
--- Absolute launcher paths prevent legacy Mac Claude/Amp binaries from winning PATH.
+-- Absolute launcher paths prevent a legacy Mac Claude binary from winning PATH.
 local function agent_pane(agent, ctx)
   local directory = terminal_directory(ctx)
   local home = assert(os.getenv("HOME"), "HOME is not set")
@@ -109,7 +109,6 @@ end
 for _, item in ipairs({
   { "pi", "cmd+alt+p", "Start Pi (VM tools)" },
   { "claude", "cmd+alt+c", "Start Claude Code (VM)" },
-  { "amp", "cmd+alt+a", "Start Amp (VM)" },
 }) do
   local agent = item[1]
   rex.action{

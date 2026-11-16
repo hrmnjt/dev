@@ -4,7 +4,7 @@ import {execFileSync} from "node:child_process";
 import {pathToFileURL} from "node:url";
 
 export function verifyClis(pins, {run = execFileSync, readFile = fs.readFileSync} = {}) {
-  for (const [pkg, expected] of [["@anthropic-ai/claude-code",pins.claude],["@ampcode/cli",pins.amp],["playwright",pins.playwright]]) {
+  for (const [pkg, expected] of [["@anthropic-ai/claude-code",pins.claude],["playwright",pins.playwright]]) {
     const installed = JSON.parse(readFile(`/usr/local/lib/node_modules/${pkg}/package.json`,"utf8")).version;
     if (installed !== expected) throw new Error(`${pkg} version mismatch: expected ${expected}, got ${installed}`);
   }
@@ -16,15 +16,11 @@ export function verifyClis(pins, {run = execFileSync, readFile = fs.readFileSync
   };
   const claude = command("/usr/local/bin/claude",["--version"]);
   if (!claude.trim().startsWith(pins.claude+" ") && claude.trim() !== pins.claude) throw new Error(`Claude version output did not match ${pins.claude}: ${claude}`);
-  const help = command("/usr/local/bin/amp",["--help"]);
-  for (const expected of ["--settings-file","amp.dangerouslyAllowAll"]) {
-    if (!help.includes(expected)) throw new Error(`Pinned Amp help is missing ${expected}. Refusing an incompatible image.\n${help}`);
-  }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     verifyClis(JSON.parse(fs.readFileSync("/opt/agent-pins.json","utf8")));
-    console.log("Verified pinned CLI versions and Amp settings interface.");
+    console.log("Verified pinned CLI versions.");
   } catch (error) {console.error(error.message);process.exitCode = 1;}
 }

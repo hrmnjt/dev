@@ -3,6 +3,5 @@
   "nodeImage": "node:24.22.2-bookworm-slim@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c",
   "alpine": "3.23.7",
   "claude": "2.1.316",
-  "amp": "0.0.1794225648-g45053b",
   "playwright": "1.64.1"
 }

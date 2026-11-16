@@ -2,14 +2,14 @@
 ARG NODE_IMAGE
 FROM ${NODE_IMAGE}
 ENV DEBIAN_FRONTEND=noninteractive PLAYWRIGHT_BROWSERS_PATH=/opt/playwright \
-    DISABLE_AUTOUPDATER=1 AMP_SKIP_UPDATE_CHECK=1
+    DISABLE_AUTOUPDATER=1
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash ca-certificates curl git gh ripgrep fd-find jq python3 python3-venv \
     unzip util-linux procps less openssh-client bindfs fuse3 sudo \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd
 COPY pins.json /opt/agent-pins.json
-RUN node -e 'const p=require("/opt/agent-pins.json");require("node:child_process").execFileSync("npm",["install","-g","@anthropic-ai/claude-code@"+p.claude,"@ampcode/cli@"+p.amp,"playwright@"+p.playwright],{stdio:"inherit"})'
+RUN node -e 'const p=require("/opt/agent-pins.json");require("node:child_process").execFileSync("npm",["install","-g","@anthropic-ai/claude-code@"+p.claude,"playwright@"+p.playwright],{stdio:"inherit"})'
 RUN playwright install --with-deps chromium && chmod -R a+rX /opt/playwright \
     && test "$(id -u node)" = 1000 \
     && usermod --login agent --home /home/agent --move-home --shell /bin/bash node \
@@ -36,6 +36,5 @@ RUN find / -xdev \( -path /home -o -path /etc/agent-config -o -path /agent-state
       -o \( -type f -o -type d \) -perm /7022 -printf '%m\t%p\n' > /etc/agent-image-modes \
     && awk -F '\t' '$1 == "4755" && $2 == "/usr/bin/sudo" {found = 1} END {exit !found}' /etc/agent-image-modes
 COPY agent-image.json /etc/agent-image.json
-ENV HOME=/home/agent PATH=/usr/local/bin:/usr/bin:/bin \
-    AMP_FORCE_BEL=1
+ENV HOME=/home/agent PATH=/usr/local/bin:/usr/bin:/bin
 WORKDIR /home/agent

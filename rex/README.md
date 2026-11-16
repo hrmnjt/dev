@@ -93,13 +93,12 @@ worktree tab, keeping one tab per worktree and never typing into a running progr
 | --- | --- |
 | **Cmd+Alt+P** | Pi host UI with Gondolin-only model tools |
 | **Cmd+Alt+C** | Claude Code in its own Gondolin VM |
-| **Cmd+Alt+A** | Amp in its own Gondolin VM |
 
-The same `pi`, `claude`, and `amp` commands work from a shell. Absolute launcher
+The same `pi` and `claude` commands work from a shell. Absolute launcher
 paths prevent old Mac agent binaries from winning PATH. Panes start the launcher
 through a `zsh` login shell, so `node` resolves from the same Homebrew PATH as a
 typed command even when the Rex server has a minimal PATH. Remote/unknown terminal
-blocks are refused. Pi/Claude use native OSC 7501; Amp uses its terminal bell.
+blocks are refused. Pi/Claude use native OSC 7501.
 No tmux wrapper, host command hooks, or RPC socket are passed into the guest.
 VMs are labeled with agent/worktree for `gondolin list` and `gondolin attach`.
 
