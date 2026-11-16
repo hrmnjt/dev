@@ -93,7 +93,7 @@ Notable commands and aliases include:
 | `histedit` | Edit and reload shell history after closing other shells |
 | `llm` | Manage and inspect the host llama.cpp router service |
 | `pi` | Host Pi interface with Gondolin-only model tools |
-| `claude` / `amp` | Start the agent in a fresh Gondolin VM, never a Mac agent binary |
+| `claude` | Start Claude Code in a fresh Gondolin VM, never a Mac agent binary |
 
 The agent functions invoke the shared `~/.local/bin/agent-vm` explicitly, even
 if Homebrew or `.zshrc.local` puts a legacy agent binary earlier on PATH. There

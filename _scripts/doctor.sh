@@ -374,7 +374,7 @@ run_repository_checks() {
 
 check_expected_commands() {
   missing_commands=""
-  for name in aerospace agent-vm amp borders brew claude fzf gh git gondolin herdr jq just lazygit nvim node npm pi qemu-system-aarch64 rg starship stow uv zsh; do
+  for name in aerospace agent-vm borders brew claude fzf gh git gondolin herdr jq just lazygit nvim node npm pi qemu-system-aarch64 rg starship stow uv zsh; do
     if ! command_exists "$name"; then
       missing_commands="$missing_commands $name"
     fi

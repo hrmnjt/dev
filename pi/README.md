@@ -89,7 +89,7 @@ is inactive off macOS, and exposes no model-callable host process tool.
 Keep Pi's Ctrl+V attachment flow: intercept only Pi-generated regular temporary
 image files on interactive user input, turn them into image blocks, then remove
 the temporary path/file. Host clipboard images do not need a VM mount. Select an
-image-capable model. Claude/Amp use the separate images-only proxy instead.
+image-capable model. Claude uses the separate images-only proxy instead.
 
 ### Answer — `extensions/answer.ts`
 
@@ -184,7 +184,7 @@ host tool backend. Workspace creation/management remains a user operation.
 
 First complete [branch trials and shared host acceptance](../gondolin/README.md).
 Do not merge just to test: Stow links in the main checkout are live.
-Quit all Pi/Claude/Amp sessions before deployment, then run **on the Mac from the
+Quit all Pi/Claude sessions before deployment, then run **on the Mac from the
 primary checkout**, not from a worktree or model tool:
 
 ```bash
@@ -212,7 +212,7 @@ Inspect any retired extension which is a regular file or a valid link to another
 copy; do not overwrite it automatically. The new launcher's explicit allowlist
 prevents loading it, and doctor reports leftovers. Keep existing host
 `auth.json` and runtime settings. No provider login/model changes are required.
-Reload the login shell (`exec zsh -l`) so the `pi`/`claude`/`amp` launchers win.
+Reload the login shell (`exec zsh -l`) so the `pi`/`claude` launchers win.
 
 For a fresh Pi agent directory only:
 

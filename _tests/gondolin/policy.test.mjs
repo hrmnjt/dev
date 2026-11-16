@@ -49,7 +49,7 @@ test("launching from home, its ancestors or credential directories is refused",t
 test("guest env is an allowlist: no host tokens, SSH agent, proxies or identity overrides",() => {
   const env = guestEnv({GH_TOKEN:"github_pat_fixture-placeholder"},{TERM:"xterm-test",TERM_PROGRAM:"rex",REX_SOCKET:"/private/socket",SSH_AUTH_SOCK:"private",ANTHROPIC_API_KEY:"private",GIT_AUTHOR_NAME:"wrong",BASH_ENV:"evil",HTTPS_PROXY:"evil"});
   for (const key of ["SSH_AUTH_SOCK","ANTHROPIC_API_KEY","GIT_AUTHOR_NAME","BASH_ENV","HTTPS_PROXY","REX_SOCKET"]) assert.equal(env[key],undefined);
-  assert.equal(env.TERM_PROGRAM,"rex");assert.equal(env.GIT_CONFIG_VALUE_0,"true");assert.equal(env.AMP_FORCE_BEL,"1");
+  assert.equal(env.TERM_PROGRAM,"rex");assert.equal(env.GIT_CONFIG_VALUE_0,"true");
   // Node trusts Gondolin's CA through the world-readable runtime bundle, not the root-only mount.
   assert.equal(env.NODE_EXTRA_CA_CERTS,"/run/gondolin/ca-certificates.crt");
   assert.match(globalGitConfig(null),/insteadOf = git@github.com:/);
@@ -97,21 +97,13 @@ test("secrets are host-scoped, including Basic auth and redirected real credenti
   assert.equal(Buffer.from(rewritten.headers.get("Authorization").slice(6),"base64").toString(),"x-access-token:github_pat_fake-real");
   await assert.rejects(httpHooks.onRequest(request("https://example.com/")),/secret|allowed/i);
   await assert.rejects(httpHooks.onRequest(new Request("https://example.com/",{headers:{Authorization:"Bearer github_pat_fake-real"}})),/secret|allowed/i);
-  // Amp's token reaches ampcode.com and its subdomains only, never lookalike domains.
-  const amp = secretDefinitions("amp",name => ({github:"github_pat_fake-real",amp:"sgamp_fake-real"}[name])).AMP_API_KEY;
-  const ampHooks = createHttpHooks({secrets:{AMP_API_KEY:{...amp,placeholder:"sgamp_fake-placeholder"}},blockInternalRanges:true});
-  const bearer = url => new Request(url,{headers:{Authorization:"Bearer sgamp_fake-placeholder"}});
-  for (const url of ["https://ampcode.com/api","https://production.ampcode.com/api"]) {
-    assert.equal((await ampHooks.httpHooks.onRequest(bearer(url))).headers.get("Authorization"),"Bearer sgamp_fake-real");
-  }
-  await assert.rejects(ampHooks.httpHooks.onRequest(bearer("https://evilampcode.com/api")),/secret|allowed/i);
   for (const ip of ["127.0.0.1","10.0.0.1","192.168.1.1","169.254.169.254","::1"]) assert.equal(await httpHooks.isIpAllowed({hostname:"example.com",ip,family:ip.includes(":") ? 6:4,port:443,protocol:"https"}),false);
   assert.equal(await httpHooks.isIpAllowed({hostname:"example.com",ip:"93.184.216.34",family:4,port:443,protocol:"https"}),true);
 });
 
 test("launch flags and renewal diagnostics stay explicit without credentials in output",() => {
-  assert.deepEqual(agentCommand("amp",["-x","fixture"]),["/usr/local/bin/amp","--settings-file","/etc/agent-config/amp/settings.json","-x","fixture"]);
-  assert.ok(agentCommand("claude").includes("--dangerously-skip-permissions"));
+  assert.deepEqual(agentCommand("claude",["-x","fixture"]),["/usr/local/bin/claude","--dangerously-skip-permissions","--settings","/etc/agent-config/claude/settings.json","-x","fixture"]);
+  assert.throws(() => agentCommand("amp"),/Expected claude/);
   assert.throws(() => agentCommand("claude",["login"]),/disabled/);
   for (const value of ["0","65536","-1","1;echo bad"]) assert.throws(() => parsePreview(value));
   assert.equal(parsePreview("3000"),3000);

@@ -11,7 +11,7 @@ import { loadGondolin } from "./sdk.mjs";
 export async function createSession(options, dependencies = {}) {
   const {agent, cwd = process.cwd(), preview, resources = {}, outputDirectory, setupToken = false, signal, installationDirectory} = options;
   signal?.throwIfAborted();
-  if (!["pi","claude","amp"].includes(agent)) throw new Error("Unknown agent.");
+  if (!["pi","claude"].includes(agent)) throw new Error("Unknown agent.");
   // Verify the image before retrieving secrets or creating any mutable state.
   const {spec,directory} = (dependencies.requireImage ?? requireImage)();
   const sdk = dependencies.sdk ?? await loadGondolin(installationDirectory);
@@ -67,12 +67,10 @@ export async function createSession(options, dependencies = {}) {
       const ignore = [path.join(checkout,"git/.config/git/ignore"),path.join(os.homedir(),".config/git/ignore")].find(file => fs.existsSync(file));
       await put("/gitignore",ignore ? fs.readFileSync(ignore) : "");
       const source = fs.existsSync(path.join(checkout,"claude/.config/agent-vm/claude/settings.json")) ? path.join(checkout,"claude/.config/agent-vm/claude") : path.join(os.homedir(),".config/agent-vm/claude");
-      const amp = fs.existsSync(path.join(checkout,"amp/.config/agent-vm/amp/settings.json")) ? path.join(checkout,"amp/.config/agent-vm/amp") : path.join(os.homedir(),".config/agent-vm/amp");
-      roPaths.push(fs.realpathSync(source),fs.realpathSync(amp),path.join(checkout,"gondolin/.local/bin"));
+      roPaths.push(fs.realpathSync(source),path.join(checkout,"gondolin/.local/bin"));
       await put("/claude/settings.json",fs.readFileSync(path.join(source,"settings.json")));
       await put("/claude/CLAUDE.md",fs.readFileSync(path.join(source,"CLAUDE.md")));
       for (const theme of fs.readdirSync(path.join(source,"themes")).filter(f => f.endsWith(".json"))) await put("/claude/themes/"+theme,fs.readFileSync(path.join(source,"themes",theme)));
-      await put("/amp/settings.json",fs.readFileSync(path.join(amp,"settings.json")));
       mounts["/etc/agent-config"] = new ReadonlyProvider(memory);
       if (outputDirectory) mounts["/pi-output"] = new ReadonlyProvider(new RealFSProvider(outputDirectory));
       for (const [guest,host] of Object.entries(resources)) mounts[guest] = new ReadonlyProvider(new RealFSProvider(host));
@@ -144,7 +142,7 @@ export async function createSession(options, dependencies = {}) {
       vm.setIngressRoutes([{prefix:"/",port:preview,stripPrefix:true}]);
       ingress = await vm.enableIngress({listenHost:"127.0.0.1",listenPort:0});
     }
-    // Claude and Amp keep their VM busy for the whole session. Pi's VM idles
+    // Claude keeps its VM busy for the whole session. Pi's VM idles
     // between tool calls, and Gondolin re-syncs it when it resumes.
     const clockTimer = agent === "pi" ? null : setInterval(() => { Promise.resolve().then(() => vm.exec(setClock())).catch(() => {}); },30_000);
     clockTimer?.unref();

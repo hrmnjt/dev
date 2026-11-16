@@ -68,8 +68,8 @@ for key in pairs(wiring.bindings) do
   bound = bound + 1
   assert(not key:find("ctrl", 1, true), "leave Ctrl keys to terminal programs: " .. key)
 end
-assert(bound == 7)
-for _, item in ipairs({ {"pi", "cmd+alt+p"}, {"claude", "cmd+alt+c"}, {"amp", "cmd+alt+a"} }) do
+assert(bound == 6)
+for _, item in ipairs({ {"pi", "cmd+alt+p"}, {"claude", "cmd+alt+c"} }) do
   assert(wiring.bindings[item[2]].action == "agent_" .. item[1])
   wiring.actions["agent_" .. item[1]].run(context)
   local pane = wiring.splits[#wiring.splits]
@@ -82,7 +82,7 @@ for _, item in ipairs({ {"pi", "cmd+alt+p"}, {"claude", "cmd+alt+c"}, {"amp", "c
   assert(#command == 8, "shortcut never enables previews or a host CLI fallback")
 end
 wiring.host = "remote"
-assert(not pcall(wiring.actions.agent_claude.run, context) and #wiring.splits == 3)
+assert(not pcall(wiring.actions.agent_claude.run, context) and #wiring.splits == 2)
 wiring.host = "local"
 local function refused(ctx, action)
   local before = #wiring.created

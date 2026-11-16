@@ -1,4 +1,4 @@
-// Host policy shared by Pi, Claude Code and Amp. No agent process runs here.
+// Host policy shared by Pi and Claude Code. No agent process runs here.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -86,7 +86,6 @@ export function guestEnv(secretEnv = {}, terminal = process.env) {
     GIT_CONFIG_GLOBAL:"/etc/agent-config/gitconfig", GIT_CONFIG_NOSYSTEM:"1", GIT_TERMINAL_PROMPT:"0",
     GIT_CONFIG_COUNT:"1", GIT_CONFIG_KEY_0:"user.useConfigOnly", GIT_CONFIG_VALUE_0:"true",
     CLAUDE_CONFIG_DIR:HOME+"/claude-state", DISABLE_AUTOUPDATER:"1",
-    AMP_SKIP_UPDATE_CHECK:"1", AMP_FORCE_BEL:"1", AMP_DISABLE_AMP_THREAD_TRAILER:"1",
     PLAYWRIGHT_BROWSERS_PATH:"/opt/playwright", DISPLAY:":0",
     // Gondolin's init points Node at its CA on the root-only VFS mount. The
     // runtime bundle (system CAs plus that CA) is world-readable, as curl uses.
@@ -158,8 +157,7 @@ export function parsePreview(value) {
   return Number(value);
 }
 export function agentCommand(agent, args = []) {
-  if (!["claude","amp"].includes(agent)) throw new Error("Expected claude or amp.");
+  if (agent !== "claude") throw new Error("Expected claude.");
   if (args.some(a => /^(login|logout|auth|setup-token|update|upgrade|install|uninstall)$/.test(a))) throw new Error("Login/update/install commands are disabled; use the documented host setup-token flow or rebuild the pinned image.");
-  return agent === "claude" ? ["/usr/local/bin/claude", "--dangerously-skip-permissions", "--settings", "/etc/agent-config/claude/settings.json", ...args] :
-    ["/usr/local/bin/amp", "--settings-file", "/etc/agent-config/amp/settings.json", ...args];
+  return ["/usr/local/bin/claude", "--dangerously-skip-permissions", "--settings", "/etc/agent-config/claude/settings.json", ...args];
 }

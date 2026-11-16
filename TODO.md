@@ -12,14 +12,15 @@ source and date with each answer.
    freely within the VM's constraints.
 2. Run Claude Code in Gondolin, with quality-of-life improvements that make
    working with it excellent.
-3. Run Amp in Gondolin, to the same standard.
+3. Run Amp in Gondolin, to the same standard. **Deferred on 2026-11-16**: Amp
+   was removed to keep the image and launcher small; see tracker section 5.
 
 Gondolin is the one sandbox to manage. Inside it, agents act without asking.
 
 ## Rules
 
-- Agents never act outside the VM. Claude Code and Amp run only in the VM and
-  are not installed on the Mac; Pi's tools run only in the VM. Pi's `!` and
+- Agents never act outside the VM. Claude Code runs only in the VM and is not
+  installed on the Mac (nor is Amp); Pi's tools run only in the VM. Pi's `!` and
   `!!` are user commands and stay on the Mac.
 - Real credentials stay in the Mac's Keychain; the guest sees placeholders.
   Never log in inside the VM, and never forward the SSH agent.
@@ -33,7 +34,8 @@ Gondolin is the one sandbox to manage. Inside it, agents act without asking.
 
 ## Decisions
 
-All decided on 2026-11-01. IDs match the tracker.
+All decided on 2026-11-01. IDs match the tracker. Amp parts are historical
+since Amp was deferred on 2026-11-16.
 
 ### Setup
 
@@ -204,8 +206,8 @@ acceptance, credentials, rulesets and deployment remain pending.
   `DOCKER_HOST` override was needed. Runtime mount/workload checks remain pending.
   Podman's inspection CLI needs a host lockfile, so configuration inspection
   used the saved definition only. No Stow deployment from the worktree.
-- [x] Fingerprinted Debian/Alpine image pins Node, Claude, Amp,
-  Playwright/Chromium and Gondolin; user build completed with version/help
+- [x] Fingerprinted Debian/Alpine image pins Node, Claude,
+  Playwright/Chromium and Gondolin (Amp until 2026-11-16); user build completed with version/help
   assertions passing (W-01). Completion marker matches the current source.
   This proves image construction, not VM boot, enforcement or authentication.
 - [x] Shared `gondolin/` package centralizes mounts, network, host-scoped
@@ -217,10 +219,9 @@ acceptance, credentials, rulesets and deployment remain pending.
   common hooks, guest Git config and `/pi-output`, through bash, root `vm.fs`
   and root via `sudo`; `_models` is hidden. Keep the accepted writable
   `.git/config` execution risk.
-- [~] Claude, Amp and GitHub tokens in Keychain (W-02, W-12). On 2026-11-09 the
+- [~] Claude and GitHub tokens in Keychain (W-02, W-12). On 2026-11-09 the
   user added the GitHub token, Claude token and its expiry; doctor passes
-  them (expiry in 356 days), and the Amp token, which Amp accepted without a
-  login prompt.
+  them (expiry in 356 days). The unused `dev.agent-vm.amp` item can be deleted.
 - [~] One labelled VM/session, explicit image, no host fallback, failure
   messages, cancellation and cleanup are implemented/tested with fake VM
   transports (W-04, W-09, W-15). The live fixture confirms real boot, timeout,
@@ -284,31 +285,23 @@ acceptance, credentials, rulesets and deployment remain pending.
   token, and `setup-token` tokens are inference-only (W-02). Use Claude Code on
   the web for phone/remote work (W-19).
 
-### 5. Amp
+### 5. Amp (deferred)
 
-- [~] `@ampcode/cli` is pinned and the image build passed its version/interface
-  checks. On 2026-11-09 the `sgamp_` Keychain placeholder signed Amp in with
-  no login prompt and prompts worked (W-01/02). Amp and Claude both showed a TLS
-  error first; Amp also did after an image paste. Amp's apt saw a Release date
-  minutes ahead of the guest clock, and Gondolin's certificates allow only five
-  minutes of lag: launch now sets the clock and Claude/Amp re-sync it. Recheck,
-  and capture the exact TLS error if it remains.
-- [~] The pinned binary's actual `--help` confirms the
-  `amp.dangerouslyAllowAll` setting, not the assumed CLI flag. VM-only read-only
-  settings now enable it; the launcher passes only `--settings-file` plus user
-  arguments. Build checks require both advertised interfaces and print failures.
-  Rebuild passed; `sudo apt-get install` ran without prompts (W-18).
-- [x] Rex action/shortcut and typed `amp` route through the same launcher;
-  mocked wiring and branch Rex config checks pass (W-03).
-- [x] `AMP_FORCE_BEL=1` and notification settings are supplied; the user
-  confirmed the bell (W-06).
-- [~] Shared image-paste/preview/Git/state plumbing is implemented. Amp image
-  paste showed a Rex `rex-clipboard-*.png` Mac temp path, which the VM cannot
-  read; retest with `Ctrl+V`. A later upload failed with Bun's `EPROTO` "TLS
-  handshake failed" (not a certificate-date error) while the VPN was on and
-  Amp's server was refusing the November 1 CLI; Amp is now bumped. Retest after
-  the rebuild without the VPN. Playwright, pushes/PRs and per-project history
-  pending, as for Claude.
+- [-] Removed on 2026-11-16 to keep the image and launcher simple; `95ef4ef` is
+  the last commit with Amp support. What the trial established (W-01/02/06/18):
+  - Worked: `sgamp_` Keychain placeholder sign-in (hosts `ampcode.com` and
+    `*.ampcode.com`), the `amp.dangerouslyAllowAll` setting from a read-only
+    `--settings-file` (no CLI bypass flag exists), `AMP_FORCE_BEL` bells and
+    prompt-free `sudo apt-get`.
+  - Failed: image upload with Bun's `EPROTO` "TLS handshake failed", not a
+    certificate-date error. Amp uploads straight to Google Cloud Storage, falling
+    back to `ampcode.com/api/attachments/upload-proxy`. Unresolved; the leading
+    suspect is a client insisting on HTTP/2, which Gondolin's interception does
+    not support. The VPN was on at the time.
+  - Cost: Amp's server refused an eight-day-old CLI ("needs to be updated"), so
+    every Amp bump means an image rebuild.
+  - Retry by restoring from that commit, then run the `openssl s_client -alpn h2`
+    versus `http/1.1` probe against the upload host from inside the VM.
 
 ### 6. Ship
 
@@ -322,7 +315,6 @@ acceptance, credentials, rulesets and deployment remain pending.
 
 ### Later
 
-- [ ] An Amp plugin that turns its state events into OSC 7501 (W-06).
 - [ ] Per-project Mac service mapping, when a project needs one (W-08).
 - [ ] Revisit agents in the main `dev` checkout before running unattended
   (W-05).
