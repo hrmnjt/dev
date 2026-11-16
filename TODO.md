@@ -269,8 +269,9 @@ acceptance, credentials, rulesets and deployment remain pending.
 - [~] HTTPS rewrite/helper and selected-repo identity are implemented. A real
   VM commit used the right identity, but the push failed: the guest credential
   helper was unquoted, so Git truncated it at `;`. Fixed and covered by a real
-  `git credential fill` test; authenticated push/PR and ruleset refusal pending
-  (W-12).
+  `git credential fill` test. On 2026-11-16, on the rebuilt Amp-free image
+  (`880cc58dbdc81bf9`), the user confirmed the VM push check works.
+  PR creation and ruleset refusal pending (W-12).
 - [~] Per-primary-project state is implemented; `claude --resume` after restart
   works (user-confirmed). History/memory across worktrees and parallel
   sessions pending (W-14).
