@@ -51,9 +51,9 @@ node "$config/cli.mjs" claude
 ```
 
 `trial-pi` uses a mode-0700 temporary agent directory with branch settings/themes,
-explicit branch extensions and the three retained built-ins. Discovered extensions
-(including the deployed native backend), project extensions, MCP and skills are
-not loaded. Host auth is linked, not mounted in the VM; Pi writes refreshed tokens
+explicit branch extensions and the four retained built-ins. Discovered extensions
+(including the deployed native backend), project extensions, MCP servers and
+skills are not loaded. Host auth is linked, not mounted in the VM; Pi writes refreshed tokens
 through the link to the host file, but its lock lives in the temporary directory,
 so quit other Pi sessions before a trial to avoid concurrent token refreshes.
 The temporary directory is removed on exit. Normal `pi` also selects
@@ -202,8 +202,9 @@ this local launcher.
 ## Build, upgrade, deploy
 
 Pins live in `pins.json`: Gondolin 0.14.0, a digest-pinned Debian Node image,
-Claude Code 2.1.316 and Playwright 1.64.1. The build verifier checks installed
-package versions and Claude's own version output; command failures include
+Claude Code 2.1.316, Playwright 1.64.1 and a digest-pinned uv 0.13.9 image. The
+build verifier checks installed package versions and Claude's and uv's own
+version output; command failures include
 status/output. The verifier is part of the image fingerprint.
 Auto-update is disabled.
 The Alpine kernel/boot layer is separate from the Debian OCI root filesystem.

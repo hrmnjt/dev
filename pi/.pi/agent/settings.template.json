@@ -3,7 +3,6 @@
   "tuiMode": "fullscreen",
   "defaultTools": ["read", "write", "edit", "bash", "codemode"],
   "codemode": { "mode": "on" },
-  "extensions": ["-builtin:mcp"],
   "defaultProvider": "openai",
   "defaultModel": "gpt-6.1-sol",
   "defaultThinkingLevel": "high",

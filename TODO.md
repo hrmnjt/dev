@@ -122,10 +122,11 @@ since Amp was deferred on 2026-11-16.
   VM; `!` and `!!` stay on the Mac. Pi's ChatGPT sign-in refreshes tokens, and
   keeping Pi on the host is the only referenced pattern that keeps them out of
   the guest. *Source: Pi's Gondolin example, the pre-October setup.*
-- **W-17 Pi pruning.** Drop the `sandbox`, `uv`, and `wal-writer` extensions
-  and turn off the `mcp` built-in. Keep answer, caffeinate, clipboard-image,
-  exit, review, review-summary, tldraw, codemode, llama.cpp, and tool-search.
-  *Source: user choice per extension.*
+- **W-17 Pi extensions.** Drop only the `sandbox` extension. Keep uv (its
+  guard checks VM bash), wal-writer (a narrow host tool), answer, caffeinate,
+  clipboard-image, exit, review, review-summary, tldraw, and the codemode,
+  llama.cpp, mcp and tool-search built-ins. Extension cleanup is a later PR.
+  *Source: user choice; uv, WAL and MCP kept on 2026-11-22.*
 - **W-18 Claude and Amp settings.** Tracked in this repo (the `claude/` package
   rewritten for the VM, plus an Amp settings file) and mounted read-only.
   Claude runs as a non-root user, since it rejects
@@ -243,8 +244,10 @@ acceptance, credentials, rulesets and deployment remain pending.
   The live fixture confirms the mount is readable and read-only, Pi-style writes
   are UID 1000 and bash timeouts recover. On 2026-11-16 a real session read
   `seq 1 200000` overflow back through `/pi-output` (last line `200000`).
-- [x] Retired `sandbox`, `uv`, `wal-writer` and native-only tests;
-  disabled MCP. The explicit launcher keeps only the agreed extension set.
+- [x] Retired `sandbox` and native-only tests. uv guards VM bash with pinned
+  uv 0.13.9 in the image (needs a rebuild), WAL stays a host tool and MCP stays
+  enabled with its tools blocked, as before (2026-11-22). The explicit launcher
+  keeps the agreed extension set.
   Existing model/thinking/theme/tool settings are preserved (W-17).
 - [x] Tests and doctor source match the candidate; expiry warnings and
   missing/stale setup diagnostics are included. See evidence below.

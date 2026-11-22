@@ -32,7 +32,7 @@ export async function buildImage(runtime = "docker") {
     for (const file of ["Dockerfile","pins.json","guest"]) fs.cpSync(path.join(CONFIG_DIR,file),path.join(scratch,file),{recursive:true});
     fs.writeFileSync(path.join(scratch,"agent-image.json"),JSON.stringify(spec));
     const tag = "agent-vm:"+spec.fingerprint.slice(0,16);
-    execFileSync(runtime,["build","--platform",spec.arch === "aarch64" ? "linux/arm64" : "linux/amd64","--build-arg","NODE_IMAGE="+pins.nodeImage,"-t",tag,scratch],{stdio:"inherit"});
+    execFileSync(runtime,["build","--platform",spec.arch === "aarch64" ? "linux/arm64" : "linux/amd64","--build-arg","NODE_IMAGE="+pins.nodeImage,"--build-arg","UV_IMAGE="+pins.uvImage,"-t",tag,scratch],{stdio:"inherit"});
     // A failed rebuild must not leave a previous completion marker trusted.
     fs.rmSync(path.join(output,"agent-image.json"),{force:true});
     await buildAssets({arch:spec.arch,distro:"alpine",alpine:{version:pins.alpine},oci:{image:tag,runtime,pullPolicy:"never"},runtimeDefaults:{rootfsMode:"cow"}}, {outputDir:output});

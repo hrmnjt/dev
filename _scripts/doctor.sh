@@ -496,7 +496,7 @@ check_pi() {
   else
     fail "Pi Gondolin extension missing (run: just stowall)"
   fi
-  for retired in sandbox.ts uv.ts wal-writer.ts; do
+  for retired in sandbox.ts lib/native-policy.ts lib/native-runtime.ts; do
     if [ -e "$HOME/.pi/agent/extensions/$retired" ] || [ -L "$HOME/.pi/agent/extensions/$retired" ]; then
       fail "Retired Pi extension $retired remains (see pi/README.md)"
     fi

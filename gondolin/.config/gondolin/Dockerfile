@@ -1,5 +1,7 @@
 # syntax=docker/dockerfile:1
 ARG NODE_IMAGE
+ARG UV_IMAGE
+FROM ${UV_IMAGE} AS uv
 FROM ${NODE_IMAGE}
 ENV DEBIAN_FRONTEND=noninteractive PLAYWRIGHT_BROWSERS_PATH=/opt/playwright \
     DISABLE_AUTOUPDATER=1
@@ -8,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip util-linux procps less openssh-client bindfs fuse3 sudo \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd
+COPY --from=uv /uv /uvx /usr/local/bin/
 COPY pins.json /opt/agent-pins.json
 RUN node -e 'const p=require("/opt/agent-pins.json");require("node:child_process").execFileSync("npm",["install","-g","@anthropic-ai/claude-code@"+p.claude,"playwright@"+p.playwright],{stdio:"inherit"})'
 RUN playwright install --with-deps chromium && chmod -R a+rX /opt/playwright \

@@ -16,6 +16,8 @@ export function verifyClis(pins, {run = execFileSync, readFile = fs.readFileSync
   };
   const claude = command("/usr/local/bin/claude",["--version"]);
   if (!claude.trim().startsWith(pins.claude+" ") && claude.trim() !== pins.claude) throw new Error(`Claude version output did not match ${pins.claude}: ${claude}`);
+  const uv = command("/usr/local/bin/uv",["--version"]);
+  if (uv.trim().split(" ")[1] !== pins.uv) throw new Error(`uv version output did not match ${pins.uv}: ${uv}`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

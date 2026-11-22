@@ -20,7 +20,8 @@ bypass those protections; ask for a deliberate host edit when needed.
 `.git/config` stays writable, with the documented host-hook/config execution risk.
 Tokens are host Keychain values substituted for guest placeholders; no SSH agent
 or arbitrary host environment is forwarded. The internet is open, but Mac/private
-services are blocked except the narrow images-only clipboard and Pi tldraw bridges.
+services are blocked except the narrow images-only clipboard bridge and Pi's
+tldraw and WAL host tools.
 
 Homebrew, Stow, live npm installs, image builds, Keychain, GitHub rulesets,
 launchd, VPN and local-model services remain deliberate user steps. Do not merge

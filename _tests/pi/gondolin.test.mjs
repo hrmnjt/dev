@@ -34,9 +34,11 @@ test("VM registration is side-effect free, startup is singleflight and all direc
   const read = await f.call("read",{path:"vm-fixture.txt"});assert.equal(read.content[0].text,"guest");
   await f.call("edit",{path:"vm-fixture.txt",edits:[{oldText:"guest",newText:"edited"}]});
   assert.equal((await f.call("read",{path:"vm-fixture.txt"})).content[0].text,"edited");
-  const bash = await f.call("bash",{command:"python -m pip --version"});assert.equal(bash.structuredContent.exit_code,0,"retired uv guard must not return");
+  await assert.rejects(f.call("bash",{command:"python -m pip --version"}),/Use uv instead/);
+  assert.ok(!f.state.calls.some(call => call[0] === "bash"),"uv guard rejects before the VM runs anything");
+  const bash = await f.call("bash",{command:"uv run python --version"});assert.equal(bash.structuredContent.exit_code,0);
   const denied = await f.hooks.get("tool_call")({toolName:"powershell"},f.ctx);assert.equal(denied.block,true);
-  assert.equal((await f.hooks.get("tool_call")({toolName:"wal_append"},f.ctx)).block,true);
+  assert.equal(await f.hooks.get("tool_call")({toolName:"wal_append"},f.ctx),undefined,"WAL stays a narrow host tool");
   const prompt = await f.hooks.get("before_agent_start")({systemPrompt:"base"},f.ctx);assert.match(prompt.systemPrompt,/Gondolin VM/);
   await f.hooks.get("session_shutdown")({},f.ctx);await f.hooks.get("session_shutdown")({},f.ctx);
   assert.equal(f.state.closes,1);
