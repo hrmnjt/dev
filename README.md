@@ -158,66 +158,33 @@ herdr plugin list --plugin hrmnjt.default-tabs
 
 #### Checking repository and host health
 
-Run the portable, non-mutating repository checks while editing:
+All doctor modes are non-mutating:
 
 ```bash
-just doctor --only-check
+just doctor --only-check  # portable repository checks
+just doctor               # also inspect the deployed Mac setup
+just doctor --verbose     # include commands and captured integration output
 ```
 
-This validates shell syntax (including extensionless shebang scripts), strict
-JSON, TOML, Git and Just configuration, whitespace, conflict markers, and
-fail-closed Git identity selection in isolated temporary repositories, including
-Claude's Git configuration environment. Unavailable tools are reported as
-warnings rather than hiding the checks that did run.
+Repository checks cover shell syntax, JSON/TOML, Git/Just configuration,
+whitespace/conflict markers and fail-closed Git identity. Missing tools produce
+warnings. Host checks also inspect packages, Stow links, Pi/Gondolin setup,
+Keychain expiry and app integrations; they do not boot a VM, prove isolation or
+test a push/PR. Add `--verbose` to either mode for diagnostics.
 
-Run the complete diagnostic on the host Mac:
-
-```bash
-just doctor
-```
-
-The full mode runs the same repository checks, then inspects Brew packages,
-expected commands, Stow links, the deployed Git identity, Pi dependencies and
-settings, Gondolin launchers/image markers/Keychain expiry, AeroSpace, Herdr,
-and host GitHub CLI authentication. This does not boot
-a VM, prove isolation, or test a push/PR.
-It reports remediation commands but never installs, rewrites, reloads, or
-repairs the setup. Add `--verbose` (or `-v`) to either mode to show the commands
-and captured output behind integration checks:
-
-```bash
-just doctor --verbose
-just doctor --only-check --verbose
-```
-
-When changing the Stow diagnostic, run its small shell regression check:
+Run focused script regressions separately; doctor does not run them:
 
 ```bash
 ./_scripts/tests/doctor-stow.sh
-```
-
-It tests seven disposable healthy/broken link and ignored-dependency layouts without Node, Homebrew, or
-changes to your real home directory. Other focused script regressions are:
-
-```bash
 ./_scripts/tests/doctor-repository.sh
 ./_scripts/tests/sshsetup.sh
 ./_scripts/tests/rex-worktrees.sh
 ```
 
-These cover shell discovery, Claude Git identity refusal, SSH setup with fake
-keygen/agent/Keychain/clipboard commands, and Rex worktree lifecycle safety with
-real disposable Git repositories and mocked Rex/menu operations. Normal doctor
-runs do not run these fixtures. VM/Pi tests (after branch-local shared dependency
-installation) run separately:
-
-```bash
-node --test _tests/gondolin/*.test.mjs _tests/pi/*.test.mjs
-```
-
-The real-VM test is skipped unless explicitly enabled on the Mac after building;
-see [VM acceptance](gondolin/README.md#checks-and-remaining-acceptance). See [Rex checks](rex/README.md#checks) for its
-mocked Lua action check and remaining interactive verification.
+These use disposable fixtures rather than changing your real home or sessions.
+See [VM/Pi tests and host acceptance](gondolin/README.md#checks-and-remaining-acceptance)
+for SDK/dependency setup and the opt-in live VM test, and
+[Rex checks](rex/README.md#checks) for its server requirement and interactive checks.
 
 #### Managing macOS defaults
 
@@ -258,24 +225,10 @@ brew bundle cleanup --force  # remove them only after reviewing the preview
 
 #### Local models
 
-Bootstrap the llama.cpp router when local inference is needed. It starts
-without loading a model:
-
-```bash
-llm start
-llm status
-```
-
-Then, inside Pi:
-
-1. Run `/login llama.cpp` once and accept the local default URL.
-2. Run `/llama` to download, load, or unload models.
-3. After loading a model, run `/model` and select its actual llama.cpp model ID.
-
-`_models/` is the single Git-ignored llama.cpp cache. Download and manage every
-model through `/llama`; do not maintain a separate manual GGUF layout. See the
-[llama.cpp guide](llama/README.md) for router deployment, Hugging Face
-authentication, service checks, and model storage.
+Run `llm start` in a host terminal. In Pi, use `/login llama.cpp` once,
+`/llama` to download/load/unload models, then `/model` to select a loaded ID.
+See the [llama.cpp guide](llama/README.md) for authentication, storage and
+service diagnostics.
 
 #### Add a top-level package or repository-local directory
 
@@ -292,289 +245,72 @@ Prefix new repository-local top-level directories with `_`.
 
 ## Changelog
 
-Workflow changes worth remembering, newest first. Everything up to and
-including [1.0.0] stays as one block at the bottom; changes after it are
-expanded month by month. Full history lives in `git log`.
+Workflow changes worth remembering, newest first. Older implementation details,
+test transcripts and intermediate fixes live in `git log`; entries through
+[1.0.0] remain one baseline block.
 
 ### 202611
 
-- 20261122: Pi has no launcher any more, so `pi update` works again. Removed
-  the zsh `pi` function, the Stow `~/.local/bin/pi` wrapper, `agent-vm pi` and
-  `trial-pi`; Pi's installer owns `pi` and discovers the Gondolin extension.
-  If the extension doesn't load, Pi starts with Mac tools (an accepted
-  trade-off), so check the footer shows `VM <id>` before typing. Sessions use
-  Pi's usual store, branch trials use a temporary profile, and doctor warns
-  about unmanaged extensions or a `pi` that isn't the installer's.
-- 20261122: Follow-ups from the first Gondolin deploy. The VM's uv now uses a
-  separate `.venv-vm` (globally Git-ignored), so it never reuses or rebuilds a
-  Mac-built `.venv`. Doctor validates TOML with a uv-found Python 3.11+ when
-  macOS `python3` lacks `tomllib`, and reports when Pi's installer has replaced
-  the `~/.local/bin/pi` wrapper. The Pi deploy steps remove that installer link,
-  and the Pi and Claude guides explain how to resume pre-migration sessions.
-- 20261122: Kept Pi's uv guard, WAL writer and MCP in the Gondolin migration.
-  The guard now checks VM bash before anything runs, WAL stays a narrow host
-  tool, and MCP stays enabled with its tools still blocked, as before. The VM
-  image gains a digest-pinned uv 0.13.9, which the build verifier checks.
-  Requires an image rebuild.
-- 20261116: Deferred Amp to keep the agent VM image and launcher small. Removed
-  the Amp CLI from the image, the `amp` launcher and zsh function, its Keychain
-  placeholder, VM settings package and build checks. The trial
-  signed in and ran prompt-free, but image upload failed with an unresolved TLS
-  handshake error and Amp's server refuses CLIs more than about a week old.
-  `TODO.md` records the findings for a later retry. Requires an image rebuild.
-- 20261116: Added a Podman package and Brewfile entry. Its only setting stops
-  new Podman machines from sharing Mac directories; doctor validates it as TOML.
-- 20261109: Fixed the first live Gondolin failure: bindfs now mounts with
-  `nonempty` over Gondolin's existing binds. Gave the VM agent user passwordless
-  `sudo` (keeping Gondolin's CA variables) and ran Pi's write/edit tools as that
-  user. Carried host Git excludes, rerere, `zdiff3` and branch sort into the
-  guest. Seeded Claude's per-project state past onboarding and skipped its
-  bypass-mode prompt; dropped Remote Control notifications, which inference-only
-  `setup-token` tokens cannot use. Added an `fd` command and `wl-paste -l` to
-  the image, made policy tests independent of
-  symlinked `TMPDIR` and let Pi tests find the installed SDK or a disposable
-  `_scratch/pi-sdk` copy. After the live fixture showed `sudo` without its
-  setuid bit (Gondolin's macOS build drops special modes), the image records
-  them and each launch restores them; `/var/cache` and `/var/log` stay off tmpfs
-  for apt. Launch also sets a guest hostname and keeps `localhost` in
-  `/etc/hosts`, so `sudo` stops warning. Fixed guest HTTPS trust of Gondolin's
-  interception CA: `setup-token` keeps an empty VFS so the CA is injected, and
-  Node uses the world-readable CA bundle. Quoted the guest Git credential
-  helper, which Git had truncated at `;`, and extended Amp's token placeholder
-  to `*.ampcode.com`. Launch sets the guest clock from the Mac, and Claude/Amp
-  sessions re-sync it every 30 seconds: after Mac sleep a busy guest fell
-  behind Gondolin's five-minute certificate backdating, failing HTTPS to new
-  hosts and apt date checks. Bumped Amp to 0.0.1794225648-g45053b after its
-  server refused the November 1 build. Requires an image rebuild. The
-  opt-in live VM fixture passes; real-agent acceptance remains pending.
-- 20261108: Added bounded, escaped startup-step diagnostics for Gondolin's
-  mount/state/non-root probes, redacting known credentials and placeholders
-  before truncation while retaining fail-closed cleanup. The first live fixture
-  fails at bindfs setup; VM enforcement acceptance remains blocked.
-- 20261107: Corrected Amp's VM bypass to use its documented
-  `amp.dangerouslyAllowAll` setting rather than an assumed CLI flag. Moved Amp
-  settings into VM-only configuration, added diagnostic build-interface/version
-  checks and regression coverage. The image rebuild now completes; live VM
-  enforcement and real-agent acceptance remain pending.
-- 20261106: Added the Hex desktop app cask (`anomalyco/tap/hex`) to the Brewfile.
-- 20261102: Implemented a candidate shared Gondolin launcher/image policy for
-  Pi tools, non-root Claude Code and Amp: pinned guest agents/Chromium,
-  same-path linked-worktree mounts, fail-closed identity, read-only agent config
-  and hooks, Keychain-backed host-scoped placeholders, per-project state,
-  images-only clipboard proxy and opt-in loopback previews. Added isolated branch
-  trials, Stow-safe dependency resolution, VM/Pi fixtures and
-  doctor renewal checks; retired
-  the Seatbelt extension. Added VM-only Claude bypass
-  settings, separate from the Mac CLI's; image builds need a Docker or Podman
-  engine.
-  Image build, kernel/CLI acceptance, rulesets and deployment
-  remain deliberate pending user steps, not verified results.
-- 20261101: Added the Tailscale desktop app cask to the Brewfile.
+- 20261122: Pruned migration diaries, test transcripts, duplicate guidance and
+  the sample-model tutorial; kept setup, recovery and pending acceptance checks.
+  Corrected the GitHub CLI guide for Gondolin.
+- 20261122: Pi's installer now owns `pi`, restoring `pi update`; retired the
+  shell/Stow launchers and `agent-vm pi`. Pi discovers Gondolin globally:
+  check for `VM <id>` before typing because a missing extension leaves Mac
+  tools available. Sessions use Pi's native store.
+- 20261122: Kept Pi's uv guard, WAL host tool and enabled-but-blocked MCP.
+  Added pinned uv 0.13.9 to the image and isolated guest Python in
+  `.venv-vm`; requires an image rebuild. Doctor can use uv's Python for TOML.
+  Added pre-migration Pi/Claude session recovery instructions.
+- 20261116: Deferred Amp after unresolved image-upload TLS failures and frequent
+  forced CLI upgrades; removed it from the image/launcher. Retry notes remain
+  in `TODO.md`. Requires an image rebuild.
+- 20261116: Added Podman with no default Mac-directory shares.
+- 20261109: Fixed live VM bindfs access, sudo modes, guest HTTPS/clock handling
+  and Git credentials; added guest Git defaults and Claude onboarding state.
+  The live fixture passes; full real-agent acceptance remains pending.
+- 20261108: Added bounded, escaped and credential-redacted startup diagnostics.
+- 20261107: Corrected Amp bypass configuration and image interface/version checks.
+- 20261106: Added the Hex desktop app cask.
+- 20261102: Added the candidate shared Gondolin image/policy for Pi tools,
+  non-root Claude and initially Amp; retired Pi's Seatbelt backend. Includes
+  same-path worktrees, fail-closed identity, read-only agent config/hooks,
+  Keychain placeholders, project state, image clipboard and opt-in previews.
+  Host acceptance and deployment remain deliberate user steps.
+- 20261101: Added the Tailscale desktop app cask.
 
 ### 202610
 
-- 20261029: Added Rex's Claude Code `SessionStart` hook for session/pane context
-  alongside the existing Herdr hook, with a five-second timeout and ignored failures.
-- 20261028: Routed Claude, ChatGPT, and Microsoft 365 Copilot windows to AeroSpace
-  workspace 9 (`option-9`), leaving Zed on workspace 10 (`option-0`).
-- 20261028: Made auto mode the Claude Code global default, preserving outside-read
-  blocking and mandatory Bash sandboxing without unsandboxed retries.
-- 20261028: Added the Claude desktop app cask to the Brewfile alongside Claude Code.
-- 20261028: Grouped Rex worktrees as named tabs in one session per project,
-  leaving panes for programs. New/Open and bulk reopening reuse the project
-  session; Delete closes only the target worktree tab, preserving sibling tabs
-  and the branch. Added tab-level safety/regression coverage and documented
-  deliberate migration from existing sessions without stopping running work.
-- 20261026: Made Rex New worktree track an exact, already-fetched remote branch
-  match instead of branching from local `main`. Keep `main` as the no-match
-  fallback, refuse ambiguous remotes, and never fetch or reset existing branches.
-  Added disposable real-Git regression coverage.
-- 20261026: Routed Rex windows to AeroSpace workspace 1 (`option-1`), alongside
-  Ghostty.
-- 20261025: Replaced the Rex Cmd+Shift+K project picker with two choices.
-  `[all projects]` opens a plain shell session for every listed project that
-  has none and leaves projects with open sessions alone. `[path]` takes a typed
-  Git checkout path and switches to or opens its session without adding it to
-  the list. Also fixed the binding fixture's stale one-project assumption.
-- 20261025: Added a Rex project picker on Cmd+Shift+K over a hand-kept
-  `projects` table in `init.lua`. It lists open projects first and switches to
-  their session or opens the checkout. From a terminal outside Git, such as
-  after a Rex restart, New and Open ask for the project first; Delete never
-  does. Open adds an `[all worktrees]` row that gives every worktree without
-  a session a plain shell session again. The primary checkout's session is now
-  named after its project. Nothing is scanned or saved at runtime.
-- 20261025: Trimmed the Rex guide to setup and daily use, removing the worktree
-  walkthrough, future TODOs, diagnostic history, and repeated implementation
-  details while keeping shortcuts, safety/recovery notes, and checks.
-- 20261025: Documented Pi 1.3.0's built-in Rex activity/notification support
-  through OSC 7501, avoiding duplicate extensions or agent hooks. Verified live
-  Pi working status and enabled Rex notification preferences; background
-  banners and other state indicators remain interactive checks. No host settings
-  changed.
-- 20261023: Added Rex worktree actions on Cmd+Shift+N/O/Backspace, leaving
-  every Ctrl key to terminal programs. New branches from local `main` into a
-  sibling checkout with one plain shell session; Open lists worktrees and local
-  branches and focuses, reopens, or creates their sessions; Delete confirms
-  stopping the session's programs, then removes the checkout without `--force`
-  and keeps the branch. Primary, dirty, locked, submodule, and mixed-session
-  checkouts are refused. Sessions are found by terminal directory, and nothing
-  is saved outside Git and Rex. Everything runs in Rex's own Lua runtime with
-  fzf prompts, tested against real Git with mocked sessions; real shortcuts,
-  menu interaction, and shutdown still need an end-to-end check.
-- 20261023: Simplified the Rex guide into a manual setup flow with preview-era
-  TODOs, and added a minimal Stow-managed `init.lua` for future supported config.
-- 20261022: Globally ignored local Claude `.claude/.cc-writes/` scratch output
-  without excluding shared Claude configuration.
-- 20261022: Added a Stow-deployed Rex `gruvbox-dark-hard` import theme matching
-  Ghostty's cursor and selection colors, with native import and 18-point
-  JetBrains Mono Nerd Font setup instructions. Kept typography, color,
-  clipboard, pane, and notification choices as manual Settings guidance and
-  optional native commands during beta; documented refresh behavior without
-  a setup script or managed runtime state.
-- 20261012: Routed Zed windows to AeroSpace workspace 10 (`option-0`).
-- 20261011: Isolated Pi `/review` intent-to-add in a private index, preserving
-  existing staging. Compare base reviews against the merge base, report Git
-  failures, and clean up on completion, cancellation, errors, and shutdown.
-  Added linked-worktree, alternate-index, and command regression coverage.
-- 20261011: Expanded doctor shell checks to supported shebang scripts, including
-  extensionless files; safely skip non-shell and binary headers.
-- 20261011: Added doctor validation of Claude's Git identity refusal, distinguishing
-  missing identity from malformed configuration and unrelated commit failures.
-- 20261011: Improved GitHub SSH setup to preserve host entries and symlinks,
-  enable Keychain preferences, reuse reachable agents, and accept existing keys.
-  Added disposable regression checks without touching real SSH/Keychain state.
-- 20261011: Removed the thin Just SSH setup wrapper; first-run instructions call
-  `./_scripts/sshsetup.sh` directly.
-- 20261011: Resolved Pi UI test dependencies through the selected SDK installation
-  rather than assuming dependencies are nested inside its package directory.
-- 20261011: Documented that Neovim's lock file remains host-local and Git-ignored,
-  not Stow-managed.
-- 20261011: Corrected the documented personal Git name to match the configuration.
-- 20261011: Corrected VPN script usage and Stow setup notes; removed obsolete
-  SketchyBar indicator documentation.
-- 20261011: Retained the legacy Pi usage ignore because existing runtime logs
-  still need it.
-- 20261009: Changed Azure CLI from a Homebrew formula to a cask to follow its
-  upstream migration and correct the Brewfile dependency check.
-- 20261009: Preserved Claude's Opus/xhigh preferences, mobile push notifications,
-  and existing Herdr session hook during settings migration; left Claude plugin
-  enablement unmanaged.
-  Added a native Gruvbox Dark Hard custom theme; shortened the package guide to
-  setup, preferences, safety checks, and web identity. Plain `claude` is the
-  default, with optional CLI policy priority. The workspace
-  confinement policy and omission of old tldraw command allow rules stay unchanged.
-- 20261009: Added the Claude Code cask and one Stow-managed global Mac settings
-  file, with autonomous workspace edits, outside-read blocking, native
-  sandboxing without command exclusions or unsandboxed retries, fail-closed Git
-  identity, and no Claude attribution. Kept personal instructions repo-neutral.
-  Globally ignored optional project-local settings and documented
-  reusable claude.ai environment identity and personal instructions without
-  per-repo settings or hooks. Use shared `AGENTS.md` directly without a root
-  `CLAUDE.md` wrapper; documented differences from Pi's current native sandbox.
-  Existing PR commits are not rewritten.
-- 20261007: Retired the native-migration planning backlog and its setup link.
-  Implementation and host enforcement are verified; remaining manual checks
-  and deferred provider/local-first work stay documented in `pi/README.md`,
-  without marking those checks as passed.
-- 20261007: Replaced the doctor Stow regression's JavaScript harness with a
-  standalone shell script under `_scripts/tests/`; removed `_tests/meta/`.
-  Preserve all six link-layout checks without adding a framework or dependency.
-  Pi tests stay unchanged; documented their separate command. Canonicalize fixture
-  temp roots with `pwd -P` so macOS `/var` and custom TMPDIR symlinks are not
-  mistaken for deployment links. Six cases pass with normal and symlinked,
-  trailing-slash TMPDIR paths; cleanup verified. Pi-only non-kernel suite:
-  46 passed, 1 expected skip.
-- 20261007: Verified live `/answer` extraction/submission with the selected
-  `openai/gpt-6.1-sol`: four synthetic questions remain ordered, optional context
-  and multiline answers survive normal-message submission, and form cancellation
-  sends no answers (user confirmed). No sample project created. Navigation/answer
-  retention, local-model extraction and the review UI checks remain pending.
-- 20261007: Diagnosed repeat review completion from the active session entries:
-  the review was already confirmed through `b2dadb3`. Repeated `complete` now
-  reports that checkpoint without appending state or covering newer commits;
-  absent/reset/rewritten/other-scope and unfinished reviews still reject it.
-  Eight review regression tests pass; updated non-kernel suite: 52 passed,
-  0 failed, 1 expected skip. All ten extensions load and strict semantic checks
-  pass; repository doctor: 12 passed, no failures/warnings. Live reload/tree
-  and other interactive checks remain; updated host verification is below.
-- 20261007: Fixed Pi startup denial probes for project-local `TMPDIR` and
-  temp-root launches by testing the already-protected scratch marker under the
-  unchanged session profile. Both new mock regressions fail against the old
-  source and pass after the fix; policy tests report 14 passes and one expected
-  skip. User host rerun: 53 passed, 0 failed, 1 expected skip, including the
-  expanded real Seatbelt launch/marker/cleanup cases; full doctor: 24 passed,
-  0 failed, 0 warnings. Interactive closeout remains pending.
-- 20261006: Confirmed user OpenAI OAuth and exact `gpt-6.1-sol` availability;
-  set tracked `openai/gpt-6.1-sol/high` defaults and update the cloud shortlist,
-  preserving both local models, codemode and appearance. User deferred real-task,
-  image and provider checks. User applied the minimal host settings delta;
-  runtime provider/model/high and exact-model thinking override are verified.
-  Fresh-start procedure reported complete; old login retained.
-- 20261006: Verified all ten tracked extensions with Pi's official loader,
-  all-extension strict semantic checking and 45 non-kernel regression passes
-  (one expected skip). Subsequent host Stow and the updated full suite pass:
-  46 passed, 0 failed, 1 expected skip, including real Seatbelt enforcement;
-  full doctor: 24 passed, 0 failed, 0 warnings. Native Git SSH
-  `ls-remote` succeeds. Requested OpenAI model exists in the live catalog with
-  image/reasoning support, but its provider is not authenticated; no loaded
-  local model is available. Documented staged host checks/login and bounded
-  privacy-safe local-first trials; defaults/auth/service state remain unchanged.
-- 20261006: Refreshed official Pi imports and hardened `/answer` with
-  provider-neutral authenticated extraction, validated/bounded question JSON,
-  distinct cancellation/errors and session/model guards. Updated editor theme
-  contracts, focus forwarding and review fullscreen mouse handling/cleanup.
-  Nine UI/extraction regression tests and strict semantic checking of all
-  tracked TypeScript extensions pass; real interactive/provider checks remain.
-- 20261006: Persisted branch-aware review-summary requests and explicitly
-  confirmed completion in Pi session entries. Pin Git ranges; unfinished/failed
-  reviews never advance checkpoints. Reconstruct only the active session branch;
-  isolate repository/worktree/branch/base/history scopes, with reset support.
-  Six real-Git/SDK session regression tests and strict semantic type-check pass;
-  interactive reload/tree verification remains pending.
-- 20261005: Added structured WAL/tldraw results using Pi output schemas. Preserve
-  direct text, arguments, permissions and screenshot images; scripts consume
-  API JSON/WAL fields and forward screenshots with `image(result.image)` without
-  returning internal paths or printing image bytes. Six serializer/schema,
-  validation and SDK QuickJS transport tests pass. Live scratch-canvas structured
-  search/exec, save, JPEG forwarding and app-error rejection pass; the disposable
-  probe was removed and the original empty canvas saved. Approved WAL append,
-  structured fields and exact-tail verification pass on 20261006; PI-05 is complete.
-- 20261005: Added validated codemode `on` defaults alongside direct tools. Live
-  scripted reads/writes/edits, uv rejection, nonzero exits, overflow-log access,
-  external write rejection and partial-write failure behavior pass. Keep models,
-  auth and appearance unchanged. Host runtime settings and fresh default startup
-  are verified: direct tools + codemode remain available in `on` mode.
-  Settings-delta regression tests pass.
-- 20261005: Applied a host-approved correction to Pi's native policy: preserve
-  Gondolin's launch-directory write boundary, normal bash Git/network/SSH, and
-  editable Pi source. Use Seatbelt directly instead of sandbox-runtime's extra
-  mandatory locks/proxies; remove that dependency and the native footer. Preserve
-  private scratch, linked Git metadata, model-cache exclusion, uv routing, and
-  fail-closed startup/identity. Candidate policy/registry and Stow tests pass
-  (22 passed, 1 expected skip). Host npm cleanup reports zero vulnerabilities;
-  corrected the fixture hook path to absolute `.git/hooks` without policy changes.
-  The host Seatbelt kernel rerun passes, including hooks, loopback/Unix sockets,
-  linked-worktree commits, images, overflow and cleanup. Full host suite:
-  23 passed, 0 failed, 1 expected skip; doctor: 24 passed, 0 failed, 0 warnings.
-  A fresh-process `/sandbox` confirms the corrected policy is loaded;
-  codemode and interactive verification remain pending.
-- 20261002: Fixed doctor's Stow check to accept valid folded directory links
-  and reject links to the wrong checkout file; six regression cases pass.
-- 20261002: Replaced Gondolin with native-only macOS Pi sandboxing for
-  bash/read/write/edit, initially protected worktree/policy/Git paths, private scratch and
-  overflow logs, and shared uv routing. Removed VM/runner dependencies, image
-  configuration/recipe, VM-only Brew entries, and shell exports; updated review,
-  bridge, doctor, deployment, and migration tests (canonical macOS temp paths
-  and a valid PNG fixture). The macOS suite passes (16 passed, 1 expected skip),
-  including real Seatbelt enforcement, images, overflow access, and cleanup;
-  interactive verification remains pending. Authentication, models, appearance,
-  and codemode settings are unchanged.
-- 20261001: Added a concise decision-first TODO backlog for Pi compatibility,
-  native sandboxing with Gondolin rollback, codemode, provider/model defaults,
-  and extension maintenance; recorded deferred topics and local-first trials.
-  Preserve the current Gruvbox/fullscreen experience. No runtime changes.
-- 20261001: Moved Herdr's explicit Kitty graphics setting from the deprecated
-  experimental key to `terminal.kitty_graphics`.
+- 20261029: Added Rex's Claude `SessionStart` hook alongside Herdr's host hook.
+- 20261028: Routed Claude, ChatGPT and Copilot to workspace 9, Zed to 10.
+  Added the Claude desktop app and made Mac Claude auto permission mode default.
+- 20261028: Grouped Rex worktrees as tabs in one session per project; deletion
+  stops only the target tab and keeps branches and sibling programs.
+- 20261026: Rex New tracks an exact fetched remote branch, otherwise local
+  `main`, refusing ambiguous remotes. Routed Rex to workspace 1.
+- 20261025: Added Rex project/all-project and worktree reopening pickers;
+  documented native Pi activity reporting and trimmed the Rex guide.
+- 20261023: Added Rex worktree create/open/delete actions with fzf prompts and
+  safety checks, without consuming terminal Ctrl bindings.
+- 20261022: Added the Rex Gruvbox import theme and native preference setup;
+  globally ignored Claude `.cc-writes/` scratch output.
+- 20261012: Routed Zed to workspace 10.
+- 20261011: Made Pi review use a private Git index and merge-base comparisons.
+  Expanded doctor shell/identity checks and hardened SSH setup; removed its
+  thin Just wrapper. Documented host-local Neovim lock state.
+- 20261009: Added Mac Claude settings, Gruvbox, fail-closed identity and web
+  environment guidance while preserving Opus/xhigh, hooks and notifications.
+  Moved Azure CLI to a cask.
+- 20261007: Made review completion idempotent and fixed native startup probes
+  for temporary paths. Verified answer submission/cancellation; remaining UI
+  checks stayed pending. Moved Stow regression tests to standalone shell.
+- 20261006: Set `openai/gpt-6.1-sol/high`, hardened answer extraction and UI
+  guards, and persisted branch-aware review-summary requests/completions.
+- 20261005: Added structured WAL/tldraw results and codemode alongside direct
+  tools; simplified native Seatbelt policy.
+- 20261002: Temporarily replaced Gondolin with native macOS Pi sandboxing;
+  fixed doctor support for valid folded Stow links.
+- 20261001: Moved Herdr Kitty graphics to `terminal.kitty_graphics`.
 
 ### 202609
 

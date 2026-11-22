@@ -43,15 +43,6 @@ No opening the app window. No hunting through the menu bar dropdown.
   - Granting Accessibility to AeroSpace does **not** grant it to your terminal.
 - `IVANTI_VPN_NAME` env var set to your VPN connection name
 
-## Alternatives & tradeoffs
-
-| Approach | Pro | Con |
-|----------|-----|-----|
-| GUI (default) | Always works | Clickops every time; slow |
-| This script | Fast, terminal-native | Breakable by Ivanti UI changes; relies on AppleScript |
-| Ivanti CLI tools | Official support | Not available on macOS (Windows/Linux only) |
-| OpenConnect alternative | Open source, no vendor lock-in | May not support all auth methods the org uses |
-
 The script can break if Ivanti renames menu items or restructures the menu
 bar dropdown. When that happens, the fix is adjusting the AppleScript menu
 navigation paths.

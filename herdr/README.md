@@ -25,17 +25,8 @@ instead of a dedicated tab; see [herdr-nvim sidebar and file picker](#herdr-nvim
 Opening a worktree whose Herdr workspace is already open only focuses it and
 does not create duplicate tabs.
 
-The tracked plugin source is deployed by Stow:
-
-```text
-herdr/.config/herdr/local-plugins/default-tabs/
-  herdr-plugin.toml
-  default_tabs.sh
-
-~/.config/herdr/local-plugins/default-tabs/
-  herdr-plugin.toml
-  default_tabs.sh
-```
+Stow deploys the plugin from `herdr/.config/herdr/local-plugins/default-tabs/`
+to `~/.config/herdr/local-plugins/default-tabs/`.
 
 Herdr keeps its generated plugin registry, plugin-owned configuration, and
 runtime state separately under `~/.config/herdr/plugins.json`,
@@ -59,49 +50,14 @@ herdr plugin enable hrmnjt.default-tabs
 herdr plugin unlink hrmnjt.default-tabs
 ```
 
-### Test the default tabs
+### Check the default tabs
 
-From a clean primary checkout, create a disposable worktree through the normal
-shortcut: press `ctrl+b`, then `Shift+G`, replace the generated branch with
-`chore/herdr/test-default-tabs`, and press Enter.
-
-The new workspace should open with exactly two full-screen tabs:
-
-- `shell`, at a Zsh prompt in the test worktree on the test branch.
-- `pi`, focused with Pi running in the same worktree.
-
-Select `shell` and verify its Git context:
-
-```bash
-pwd
-git branch --show-current
-git status --short
-```
-
-The branch should be `chore/herdr/test-default-tabs`. Check the event hook when
-the tabs do not appear:
-
-```bash
-herdr plugin log list --plugin hrmnjt.default-tabs
-```
-
-To also test reopening an existing checkout, exit Pi and close only its Herdr
-workspace from the `shell` tab:
-
-```bash
-herdr workspace close "$HERDR_WORKSPACE_ID"
-```
-
-The Git worktree remains on disk. From the parent workspace, press `ctrl+b`, then
-`Shift+O`, and select the test worktree. It should again open with `shell` and
-focused `pi` tabs, this time through the `worktree.opened` hook.
-
-To clean up, exit Pi, remove the active test worktree with `ctrl+b`, then
-`Shift+D`, and delete the retained branch from the primary checkout:
-
-```bash
-git branch -d chore/herdr/test-default-tabs
-```
+Create a disposable worktree with the normal shortcut. Confirm exactly two
+tabs: a `shell` prompt and focused `pi`, both in the new worktree. Exit Pi,
+close the workspace with `herdr workspace close "$HERDR_WORKSPACE_ID"`, then
+reopen it with `prefix+Shift+O`: the same layout should be recreated. Opening
+an already-open workspace must not duplicate tabs. Remove the test checkout
+through Herdr and delete its retained branch separately with `git branch -d`.
 
 ## herdr-nvim sidebar and file picker
 
@@ -118,12 +74,8 @@ two halves, installed separately:
    herdr server reload-config
    ```
 
-   The install clones the plugin into `~/.config/herdr/plugins/` (tracked as
-   mutable state, not in Git) and its build hook downloads a prebuilt ~7 MB
-   `herdr-nvim` binary from GitHub Releases. Like other third-party plugins,
-   it is installed rather than vendored; only the keybindings below are
-   tracked here. To hack on the plugin, clone it elsewhere and override the
-   installed copy with `herdr plugin link /path/to/herdr-nvim`.
+   This third-party plugin is installed, not vendored; its build hook downloads
+   a prebuilt binary. Its installed files remain mutable state outside Git.
 
    The tracked `config.toml` binds the two actions herdr leaves unbound by
    default:
@@ -133,9 +85,7 @@ two halves, installed separately:
    | `prefix+e` | toggle the per-tab nvim sidebar |
    | `prefix+o` | open a file from the picker (agent-touched files first) |
 
-   The existing `prefix+shift+o` worktree binding is unaffected. If
-   `prefix+e` or `prefix+o` ever collide with a built-in binding in a future
-   herdr release, rebind the action in `config.toml`.
+   The existing `prefix+shift+o` worktree binding is unaffected.
 
 2. The nvim plugin for annotations, provided by
    `nvim/.config/nvim/lua/plugins/herdr.lua` (see the
@@ -161,15 +111,8 @@ background agent finishes or needs input. Herdr suppresses the active tab and
 waits one second to filter transient states. Herdr's separate sound is disabled,
 leaving Ghostty/macOS as the single notification sound source.
 
-Deploy and reload the config, then inspect any existing integration:
-
-```bash
-just stowall
-herdr server reload-config
-herdr integration status
-```
-
-To test, run the following and switch away from Ghostty before it fires:
+Inspect the integration with `herdr integration status`. To test delivery,
+run this and switch away from Ghostty before it fires:
 
 ```bash
 (sleep 5; herdr notification show "Herdr notification test" \
@@ -225,13 +168,6 @@ herdr worktree create \
   --base origin/main \
   --label "Short task description" \
   --focus
-```
-
-List and remove worktrees with:
-
-```bash
-herdr worktree list --cwd /path/to/primary/repository
-herdr worktree remove --workspace <workspace-id>
 ```
 
 ## Removing merged worktrees

@@ -41,24 +41,6 @@ repo `.git/config` is writable, including the accepted `core.hooksPath` risk whe
 host Git later runs. See [shared policy and GitHub rulesets](../gondolin/README.md).
 This candidate requires VM acceptance before deployment.
 
-## What this enables
-
-Never think about identity again. `git commit` in `~/code/github.com/hrmnjt/*`
-always uses personal email. In `~/code/work/*` it always uses work email.
-No per-repo config, no forgotten `git config user.email` after a re-clone.
-
-## Alternatives & tradeoffs
-
-| Approach | Pro | Con |
-|----------|-----|-----|
-| Per-repo `git config user.email` | No global config needed | Must remember every re-clone; easy to forget |
-| Single `.gitconfig` with one identity | Simplest | Wrong identity in half your repos |
-| Conditional includes (this) | Set once, always correct | Must maintain directory conventions |
-| Separate macOS user accounts | Total isolation | Heavy; switching users is painful |
-
-The directory convention (`~/code/github.com/hrmnjt/` vs `~/code/work/`) is
-the only ongoing cost, and it's already enforced by how I organize repos.
-
 ## Pull behavior
 
 The tracked defaults make a plain pull equivalent to using `--prune --ff-only`:

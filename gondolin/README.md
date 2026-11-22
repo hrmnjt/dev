@@ -142,28 +142,16 @@ worktree files, including untracked `.env` files, are still readable. Known host
 Pi/Claude auth files are hidden if a legacy folded Stow layout puts them inside
 the selected checkout; do not store other host credentials in a workspace.
 
-Gondolin 0.14's `sandboxfs` mount is root-only. The pinned image includes `bindfs`,
-which re-exports the **same guarded providers**, remapping file ownership to UID
-1000 so non-root Claude can read/write them. It exposes no additional host path.
-Gondolin has already bind-mounted each target, and Debian's bindfs uses libfuse 2,
-so it mounts with `nonempty`. Startup checks non-root workspace/home access and
-attempts denied writes before starting an agent. Failure stops launch; there is
-no native/unsandboxed fallback. The opt-in live host test exercises this real
-FUSE path; it passed on 2026-11-09.
+Agents run as `agent` (UID 1000) with passwordless `sudo` for guest packages
+and system changes. Pi's write/edit tools use the same user as Bash. The image's
+`bindfs` layer remaps ownership over the same guarded mounts; it exposes no
+additional host paths. Startup probes non-root access and write denials before
+starting an agent. Failure stops launch.
 
-Agents run as `agent` (UID 1000) with passwordless `sudo`, so they can install
-guest packages without asking; Gondolin's CA variables are kept for `sudo`.
-Gondolin's macOS image build extracts the root filesystem with non-root `tar`,
-dropping setuid/setgid/sticky bits and applying the umask. The image records
-those modes in `/etc/agent-image-modes` and every launch restores them as guest
-root before the agent starts. Launch also sets the hostname (`pi-vm`,
-`claude-vm`; Gondolin leaves `(none)`, which `sudo` warns about) and
-keeps `localhost` in `/etc/hosts`. Only `/tmp`, `/var/tmp` and `/root` are tmpfs;
-`/var/cache` and `/var/log` stay on the disposable root disk so `apt`/debconf work.
-That disk has roughly 20% free headroom over the image; large installs may not fit.
-Root in the VM gains no host access: read-only and hidden paths are enforced by
-the host provider, the root disk is discarded on exit, and credentials are only
-placeholders. Pi's write/edit tools also run as `agent`, matching its bash tool.
+Root in the VM gains no host access: the provider enforces protected/hidden
+paths and credentials remain placeholders. The root disk is discarded on exit.
+It has roughly 20% free headroom over the image, so large package installs may
+not fit. Only `/tmp`, `/var/tmp` and `/root` are tmpfs; apt state remains on disk.
 
 State is under `~/.local/state/agent-vm/<primary-hash>/<agent>/`:
 
@@ -184,16 +172,12 @@ the Mac's `.venv`, in the worktree. Bare `uv pip` still finds `.venv`; pass
 `--python .venv-vm`. The global Git ignore covers `.venv-vm/`. `UV_LINK_MODE=copy`
 avoids hardlink warnings, since uv's cache is on the guest-home mount.
 
-Gondolin intercepts guest HTTPS with its own host-generated CA, mounted read-only
-into every VM (root-only). Its init trusts that CA system-wide and writes a
-world-readable bundle at `/run/gondolin/ca-certificates.crt`, which `curl`, Git,
-`pip` and `gh` use; the launcher points `NODE_EXTRA_CA_CERTS` (Claude, npm)
-there too. Chromium keeps its own NSS store, so Playwright needs
-`ignoreHTTPSErrors` for external HTTPS sites; local HTTP previews are unaffected.
-Its per-host certificates are backdated only five minutes, so a lagging guest
-clock rejects newly seen hosts. Gondolin re-syncs the clock only when an idle VM
-resumes, and Claude keeps its VM busy (Mac sleep stops guest time), so the
-launcher sets the clock at boot and Claude sessions re-sync it every 30 seconds.
+Gondolin intercepts guest HTTPS with its own CA. System tools trust it, and
+the launcher points Node at `/run/gondolin/ca-certificates.crt`. Chromium uses
+its own NSS store, so Playwright needs `ignoreHTTPSErrors` for external HTTPS;
+local HTTP previews are unaffected. The launcher also synchronizes the guest
+clock at boot and every 30 seconds in Claude sessions to avoid certificate
+failures after Mac sleep.
 
 Public HTTP(S) internet access follows Gondolin's default policy. Internal/private
 IP destinations and Mac services are blocked, with only the images-only clipboard
@@ -202,7 +186,7 @@ proxy accepts only a fixed random GET route returning bounded PNG bytes from
 AppKit; no text, file-path, upload or arbitrary-command endpoint. It cannot stop
 an agent reading the clipboard image while its session is running, so avoid
 copying private images during an untrusted session. Pi keeps its own attachment
-extension instead. Real CLI image-paste detection remains a host acceptance check.
+extension instead.
 
 ## Daily use
 
@@ -226,13 +210,10 @@ this local launcher.
 
 ## Build, upgrade, deploy
 
-Pins live in `pins.json`: Gondolin 0.14.0, a digest-pinned Debian Node image,
-Claude Code 2.1.316, Playwright 1.64.1 and a digest-pinned uv 0.13.9 image. The
-build verifier checks installed package versions and Claude's and uv's own
-version output; command failures include
-status/output. The verifier is part of the image fingerprint.
-Auto-update is disabled.
-The Alpine kernel/boot layer is separate from the Debian OCI root filesystem.
+Agent, runtime, browser and image versions are pinned in `pins.json` and
+verified during the build. Auto-update is disabled; the verifier is part of
+the image fingerprint. The Alpine kernel/boot layer is separate from the Debian
+OCI root filesystem.
 
 Build prerequisites: Node 24+, QEMU, Docker or Podman, `lz4`, `e2fsprogs` and
 macOS `cpio`. Brewfile tracks QEMU, `lz4` and `e2fsprogs`; installing and
@@ -254,12 +235,11 @@ Branch-local fixture tests after installing the shared dependencies:
 
 ```bash
 node --test _tests/gondolin/*.test.mjs _tests/pi/*.test.mjs
-./_scripts/tests/rex-worktrees.sh
-./_scripts/tests/doctor-stow.sh
-./_scripts/tests/doctor-repository.sh
-./_scripts/tests/sshsetup.sh
 just doctor --only-check
 ```
+
+Run related shell regressions from the [root health checks](../README.md#checking-repository-and-host-health)
+when changing those scripts.
 
 Pi suites need Pi's Node SDK. They use `PI_TEST_SDK_ROOT`, a Node install behind
 `~/.pi/agent/bin/pi`, `_scratch/pi-sdk`, then Homebrew. A Bun-binary Pi ships no
@@ -275,8 +255,8 @@ synthetic tokens, fake VM transports, isolated Git repositories and synthetic
 clipboard images. They do **not** prove kernel isolation, CLI authentication,
 host clipboard/CLI image-paste compatibility, or live agent/TUI behavior.
 
-After building, run in an unsandboxed **host terminal**, never nested in Pi's
-currently loaded native sandbox:
+After building, run the host-only checks in a **host terminal**, not through
+agent/model tools:
 
 ```bash
 AGENT_VM_LIVE_TEST=1 node --test _tests/gondolin/live.test.mjs
@@ -295,9 +275,9 @@ bindfs/non-root/mount probes; boot/RSS/parallel-session budget; both
 day-in-the-life trials; Claude
 real sign-in placeholders, Ctrl+V, terminal status/bell, preview/Playwright,
 commit/push/PR and restart/history/memory; Pi overflow through real VM reads,
-codemode, review/answer/tldraw and reload/shutdown; ruleset enforcement and Mac
-agent retirement. Keep these pending in `TODO.md` until observed, then retire the
-planning file, not the acceptance checks.
+codemode, review/answer/tldraw and reload/shutdown; and ruleset enforcement.
+Track unobserved checks in [TODO.md](../TODO.md), then retire that tracker, not
+these reusable acceptance checks. Mac agent retirement is a separate decision.
 
 References: [Pi containerization/example](https://github.com/earendil-works/pi/tree/main/packages/coding-agent/examples/extensions/gondolin),
 [Gondolin custom images/networking](https://earendil-works.github.io/gondolin/),

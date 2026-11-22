@@ -37,19 +37,11 @@ operations) are blocked; use guest Bash's `rg`, `find` and `ls`. The
 [uv guard](#uv-guard--extensionsuvts) rejects pip/poetry commands before they
 reach the VM; the image includes pinned `uv`.
 
-One VM starts per Pi session and closes on shutdown/reload/replacement. Startup
-is singleflight; a failed startup is cached and shuts Pi down, not rerouted.
-The whole canonical worktree and its common Git directory are mounted at the
-same absolute paths, so linked-worktree pointers and normal Git commands work.
-A subdirectory launch exposes the whole worktree, retaining the initial cwd.
-
-`.pi`, `.claude`, Git hooks, VM launcher/config sources and global guest Git
-config are read-only; `.git/config` remains writable, with the documented
-`core.hooksPath`/host-execution risk. Identity is selected from the primary
-repository with no fallback. Host credentials and CLI auth files are not mounted.
-GitHub uses a Keychain-backed, host-scoped placeholder and HTTPS rewrites; Pi's
-model/OAuth connection stays on the Mac. Public internet access is open;
-Mac/private-network services are blocked. See the shared guide for exact limits.
+One VM starts per session and closes on shutdown/reload/replacement. The
+whole worktree and common Git directory retain their host paths. See the
+[shared boundaries and persistence](../gondolin/README.md#boundaries-and-persistence)
+for protected paths, identity, credentials, network access and the accepted
+writable `.git/config` risk.
 
 `/gondolin` reports the VM, workspace and common Git directory. Docs/examples
 are available read-only at **`/pi/docs`** and **`/pi/examples`**, not host install
@@ -57,19 +49,13 @@ paths. There is no `/sandbox` anymore.
 
 ### Bash overflow
 
-Pi's SDK writes complete overflow output on the host. `lib/vm-output.ts` exposes
-only logs returned by this session's trusted Bash tool, through a private
-read-only `/pi-output` mount. Tool text, details and codemode
-`structuredContent.full_output_path` all name that guest path. A hardlink keeps
-streaming output visible without mounting the host temp directory or copying
-unbounded output into memory. Only regular SDK-pattern, same-user files are
-accepted; owned originals/links are removed on clean shutdown. Crashes can leave
-artifacts. Files are never supplied by a model-facing path argument.
+Read complete Bash output through `read` or guest Bash at the returned
+`/pi-output/...` path. This private read-only mount exposes only trusted Bash
+logs from the current session, not the host temp directory. Owned logs are
+removed on clean shutdown; crashes can leave artifacts.
 
-Read an overflow log through `read` or guest Bash at the returned `/pi-output/...`
-path. VM reads are covered by the opt-in real-VM test; SDK serialization and log
-ownership/cleanup have fixture coverage. Codemode's own separate host overflow
-files are not a general host-read bridge: filter output in scripts instead.
+Codemode's own host overflow files are not a general host-read bridge: filter
+large results inside scripts instead.
 
 ### Sessions
 
@@ -118,8 +104,7 @@ image-capable model. Claude uses the separate images-only proxy instead.
 the selected authenticated model, then opens the terminal Q&A form. Tab/Shift+Tab,
 multiline answers, submit confirmation and cancellation remain unchanged. Busy,
 non-TUI, incomplete, malformed or oversized input is rejected; branch/model
-changes cannot submit stale results. No model fallback. Submit/cancel has prior
-live evidence; navigation/retention and local-model extraction still need checks.
+changes cannot submit stale results. No model fallback.
 
 ### Diff review — `extensions/review.ts`, `review-nvim.lua`
 
@@ -162,7 +147,6 @@ scoped to worktree, branch, base and history. Failed/incomplete reviews do not
 advance a checkpoint. After a successful final response, explicitly `complete`;
 it records only the requested HEAD, never newer commits. Repeating completion is
 informational. Reset/history rewrites/scope changes require a full review.
-Reload/tree UI checks remain pending; real-Git/session-state fixtures are retained.
 
 ### uv guard — `extensions/uv.ts`
 
@@ -202,8 +186,7 @@ return { docId: shot.docId, pageName: shot.pageName };
 Never log/return `shot.image.data`: that prints base64, not a picture. Screenshots
 enter the selected provider's context; use only trusted boards/providers. This
 bridge intentionally controls the Mac canvas app and is outside VM isolation.
-The existing serializer/QuickJS tests remain; rerun a disposable saved canvas's
-create/save/screenshot/cleanup flow after migration, not on an unrelated board.
+Test changes on a disposable saved canvas, never an unrelated board.
 
 ### Exit — `extensions/exit.ts`
 
@@ -280,24 +263,10 @@ session. Later reloads tear down the old VM before the new runtime starts.
 
 ## Checks
 
-```bash
-node --test _tests/pi/*.test.mjs _tests/gondolin/*.test.mjs
-./_scripts/tests/rex-worktrees.sh
-./_scripts/tests/doctor-stow.sh
-./_scripts/tests/doctor-repository.sh
-./_scripts/tests/sshsetup.sh
-just doctor --only-check
-```
-
-Pi suites need Pi's Node SDK: `PI_TEST_SDK_ROOT`, a Node install behind
-`~/.pi/agent/bin/pi`, `_scratch/pi-sdk`, then Homebrew. For a Bun-binary Pi, run
-`npm install --ignore-scripts --prefix _scratch/pi-sdk "@earendil-works/pi-coding-agent@$(~/.pi/agent/bin/pi --version)"`.
-Current fixture evidence is recorded in `TODO.md`; native
-Seatbelt tests are retired, not re-labelled as VM enforcement proof. Host-only
-VM integration is opt-in with `AGENT_VM_LIVE_TEST=1`; see the shared guide.
-Remaining real checks include tool images, overflow reads/codemode, shutdown,
-reload/new/resume, answer/review UI, tldraw, credentials/network policy, and Rex
-status. No push, merge, deployment or live settings change is automatic.
+Use the [shared VM/Pi checks](../gondolin/README.md#checks-and-remaining-acceptance)
+for dependencies, SDK discovery, unit tests and opt-in host integration.
+Outstanding migration/UI checks are tracked in [TODO.md](../TODO.md).
+Retired Seatbelt tests are not evidence of VM enforcement.
 
 ## Local models and themes
 
@@ -309,5 +278,4 @@ Do not expose the router or model cache to the VM. See [llama.cpp](../llama/READ
 Themes are discovered under `~/.pi/agent/themes/`; `gruvbox-dark` remains the
 tracked choice. New Pi source/config resources are read-only to VM tools;
 changes to those protected trees require a deliberate host edit/deployment,
-not an agent bypass. Host provider/image/local-first comparison trials remain
-deferred; keep private session material local unless a cloud handoff is approved.
+not an agent bypass. Keep private session material local unless a cloud handoff is approved.

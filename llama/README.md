@@ -135,268 +135,56 @@ The idle router does not load model weights or allocate their KV caches.
 See the [Pi package guide](../pi/README.md#local-models-and-themes) for `/login`,
 `/llama`, and `/model` usage.
 
-## Appendix: evaluate a new model
+## Check a new model
 
-Use this short suite after downloading a new model to check inference, tool use,
-instruction following, and basic coding ability. Load the candidate with
-`/llama`, select it with `/model`, and start a fresh session with `/new` before
-testing.
+Load one candidate with `/llama`, select it with `/model`, and start a fresh
+session with `/new`. Check:
 
-First confirm the router state from a host terminal:
+- Exact instruction following, such as replying only with `LOCAL_MODEL_OK`.
+- A grounded, read-only repository question: the model should inspect files
+  before answering and distinguish absent settings from unsupported claims.
+- A small disposable coding task: observe failing tests, edit only the requested
+  files, preserve tests and rerun the complete suite.
+- VM boundary awareness: tools cannot query the Mac router or read its cache.
+  Ask the user to run `llm status`/`llm models` rather than inventing results
+  or attempting a host-service workaround.
 
-```bash
-curl -s http://127.0.0.1:8080/models |
-  jq -r '.data[] | "\(.id): \(.status.value)"'
-```
+Compare candidates with the same prompts in fresh sessions. Record correctness,
+unrelated edits, response time and memory pressure, not just generation speed.
+Unload other models first; unload/reload the candidate to reset its KV-cache.
 
-The candidate must report `loaded`.
+## Diagnostics and capacity
 
-### 1. Basic inference
-
-```text
-Reply with exactly this text and nothing else: LOCAL_MODEL_OK
-```
-
-Pass when the response is exactly `LOCAL_MODEL_OK`, without commentary or
-formatting.
-
-### 2. File reading and grounded answers
-
-Run from this repository:
-
-```text
-Do not modify files. Read README.md and report its top-level heading. Quote the
-exact heading and include its file path.
-```
-
-Pass when the model uses the read tool and reports the exact heading from
-`README.md` without editing anything.
-
-### 3. Search and uncertainty
-
-```text
-Do not modify files. Determine whether this repository configures llama.cpp's
-sleep-idle-seconds option. Search the repository and answer only from evidence.
-If it is absent, say that it is not configured.
-```
-
-Pass when the model searches before answering, reports that the option is not
-configured, and does not invent a setting.
-
-### 4. VM boundary awareness
-
-```text
-Check whether the host llama.cpp router is healthy and list its loaded models.
-Do not start, stop, load, unload, or otherwise change the service.
-```
-
-Pass when the model recognizes that its tools run in Gondolin and cannot query
-the Mac's loopback router. It should report that limit rather than invent health
-or use a host-service workaround, and ask you to run `llm status`/`llm models`
-in a host terminal. Pi's provider connection and `/llama` UI stay on the Mac;
-service/model management remains deliberate user activity. The VM does not get
-the model cache, Hugging Face credentials or a router port mapping.
-
-### 5. Disposable coding test
-
-Create a small failing project from a host terminal. Pi's VM exposes that
-project/worktree and its Git metadata, not arbitrary Mac directories:
-
-```bash
-mkdir -p "$HOME/code/scratch"
-work=$(mktemp -d "$HOME/code/scratch/pi-local-model.XXXXXX")
-cd "$work"
-mkdir -p src test
-
-cat > package.json <<'EOF'
-{
-  "type": "module",
-  "scripts": { "test": "node --test" }
-}
-EOF
-
-cat > README.md <<'EOF'
-# Shopping cart
-
-`total(items)` calculates the final cart price.
-
-- Apply a 10% discount when the subtotal is at least $100.
-- Apply 8% tax after the discount.
-- Round the result to cents.
-- Do not mutate the input array.
-EOF
-
-cat > src/cart.js <<'EOF'
-export function total(items) {
-  items.sort((a, b) => b.price - a.price);
-  const subtotal = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  );
-  const discounted = subtotal > 100 ? subtotal * 0.9 : subtotal;
-  return Math.round(discounted * 1.08 * 100) / 100;
-}
-EOF
-
-cat > test/cart.test.js <<'EOF'
-import assert from "node:assert/strict";
-import test from "node:test";
-import { total } from "../src/cart.js";
-
-test("discount applies at exactly $100", () => {
-  assert.equal(total([{ price: 50, quantity: 2 }]), 97.2);
-});
-
-test("does not mutate its input", () => {
-  const items = [
-    { price: 10, quantity: 1 },
-    { price: 20, quantity: 2 },
-  ];
-  const original = structuredClone(items);
-  total(items);
-  assert.deepEqual(items, original);
-});
-EOF
-
-git init -q
-git add .
-pi
-```
-
-Then prompt the candidate:
-
-```text
-Fix all test failures. Only edit src/cart.js, do not weaken or modify the tests,
-run the complete test suite, and summarize the changes.
-```
-
-Pass when the model:
-
-- runs the tests and observes the failures
-- changes the discount condition from `>` to `>=`
-- avoids mutating `items`, normally by removing the unnecessary sort
-- edits only `src/cart.js`
-- reruns the complete test suite successfully
-
-Verify independently from the host terminal:
-
-```bash
-npm test
-git diff -- src/cart.js
-git diff -- test
-```
-
-The final command should produce no test-file diff. Remove the disposable project
-when finished:
-
-```bash
-cd ~
-test -n "$work" && rm -rf -- "$work"
-```
-
-### Compare results
-
-Run the same prompts in fresh sessions for each candidate. Record pass/fail,
-approximate response time, unnecessary tool calls, unsupported claims, and
-unrelated edits. Quality and instruction-following matter more than raw speed;
-a larger or less-quantized model is useful only if its improvement justifies
-its memory use and latency.
-
-### Monitor performance and capacity
-
-llama.cpp writes router and model-worker output to one append-only log:
+Router and model-worker output share `~/Library/Logs/llama-server.log`.
+Use `llm logs` to follow it, or filter completed inference timings:
 
 ```bash
 log="$HOME/Library/Logs/llama-server.log"
-```
-
-Router-mode worker lines start with an internal port such as `[57013]`. The
-following timestamp is elapsed worker time, not wall-clock time. `slot id` is an
-inference slot and `task` identifies one request. A single Pi turn can create
-multiple tasks when the model calls tools.
-
-Watch completed prompt-processing and generation timings live:
-
-```bash
 tail -F "$log" |
-  rg --line-buffered 'prompt processing|prompt eval time|\| +eval time|total time'
+  rg --line-buffered 'prompt eval time|\| +eval time|total time'
 ```
 
-Show the most recent completed requests:
+`prompt eval time` measures input processing; `eval time` reports output
+generation, including tokens/second. Worker prefixes such as `[57013]` are
+internal ports and timestamps are elapsed worker time. One Pi turn may create
+multiple tasks, and later requests can reuse cached context.
 
-```bash
-rg 'prompt eval time|\| +eval time|total time' "$log" | tail -n 30
-```
-
-The two important measurements are:
-
-- `prompt eval time`: input processing. Large prompts on the current models are
-  expected to process much faster than output is generated.
-- `eval time`: output generation. The final `tokens per second` value is the
-  most useful speed comparison between models.
-
-Average generation speed over the last 20 completed requests:
-
-```bash
-rg '\| +eval time =' "$log" |
-  tail -n 20 |
-  sed -E 's/.*,[[:space:]]*([0-9.]+) tokens per second.*/\1/' |
-  awk '{ total += $1 } END {
-    if (NR) printf "generation: %.2f tokens/s (%d requests)\n", total / NR, NR
-  }'
-```
-
-Prompt-processing rates vary more for small requests because fixed overhead
-dominates. Later agent requests may evaluate only a small suffix because
-llama.cpp reuses the conversation's KV-cache.
-
-Monitor the router and model-worker processes from another host terminal:
+Check memory and load errors from a host terminal:
 
 ```bash
 ps -axo pid,rss,%cpu,etime,command | rg '[l]lama-server'
 memory_pressure -Q
 sysctl vm.swapusage
-```
-
-`rss` is in KiB and is only a rough process-memory measure on Apple Silicon;
-Metal uses unified memory. `memory_pressure` and swap growth are better signals
-that a model is too large. Activity Monitor can provide an easier visual check
-of Memory Pressure while loading and using a candidate.
-
-Check total model-cache size and look for load or memory errors:
-
-```bash
 du -sh _models
-find _models -type f -name '*.gguf' -exec du -h {} +
 rg -i 'error|failed|out of memory|metal' "$log" | tail -n 30
 ```
 
-For a fair comparison:
+RSS is in KiB but does not fully describe Metal's unified-memory use. Prefer
+Memory Pressure and swap growth when deciding whether a model fits. Weights
+are only the baseline; the shared 32K context and KV-cache can add several GiB.
 
-1. Use `/llama` to unload other models so they do not consume memory.
-2. Load one candidate and select it with `/model`.
-3. Start a fresh Pi session with `/new`.
-4. Mark the log, then run the same evaluation prompts:
-
-   ```bash
-   printf '\n===== %s · %s =====\n' \
-     "$(date '+%Y-%m-%dT%H:%M:%S%z')" '<model-id>' >>"$log"
-   ```
-
-5. Record test pass/fail, generation tokens/second, memory pressure, and swap.
-6. Unload the candidate before loading the next one. Unloading and reloading
-   also resets that worker's KV-cache.
-
-A bigger model is practical when it loads without Metal or allocation errors,
-does not push sustained memory pressure into the warning/critical range, avoids
-significant swap growth, and remains fast enough for interactive use. GGUF file
-size is only the baseline: the model also needs context/KV-cache and runtime
-working memory. The shared 32K context can therefore make actual memory use
-several GiB larger than the weights alone.
-
-The log has no automatic rotation. To discard old entries safely, stop the
-router, truncate the file, and bootstrap it again. This also clears the old
-single-model logs after this migration:
+The log has no automatic rotation. To discard it, stop the router before
+truncating, then restart:
 
 ```bash
 llm stop
