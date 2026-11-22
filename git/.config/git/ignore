@@ -6,3 +6,6 @@
 
 # Local Claude scratch output, not project source.
 **/.claude/.cc-writes/
+
+# The agent VM's Linux uv environment, beside the Mac's .venv.
+.venv-vm/

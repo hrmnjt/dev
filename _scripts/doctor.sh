@@ -165,8 +165,16 @@ check_json() {
 }
 
 check_toml() {
-  if ! command_exists python3 || ! python3 -c 'import tomllib' >/dev/null 2>&1; then
-    warn "TOML validation skipped (Python tomllib unavailable)"
+  # macOS python3 predates tomllib; uv finds an installed 3.11+ without downloading.
+  toml_python=""
+  if command_exists python3 && python3 -c 'import tomllib' >/dev/null 2>&1; then
+    toml_python=python3
+  elif command_exists uv; then
+    toml_python=$(uv python find --no-project --no-python-downloads '>=3.11' 2>/dev/null) || toml_python=""
+  fi
+  debug "TOML Python: ${toml_python:-<none>}"
+  if [ -z "$toml_python" ]; then
+    warn "TOML validation skipped (no Python 3.11+; try: uv python install)"
     return
   fi
 
@@ -178,7 +186,7 @@ check_toml() {
 
   # Repository paths intentionally contain no whitespace.
   # shellcheck disable=SC2086
-  if python3 - $toml_files <<'PY'
+  if "$toml_python" - $toml_files <<'PY'
 from pathlib import Path
 import sys
 import tomllib
@@ -495,6 +503,11 @@ check_pi() {
     pass "Pi Gondolin extension deployment"
   else
     fail "Pi Gondolin extension missing (run: just stowall)"
+  fi
+  # Pi's installer links ~/.local/bin/pi to its launcher, replacing the VM
+  # wrapper on reinstall; Stow then refuses to relink it.
+  if [ "$(readlink "$HOME/.local/bin/pi" 2>/dev/null)" = "../../.pi/agent/bin/pi" ]; then
+    fail "Pi installer link replaced the VM wrapper at ~/.local/bin/pi (see pi/README.md#deploy)"
   fi
   for retired in sandbox.ts lib/native-policy.ts lib/native-runtime.ts; do
     if [ -e "$HOME/.pi/agent/extensions/$retired" ] || [ -L "$HOME/.pi/agent/extensions/$retired" ]; then

@@ -11,6 +11,9 @@
 - This session runs in a disposable Gondolin VM. Passwordless `sudo` for guest
   packages and system changes is expected there, not a confinement bypass;
   host protections are enforced outside the VM.
+- In the VM, `uv sync`/`run`/`add`/`venv` use `.venv-vm`; pass
+  `--python .venv-vm` to `uv pip`. A Mac-built `.venv` cannot run here; never
+  modify or recreate it.
 - Do not modify other worktrees or branches, publish changes, open pull requests,
   rewrite published history, or perform destructive shared-state operations
   without explicit authorization.

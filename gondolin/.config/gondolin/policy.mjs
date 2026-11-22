@@ -87,6 +87,10 @@ export function guestEnv(secretEnv = {}, terminal = process.env) {
     GIT_CONFIG_COUNT:"1", GIT_CONFIG_KEY_0:"user.useConfigOnly", GIT_CONFIG_VALUE_0:"true",
     CLAUDE_CONFIG_DIR:HOME+"/claude-state", DISABLE_AUTOUPDATER:"1",
     PLAYWRIGHT_BROWSERS_PATH:"/opt/playwright", DISPLAY:":0",
+    // A Mac-built .venv cannot run in Linux, and rebuilding it would break the
+    // Mac's copy. uv keeps the guest's project environment beside it instead;
+    // its cache is on another mount, so copy rather than hardlink.
+    UV_PROJECT_ENVIRONMENT:".venv-vm", UV_LINK_MODE:"copy",
     // Gondolin's init points Node at its CA on the root-only VFS mount. The
     // runtime bundle (system CAs plus that CA) is world-readable, as curl uses.
     NODE_EXTRA_CA_CERTS:"/run/gondolin/ca-certificates.crt",

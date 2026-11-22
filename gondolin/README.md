@@ -159,6 +159,13 @@ State is under `~/.local/state/agent-vm/<primary-hash>/<agent>/`:
 - All other root-disk changes are discarded on exit. Parallel sessions have
   separate VMs but intentionally share their project's agent history/memory.
 
+Python environments built on the Mac cannot run in the VM, and rebuilding them
+there would break the Mac's copy. The launcher sets `UV_PROJECT_ENVIRONMENT` to
+`.venv-vm`, so `uv sync`, `uv run`, `uv add` and `uv venv` use that folder beside
+the Mac's `.venv`, in the worktree. Bare `uv pip` still finds `.venv`; pass
+`--python .venv-vm`. The global Git ignore covers `.venv-vm/`. `UV_LINK_MODE=copy`
+avoids hardlink warnings, since uv's cache is on the guest-home mount.
+
 Gondolin intercepts guest HTTPS with its own host-generated CA, mounted read-only
 into every VM (root-only). Its init trusts that CA system-wide and writes a
 world-readable bundle at `/run/gondolin/ca-certificates.crt`, which `curl`, Git,
