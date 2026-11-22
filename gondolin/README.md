@@ -28,8 +28,8 @@ installs, logs in, rebuilds, deploys, or changes GitHub settings automatically.
   Mac home, its ancestor, or its credential/config directories is refused.
 
 The Stow package supplies `~/.config/gondolin/` and `~/.local/bin/{agent-vm,pi,
-claude,gondolin}`. Zsh functions and Rex actions use the launcher explicitly
-so an old Mac binary cannot win PATH. The host Pi executable is expected at
+claude,gondolin}`. Zsh functions use the launcher explicitly so an old Mac
+binary cannot win PATH. The host Pi executable is expected at
 `~/.pi/agent/bin/pi` (the current Pi installer location). `.stow-local-ignore`
 keeps branch-local `node_modules` out of deployment. SDK resolution uses the
 chosen installation prefix, not the canonical Stow source path; `npm ci` writes
@@ -59,20 +59,6 @@ so quit other Pi sessions before a trial to avoid concurrent token refreshes.
 The temporary directory is removed on exit. Normal `pi` also selects
 only the reviewed extension set explicitly, but preserves host settings/skills.
 Both use per-primary-project Pi session storage.
-
-Rex can check a file or invoke an action from it **without reloading server config**:
-
-```bash
-REX_CONFIG="$PWD/rex/.config/rex/init.lua" rex --autostart=false config check
-# From a Rex shell in the target worktree; this deliberately opens one agent pane:
-AGENT_VM_CONFIG="$config" rex --autostart=false do \
-  "$PWD/rex/.config/rex/init.lua" --action agent_claude \
-  -s "$REX_SESSION" -b "$REX_BLOCK"
-```
-
-Use `agent_pi` for Pi with normal host settings; use
-`trial-pi` directly for a fully isolated Pi configuration trial. This does not
-bind new keys or reload live Rex. See [Rex](../rex/README.md) for normal shortcuts.
 
 ## Host credentials
 
@@ -200,7 +186,7 @@ pi                            # host UI, VM model tools
 claude                        # non-root, no approval prompts
 claude --preview 3000         # opt-in HTTP ingress to guest localhost:3000
 claude --preview 3000 -- -c   # use -- before subsequent agent flags if needed
-# No preview ports are published by default or by the Rex shortcuts.
+# No preview ports are published by default.
 gondolin list
 gondolin attach <session-id>
 agent-vm doctor

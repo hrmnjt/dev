@@ -298,8 +298,8 @@ expanded month by month. Full history lives in `git log`.
 ### 202611
 
 - 20261116: Deferred Amp to keep the agent VM image and launcher small. Removed
-  the Amp CLI from the image, the `amp` launcher, zsh function and Rex shortcut,
-  its Keychain placeholder, VM settings package and build checks. The trial
+  the Amp CLI from the image, the `amp` launcher and zsh function, its Keychain
+  placeholder, VM settings package and build checks. The trial
   signed in and ran prompt-free, but image upload failed with an unresolved TLS
   handshake error and Amp's server refuses CLIs more than about a week old.
   `TODO.md` records the findings for a later retry. Requires an image rebuild.
@@ -311,8 +311,7 @@ expanded month by month. Full history lives in `git log`.
   user. Carried host Git excludes, rerere, `zdiff3` and branch sort into the
   guest. Seeded Claude's per-project state past onboarding and skipped its
   bypass-mode prompt; dropped Remote Control notifications, which inference-only
-  `setup-token` tokens cannot use. Rex agent panes now start through a `zsh`
-  login shell for Homebrew's `node`. Added an `fd` command and `wl-paste -l` to
+  `setup-token` tokens cannot use. Added an `fd` command and `wl-paste -l` to
   the image, removed the Codex cask, made policy tests independent of
   symlinked `TMPDIR` and let Pi tests find the installed SDK or a disposable
   `_scratch/pi-sdk` copy. After the live fixture showed `sudo` without its
@@ -344,7 +343,7 @@ expanded month by month. Full history lives in `git log`.
   same-path linked-worktree mounts, fail-closed identity, read-only agent config
   and hooks, Keychain-backed host-scoped placeholders, per-project state,
   images-only clipboard proxy and opt-in loopback previews. Added isolated branch
-  trials, Stow-safe dependency resolution, Rex agent panes, VM/Pi fixtures and
+  trials, Stow-safe dependency resolution, VM/Pi fixtures and
   doctor renewal checks; retired
   Seatbelt, uv and WAL extensions and disabled MCP. Moved Claude bypass settings
   to VM-only config and removed Mac Claude casks from the candidate Brewfile;
