@@ -80,7 +80,8 @@ export async function createSession(options, dependencies = {}) {
       }
     }
     vm = await VM.create({
-      sandbox:{vmm:"qemu",imagePath:directory,debug:false}, debugLog:null, rootfs:{mode:"cow"},
+      // Gondolin grows the sparse per-session overlay, then runs resize2fs at boot.
+      sandbox:{vmm:"qemu",imagePath:directory,debug:false}, debugLog:null, rootfs:{mode:"cow",size:config.disk},
       memory:config.memory,cpus:config.cpus,startTimeoutMs:60000,
       sessionLabel:`${agent} ${project ? path.basename(project.workspace) : "setup-token (no mounts)"}`,
       env,httpHooks,dns:{mode:"synthetic",syntheticHostMapping:"per-host"},

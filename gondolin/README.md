@@ -17,9 +17,9 @@ installs, logs in, rebuilds, deploys, or changes GitHub settings automatically.
 - Amp is not supported for now. A VM trial worked except image upload
   (`EPROTO` TLS handshake failure), and its server refuses CLIs more than a few
   days old, forcing frequent rebuilds; see the `TODO.md` notes before retrying.
-- Every VM uses the explicit fingerprinted image, QEMU, 2 CPUs and a provisional
-  **4 GiB** memory budget. Measure boot/RSS and parallel sessions on the Mac before
-  accepting that budget; it is not a measured baseline.
+- Every VM uses the explicit fingerprinted image, QEMU, 2 CPUs, a provisional
+  **4 GiB** memory budget and a **16 GiB** root disk. Measure boot/RSS and parallel
+  sessions on the Mac before accepting that budget; it is not a measured baseline.
 - The complete worktree is mounted at its canonical Mac path. Launching in a
   subdirectory keeps that cwd but exposes the whole worktree. A linked worktree's
   common Git directory is mounted at the same absolute path, not primary source.
@@ -149,9 +149,12 @@ additional host paths. Startup probes non-root access and write denials before
 starting an agent. Failure stops launch.
 
 Root in the VM gains no host access: the provider enforces protected/hidden
-paths and credentials remain placeholders. The root disk is discarded on exit.
-It has roughly 20% free headroom over the image, so large package installs may
-not fit. Only `/tmp`, `/var/tmp` and `/root` are tmpfs; apt state remains on disk.
+paths and credentials remain placeholders. The root disk is a per-session
+copy-on-write layer over the image, grown to `disk` in `config.json` and resized
+in the guest at boot, then discarded on exit. The layer is sparse: the Mac stores
+only what the guest writes, in its temporary directory. Only `/tmp`, `/var/tmp`
+and `/root` are tmpfs, limited by VM memory rather than `disk`; apt state remains
+on disk.
 
 State is under `~/.local/state/agent-vm/<primary-hash>/<agent>/`:
 
