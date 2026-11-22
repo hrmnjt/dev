@@ -1,4 +1,5 @@
 {
   "memory": "4G",
-  "cpus": 2
+  "cpus": 2,
+  "disk": "16G"
 }

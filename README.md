@@ -246,6 +246,9 @@ test transcripts and intermediate fixes live in `git log`; entries through
 
 ### 202611
 
+- 20261125: Grew each agent VM's root disk from about 2.4 GiB (455 MiB free)
+  to 16 GiB, set by `disk` in Gondolin's `config.json`. The image now installs
+  `e2fsprogs` for the boot-time resize, so rebuild it before launching.
 - 20261122: Retired Herdr's Brewfile entry, Stow package, Neovim integration
   and doctor checks. Existing Macs still need app/generated-integration cleanup
   and a host edit of the protected Claude hook. Doctor now skips unstaged TOML

@@ -7,7 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive PLAYWRIGHT_BROWSERS_PATH=/opt/playwright \
     DISABLE_AUTOUPDATER=1
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash ca-certificates curl git gh ripgrep fd-find jq python3 python3-venv \
-    unzip util-linux procps less openssh-client bindfs fuse3 sudo \
+    unzip util-linux procps less openssh-client bindfs fuse3 sudo e2fsprogs \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd
 COPY --from=uv /uv /uvx /usr/local/bin/

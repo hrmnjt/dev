@@ -39,6 +39,7 @@ test("one explicit VM per session, exact mounts, guest-only bash, loopback opt-i
   const session = await createSession({agent:"claude",cwd:path.join(f.root,"workspace"),preview:3000},f.deps);
   const spec = f.specs[0];assert.equal(f.specs.length,1);
   assert.equal(spec.sandbox.imagePath,"/explicit/pinned/image");assert.equal(spec.rootfs.mode,"cow");assert.equal(spec.ssh,undefined);
+  assert.equal(spec.rootfs.size,"16G");
   assert.equal(spec.sandbox.debug,false);assert.equal(spec.debugLog,null);
   assert.equal(spec.sessionLabel,"claude workspace");
   assert.equal(spec.env.CLAUDE_CODE_OAUTH_TOKEN.startsWith("sk-ant-oat01-"),true);
