@@ -247,9 +247,9 @@ test transcripts and intermediate fixes live in `git log`; entries through
 ### 202611
 
 - 20261122: Retired Herdr's Brewfile entry, Stow package, Neovim integration
-  and doctor checks; removed cmux's stale mention. Existing Macs still need
-  app/generated-integration cleanup and a host edit of the protected Claude
-  hook. Doctor now skips unstaged TOML deletions, matching its JSON checks.
+  and doctor checks. Existing Macs still need app/generated-integration cleanup
+  and a host edit of the protected Claude hook. Doctor now skips unstaged TOML
+  deletions, matching its JSON checks.
 - 20261122: Pruned migration diaries, test transcripts, duplicate guidance and
   the sample-model tutorial; kept setup, recovery and pending acceptance checks.
   Corrected the GitHub CLI guide for Gondolin.
@@ -428,8 +428,8 @@ The explosion month: Pi and Gondolin became the daily driver.
 - 20260531/29/28: Fixed review-summary, added a no-fetch option to `wt`,
   and added an AeroSpace trial config.
 - 20260524/25/26: Neovim dashboard-header iterations and snacks explorer;
-  added the Pi terminal review extension; reorganized the Brewfile into
-  personal vs. work sections.
+  tried cmux as an experimental multiplexer; added the Pi terminal review
+  extension; reorganized the Brewfile into personal vs. work sections.
 - 20260522: Replaced kickstart with LazyVim (python/sql/markdown extras).
 - 20260519: Added the Hunk review feedback workflow, universal usage
   tracking, and upgraded Gondolin to 0.12.0.
