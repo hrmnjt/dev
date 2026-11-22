@@ -69,6 +69,23 @@ path. VM reads are covered by the opt-in real-VM test; SDK serialization and log
 ownership/cleanup have fixture coverage. Codemode's own separate host overflow
 files are not a general host-read bridge: filter output in scripts instead.
 
+### Sessions
+
+The launcher stores Pi sessions in
+`~/.local/state/agent-vm/<project key>/pi/sessions`, shared by the project's
+worktrees. Sessions from before the migration stay in `~/.pi/agent/sessions/`
+and are not listed by `pi -c`, `pi -r` or `/resume`. Fork one into the new store
+from its worktree; the original is left unchanged:
+
+```bash
+ls -t ~/.pi/agent/sessions/*"${PWD##*/}"*/ | head
+pi --fork ~/.pi/agent/sessions/<folder>/<file>.jsonl
+```
+
+Worktree files keep their paths in the VM. Files outside the worktree, old
+scratch or overflow-log paths, and Mac-built binaries such as `.venv` are not
+available there.
+
 ## Retained tools and commands
 
 ### Codemode and tool search — built-in
@@ -214,12 +231,18 @@ for file in \
   "$HOME/.pi/agent/extensions/lib/native-runtime.ts"; do
   if [ -L "$file" ] && [ ! -e "$file" ]; then rm -- "$file"; fi
 done
+# Pi's installer links ~/.local/bin/pi to its own launcher; Stow replaces it.
+if [ "$(readlink ~/.local/bin/pi)" = "../../.pi/agent/bin/pi" ]; then rm ~/.local/bin/pi; fi
 just stowall
 npm ci --prefix ~/.config/gondolin
 npm install --prefix ~/.pi/agent
 # Build the exact accepted image if it is not already in the local cache:
 agent-vm build docker
 ```
+
+A Pi reinstall or update can link `~/.local/bin/pi` to Pi's launcher again;
+`just doctor` reports it, and the `rm` line plus `just stowall` restore the VM
+wrapper. Typed `pi` still uses the zsh function meanwhile.
 
 Inspect any retired extension which is a regular file or a valid link to another
 copy; do not overwrite it automatically. The new launcher's explicit allowlist

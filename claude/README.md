@@ -55,6 +55,26 @@ agent. The user reviews and merges under an enforced main-branch ruleset.
 `Ctrl+V` uses the images-only host proxy; Playwright/Chromium and opt-in ingress
 are provided by the shared image. These actual CLI workflows still need a host trial.
 
+Sessions and memory live in
+`~/.local/state/agent-vm/<project key>/claude/home/claude-state`, shared by the
+project's worktrees; `claude --resume` lists only those. A Mac CLI session from
+before the migration still resumes on the Mac with `/opt/homebrew/bin/claude
+--resume`. To continue one in the VM, copy it from its worktree; the worktree path,
+and so Claude's project folder name, is the same in the VM. Try one session first;
+the Mac copy is left unchanged:
+
+```bash
+enc=$(printf %s "$PWD" | sed 's/[^A-Za-z0-9]/-/g')
+ls -t ~/.claude/projects/$enc/*.jsonl | head
+key=$(printf %s "$(realpath "$(git rev-parse --path-format=absolute --git-common-dir)")" | shasum -a 256 | cut -c1-24)
+dest=~/.local/state/agent-vm/$key/claude/home/claude-state/projects/$enc
+mkdir -p "$dest" && cp ~/.claude/projects/$enc/<id>.jsonl "$dest"/
+claude --resume <id>
+```
+
+The VM has no Mac MCP servers, plugins or hooks, files outside the worktree, or
+Mac-built binaries such as `.venv`.
+
 ## Mac CLI
 
 Homebrew still installs the Mac CLI (`claude-code`) and the desktop app

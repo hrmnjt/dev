@@ -297,6 +297,12 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202611
 
+- 20261122: Follow-ups from the first Gondolin deploy. The VM's uv now uses a
+  separate `.venv-vm` (globally Git-ignored), so it never reuses or rebuilds a
+  Mac-built `.venv`. Doctor validates TOML with a uv-found Python 3.11+ when
+  macOS `python3` lacks `tomllib`, and reports when Pi's installer has replaced
+  the `~/.local/bin/pi` wrapper. The Pi deploy steps remove that installer link,
+  and the Pi and Claude guides explain how to resume pre-migration sessions.
 - 20261122: Kept Pi's uv guard, WAL writer and MCP in the Gondolin migration.
   The guard now checks VM bash before anything runs, WAL stays a narrow host
   tool, and MCP stays enabled with its tools still blocked, as before. The VM

@@ -52,6 +52,8 @@ test("guest env is an allowlist: no host tokens, SSH agent, proxies or identity 
   assert.equal(env.TERM_PROGRAM,"rex");assert.equal(env.GIT_CONFIG_VALUE_0,"true");
   // Node trusts Gondolin's CA through the world-readable runtime bundle, not the root-only mount.
   assert.equal(env.NODE_EXTRA_CA_CERTS,"/run/gondolin/ca-certificates.crt");
+  // uv never reuses or rebuilds a Mac-built .venv from the shared worktree.
+  assert.equal(env.UV_PROJECT_ENVIRONMENT,".venv-vm");assert.equal(env.UV_LINK_MODE,"copy");
   assert.match(globalGitConfig(null),/insteadOf = git@github.com:/);
   assert.match(globalGitConfig(null),/password=\$GH_TOKEN/);
   // Host Git behaviour carried into the guest: global excludes and conflict style.
