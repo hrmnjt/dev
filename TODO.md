@@ -56,11 +56,9 @@ since Amp was deferred on 2026-11-16.
 
 ### Starting work
 
-- **W-03 Entry point.** A Rex shortcut starts the chosen agent in a worktree
-  tab by running the same command you can type. `claude` and `amp` on the Mac
-  only start the VM; `claude setup-token` runs in a throwaway VM with nothing
-  mounted. *Source: Docker Sandboxes' `sbx run <agent>`; the shortcut is the
-  user's choice, with no reference.*
+- **W-03 Entry point.** The normal typed `pi` and `claude` commands start the
+  VM setup; no new Rex shortcut is added. `claude` on the Mac only starts the VM; `claude setup-token` runs in a throwaway VM with nothing
+  mounted. *Source: Docker Sandboxes' `sbx run <agent>`.*
 - **W-04, W-13 VM lifetime.** One VM per agent session, started with the agent
   and discarded on exit, so parallel agents run in parallel VMs. Revisit if
   boot time or reinstalls hurt; the memory budget comes from the baseline.
@@ -94,8 +92,7 @@ since Amp was deferred on 2026-11-16.
 ### Checking and shipping
 
 - **W-10 Previews.** Opt-in per session through Gondolin's ingress gateway, as
-  an option on the typed command; the Rex shortcut starts agents without
-  previews. The image includes Playwright with Chromium so agents can check
+  an option on the typed command; agents start without previews by default. The image includes Playwright with Chromium so agents can check
   their own web work. *Source: Docker Sandboxes' `--publish`, Gondolin ingress
   docs; the browser is the user's choice, with no sandbox reference.*
 - **W-11 Review.** Agents edit the live worktree and open PRs, so review uses
@@ -189,7 +186,7 @@ acceptance, credentials, rulesets and deployment remain pending.
   Full deployment doctor, RSS and parallel-agent sizing remain pending.
   The candidate's 4 GiB/2 CPUs is provisional, not a measured budget.
 - [x] Branch-only entry points documented: `trial-pi`, direct branch
-  `cli.mjs claude|amp`, and Rex `REX_CONFIG` / `rex do <file> --action`.
+  `cli.mjs claude`.
   No server reload or deployment is needed; real agent trials await live VM
   enforcement checks and credential setup.
 - [ ] Walk through a working day with each agent and confirm it with the user.
@@ -262,8 +259,8 @@ acceptance, credentials, rulesets and deployment remain pending.
   passes the non-root bindfs/probe path on the rebuilt image. On 2026-11-09 the
   real Claude CLI started in the VM with only the folder-trust prompt (no
   onboarding or bypass warning) and installed a package with `sudo apt-get`.
-- [x] Rex action/shortcut and typed `claude` route through the shared
-  launcher; mocked wiring and branch Rex config checks pass (W-03).
+- [x] Typed `claude` routes through the shared launcher (W-03). The Rex
+  agent shortcuts were dropped on 2026-11-22: they were not needed for the VM.
 - [x] Direct PTY/terminal metadata preserves OSC 7501; removed host command
   hooks and tmux/CLI escape interception. User confirmed Rex status (W-06).
 - [x] Images-only bounded/random-route clipboard proxy and guest adapters work:
@@ -345,9 +342,6 @@ acceptance, credentials, rulesets and deployment remain pending.
   file>` alone would load a second sandbox backend beside the deployed one.
   Pi supports `PI_CODING_AGENT_DIR` and `--no-extensions`; the latter also
   drops built-ins, which `-e builtin:<name>` restores.
-- Rex can validate a branch with `REX_CONFIG=<branch-init.lua> rex
-  --autostart=false config check`, and execute a file's actions with `rex do`.
-  This does not reload/bind the branch config; see the shared package guide.
 - Merging is deploying. After pulling `main`, new sessions see changed files at
   once; new files need `just stowall` from `main`; deleted files leave broken
   links until restowed; running Pi sessions keep old code until `/reload`.
