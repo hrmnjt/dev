@@ -35,13 +35,13 @@ export async function runPi(args, trial = false) {
   const env = {...process.env,AGENT_VM_CONFIG:INSTALL_DIR,PI_CODING_AGENT_SESSION_DIR:sessions};
   const checkout = path.resolve(CONFIG_DIR,"../../..");
   const source = path.join(checkout,"pi/.pi/agent");
-  const backend = ["--no-extensions","--no-mcp"];
-  for (const name of ["gondolin","answer","caffeinate","clipboard-image","exit","review","review-summary","tldraw"]) {
+  const backend = ["--no-extensions"];
+  for (const name of ["gondolin","answer","caffeinate","clipboard-image","exit","review","review-summary","tldraw","uv","wal-writer"]) {
     const file = path.join(source,"extensions",name+".ts");
     if (!fs.existsSync(file)) throw new Error("Pi VM extension missing; deploy from the primary checkout with just stowall (see pi/README.md).");
     backend.push("-e",file);
   }
-  for (const name of ["codemode","llama.cpp","tool-search"]) backend.push("-e","builtin:"+name);
+  for (const name of ["codemode","llama.cpp","mcp","tool-search"]) backend.push("-e","builtin:"+name);
   if (!trial) return child(hostPi,[...backend,...args],env);
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(),"pi-vm-trial-"));
   try {

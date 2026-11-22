@@ -7,18 +7,18 @@ The migration is implemented but **not yet host-accepted or deployed**.
 
 ## Configuration
 
-`pi/.pi/agent/` contains intentional settings, eight focused extensions and the
+`pi/.pi/agent/` contains intentional settings, ten focused extensions and the
 Gruvbox theme. Mutable settings, authentication, sessions and dependencies remain
 host-local, not Stow source. `--no-folding` keeps `~/.pi` a real directory.
 
 The template preserves `openai/gpt-6.1-sol/high`, its exact-model override, the
 existing two llama.cpp choices, fullscreen and `gruvbox-dark/gruvbox-dark`.
 Direct tools `read`, `write`, `edit`, `bash` plus codemode `on` remain enabled.
-MCP is disabled (`-builtin:mcp`); codemode, tool-search and llama.cpp stay.
+The MCP, codemode, tool-search and llama.cpp built-ins stay enabled.
 
 The `pi` launcher explicitly loads only Gondolin, answer, caffeinate,
-clipboard-image, exit, review, review-summary, tldraw and the three retained
-built-ins. This prevents a second/deployed backend from loading during branch
+clipboard-image, exit, review, review-summary, tldraw, uv, wal-writer and the
+four built-ins. This prevents a second/deployed backend from loading during branch
 trials and excludes retired/generated host extensions. Host settings and skills
 are otherwise retained in normal launches; `trial-pi` isolates them too.
 Do not start the underlying host Pi binary as a workaround for a failed VM.
@@ -31,8 +31,9 @@ All direct/nested/codemode `read`, `write`, `edit` and `bash` calls use the same
 VM. Reads are streamed and bounded to regular files up to 64 MiB; `~` means
 the guest home, not the Mac home. Use guest Bash to inspect larger logs.
 Unsupported tools (including host `powershell`, `grep`, `find`, `ls` and MCP
-operations) are blocked; use guest Bash's `rg`, `find` and `ls`. The uv command
-guard is gone. Python and package commands use the guest normally.
+operations) are blocked; use guest Bash's `rg`, `find` and `ls`. The
+[uv guard](#uv-guard--extensionsuvts) rejects pip/poetry commands before they
+reach the VM; the image includes pinned `uv`.
 
 One VM starts per Pi session and closes on shutdown/reload/replacement. Startup
 is singleflight; a failed startup is cached and shuts Pi down, not rerouted.
@@ -50,7 +51,7 @@ Mac/private-network services are blocked. See the shared guide for exact limits.
 
 `/gondolin` reports the VM, workspace and common Git directory. Docs/examples
 are available read-only at **`/pi/docs`** and **`/pi/examples`**, not host install
-paths. There is no `/sandbox`, `/uv-help`, `/wal` or `wal_append` anymore.
+paths. There is no `/sandbox` anymore.
 
 ### Bash overflow
 
@@ -143,6 +144,23 @@ it records only the requested HEAD, never newer commits. Repeating completion is
 informational. Reset/history rewrites/scope changes require a full review.
 Reload/tree UI checks remain pending; real-Git/session-state fixtures are retained.
 
+### uv guard — `extensions/uv.ts`
+
+Keeps Python work uv-first. Gondolin's bash tool calls its command check before
+the VM runs anything: `pip`, `pip3`, `poetry`, `python -m pip`, `python -m venv`
+and `python -m py_compile` are rejected with uv alternatives. `/uv-help` sends a
+compact uv reference into the conversation. The VM image pins `uv` and `uvx`.
+
+### WAL writer — `extensions/wal-writer.ts`
+
+A deliberately retained narrow host integration: `wal_append(text, date?)` and
+`/wal status|append <markdown>` append Markdown to the Obsidian WAL daily note at
+`~/code/github.com/hrmnjt/worklog/wal/YYYYMMDD.md`. It runs in the host Pi
+process, locks the note, creates a missing note from `wal/daily.md` when present
+and takes no arbitrary target path. Codemode receives `{ displayPath, date,
+compactDate, created, templateUsed, appendedBytes }`, never absolute paths. Use it
+when asked to record a worklog, WAL, daily note or Obsidian note.
+
 ### tldraw offline — `extensions/tldraw.ts`
 
 A deliberately retained narrow host integration, not arbitrary host filesystem
@@ -192,8 +210,6 @@ cd ~/code/github.com/hrmnjt/dev
 # Inspect/remove only dangling retired links; preserve regular/custom files.
 for file in \
   "$HOME/.pi/agent/extensions/sandbox.ts" \
-  "$HOME/.pi/agent/extensions/uv.ts" \
-  "$HOME/.pi/agent/extensions/wal-writer.ts" \
   "$HOME/.pi/agent/extensions/lib/native-policy.ts" \
   "$HOME/.pi/agent/extensions/lib/native-runtime.ts"; do
   if [ -L "$file" ] && [ ! -e "$file" ]; then rm -- "$file"; fi
@@ -217,19 +233,13 @@ For a fresh Pi agent directory only:
 cp ~/.pi/agent/settings.template.json ~/.pi/agent/settings.json
 ```
 
-For an existing setup, quit Pi and apply only the MCP-disable delta, preserving
-all other settings, authentication, models and appearance:
+An existing setup needs no settings change. MCP stays enabled as before: servers
+from `mcp.json` run on the Mac, and the tool guard still blocks their tools, as
+the native sandbox did. Opening that boundary is a separate decision.
 
-```bash
-settings="$HOME/.pi/agent/settings.json"
-jq '.extensions = ((.extensions // [])
-  | map(select(. != "builtin:mcp" and . != "+builtin:mcp" and . != "-builtin:mcp")) + ["-builtin:mcp"])' \
-  "$settings" > "$settings.tmp" && mv "$settings.tmp" "$settings"
-```
-
-The shared launcher also supplies `--no-mcp`. Remove old `GONDOLIN_GUEST_DIR`,
-`GONDOLIN_VMM`, `PI_SANDBOX_BACKEND` and token-sharing shell exports if you kept
-custom copies; no image override or host environment is forwarded to the VM.
+Remove old `GONDOLIN_GUEST_DIR`, `GONDOLIN_VMM`, `PI_SANDBOX_BACKEND` and
+token-sharing shell exports if you kept custom copies; no image override or host
+environment is forwarded to the VM.
 Use a fresh process for this migration, not `/reload` inside the old native
 session. Later reloads tear down the old VM before the new runtime starts.
 

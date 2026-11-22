@@ -297,6 +297,11 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202611
 
+- 20261122: Kept Pi's uv guard, WAL writer and MCP in the Gondolin migration.
+  The guard now checks VM bash before anything runs, WAL stays a narrow host
+  tool, and MCP stays enabled with its tools still blocked, as before. The VM
+  image gains a digest-pinned uv 0.13.9, which the build verifier checks.
+  Requires an image rebuild.
 - 20261116: Deferred Amp to keep the agent VM image and launcher small. Removed
   the Amp CLI from the image, the `amp` launcher and zsh function, its Keychain
   placeholder, VM settings package and build checks. The trial
@@ -345,7 +350,7 @@ expanded month by month. Full history lives in `git log`.
   images-only clipboard proxy and opt-in loopback previews. Added isolated branch
   trials, Stow-safe dependency resolution, VM/Pi fixtures and
   doctor renewal checks; retired
-  Seatbelt, uv and WAL extensions and disabled MCP. Added VM-only Claude bypass
+  the Seatbelt extension. Added VM-only Claude bypass
   settings, separate from the Mac CLI's; image builds need a Docker or Podman
   engine.
   Image build, kernel/CLI acceptance, rulesets and deployment
