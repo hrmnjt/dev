@@ -27,8 +27,10 @@ Gondolin is the one sandbox to manage. Inside it, agents act without asking.
 - Git identity stays fail-closed with no fallback (AGENTS.md).
 - Inside the VM, `.pi/`, `.claude/`, `.git/hooks`, and the guest's global Git
   config are read-only. The repo's own `.git/config` stays writable.
-- Fail closed: anything that can't start safely stops with a message naming
-  the fix; nothing falls back to the Mac.
+- VM startup fails closed once Pi's Gondolin extension loads. If discovery
+  misses it or loading fails, Pi starts with Mac tools: an accepted trade-off
+  (2026-11-22), covered by checking that the footer shows `VM <id>` before
+  typing (AGENTS.md).
 - Brew, Stow, `npm install --prefix ~/.pi/agent`, image builds, Keychain
   entries, logins, and GitHub settings are host steps for the user.
 
@@ -59,6 +61,10 @@ since Amp was deferred on 2026-11-16.
 - **W-03 Entry point.** The normal typed `pi` and `claude` commands start the
   VM setup; no new Rex shortcut is added. `claude` on the Mac only starts the VM; `claude setup-token` runs in a throwaway VM with nothing
   mounted. *Source: Docker Sandboxes' `sbx run <agent>`.*
+  **2026-11-22 follow-up:** `pi` uses the installer command and discovers the
+  global Gondolin extension. Missing or rejected extensions aren't a VM startup
+  failure; check Pi's footer for `VM <id>` before typing. `agent-vm pi` and
+  `trial-pi` are retired.
 - **W-04, W-13 VM lifetime.** One VM per agent session, started with the agent
   and discarded on exit, so parallel agents run in parallel VMs. Revisit if
   boot time or reinstalls hurt; the memory budget comes from the baseline.
@@ -110,7 +116,8 @@ since Amp was deferred on 2026-11-16.
 - **W-14 History.** One state folder per agent per project (primary repo),
   shared by that repo's worktrees and kept apart from other projects.
   *Source: Docker Sandboxes (state per sandbox), Claude's devcontainer (one
-  volume per devcontainer).*
+  volume per devcontainer).* Pi uses its default session directory; sessions
+  from the retired `agent-vm pi` launcher stay in the per-project folder.
 - **W-15 Failures.** A VM that won't start, an image missing or older than the
   pinned versions, or a missing Keychain token stops the launch with a message
   naming the host step that fixes it. `just doctor` warns before the Claude
@@ -187,7 +194,8 @@ acceptance, credentials, rulesets and deployment remain pending.
   Full deployment doctor, RSS and parallel-agent sizing remain pending.
   The candidate's 4 GiB/2 CPUs is provisional, not a measured budget.
 - [x] Branch-only entry points documented: `trial-pi`, direct branch
-  `cli.mjs claude`.
+  `cli.mjs claude`. (2026-11-22: `trial-pi` retired; Pi branch trials use a
+  temporary discovery profile.)
   No server reload or deployment is needed; real agent trials await live VM
   enforcement checks and credential setup.
 - [ ] Walk through a working day with each agent and confirm it with the user.

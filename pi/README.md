@@ -1,9 +1,8 @@
 # Pi agent package
 
-Pi runs on the Mac; model filesystem/shell tools run in a **Gondolin VM**. User
-`!` and `!!` stay on the Mac. There is no native backend or automatic fallback.
-See [shared VM setup, credentials, image and branch trials](../gondolin/README.md).
-The migration is implemented but **not yet host-accepted or deployed**.
+Pi runs on the Mac. The Gondolin extension routes model filesystem/shell tools
+into a **Gondolin VM**. User `!` and `!!` stay on the Mac. See [shared VM setup,
+credentials, image and branch trials](../gondolin/README.md).
 
 ## Configuration
 
@@ -16,12 +15,15 @@ existing two llama.cpp choices, fullscreen and `gruvbox-dark/gruvbox-dark`.
 Direct tools `read`, `write`, `edit`, `bash` plus codemode `on` remain enabled.
 The MCP, codemode, tool-search and llama.cpp built-ins stay enabled.
 
-The `pi` launcher explicitly loads only Gondolin, answer, caffeinate,
-clipboard-image, exit, review, review-summary, tldraw, uv, wal-writer and the
-four built-ins. This prevents a second/deployed backend from loading during branch
-trials and excludes retired/generated host extensions. Host settings and skills
-are otherwise retained in normal launches; `trial-pi` isolates them too.
-Do not start the underlying host Pi binary as a workaround for a failed VM.
+Plain `pi` comes from Pi's installer and auto-discovers the Stow-deployed
+`~/.pi/agent/extensions/gondolin.ts`. It also discovers other global extensions
+and trusted project extensions, so review them and remove retired backends from
+auto-discovery. Before typing anything, including after updates, check that the
+footer shows `VM <id>`; the extension sets it once the VM is ready. If it's
+missing, quit without typing: Pi can start with Mac tools if the extension
+didn't load, and an unregistered `/gondolin` would then reach the model as a
+prompt. Once loaded, the extension shuts Pi down on VM startup failure rather
+than falling back to the Mac.
 
 ## VM tools — `extensions/gondolin.ts`
 
@@ -71,15 +73,16 @@ files are not a general host-read bridge: filter output in scripts instead.
 
 ### Sessions
 
-The launcher stores Pi sessions in
-`~/.local/state/agent-vm/<project key>/pi/sessions`, shared by the project's
-worktrees. Sessions from before the migration stay in `~/.pi/agent/sessions/`
-and are not listed by `pi -c`, `pi -r` or `/resume`. Fork one into the new store
-from its worktree; the original is left unchanged:
+`pi -c`, `pi -r` and `/resume` use Pi's usual session store
+(`~/.pi/agent/sessions/`, grouped by working directory), including sessions
+from before Gondolin. The retired `agent-vm pi` launcher kept sessions in
+`~/.local/state/agent-vm/<project key>/pi/sessions`. Browse those by pointing
+Pi at that folder for one run, or fork one into the usual store from its
+worktree; the original is left unchanged:
 
 ```bash
-ls -t ~/.pi/agent/sessions/*"${PWD##*/}"*/ | head
-pi --fork ~/.pi/agent/sessions/<folder>/<file>.jsonl
+pi --session-dir ~/.local/state/agent-vm/<project key>/pi/sessions -r
+pi --fork /path/to/session.jsonl
 ```
 
 Worktree files keep their paths in the VM. Files outside the worktree, old
@@ -210,10 +213,9 @@ create/save/screenshot/cleanup flow after migration, not on an unrelated board.
 
 Pi reports OSC 7501 natively; no host hook or extra status extension is required.
 The VM does not wrap the host UI in tmux. See [Rex](../rex/README.md) for
-notifications/shortcuts. Herdr may launch the shared `~/.local/bin/pi` wrapper;
-its common Git directory is mounted for linked worktrees. The launcher's explicit
-extension list omits Herdr's generated host extension; do not re-add an implicit
-host tool backend. Workspace creation/management remains a user operation.
+notifications/shortcuts. Herdr launches plain `pi`; review any generated
+[Herdr integration](../herdr/README.md#agent-notifications) before using it.
+Workspace creation and management remain user operations.
 
 ## Deploy
 
@@ -231,8 +233,10 @@ for file in \
   "$HOME/.pi/agent/extensions/lib/native-runtime.ts"; do
   if [ -L "$file" ] && [ ! -e "$file" ]; then rm -- "$file"; fi
 done
-# Pi's installer links ~/.local/bin/pi to its own launcher; Stow replaces it.
-if [ "$(readlink ~/.local/bin/pi)" = "../../.pi/agent/bin/pi" ]; then rm ~/.local/bin/pi; fi
+# Remove only the retired Stow link, never Pi's installer link or a custom file.
+case "$(readlink "$HOME/.local/bin/pi" 2>/dev/null)" in
+  */gondolin/.local/bin/pi) rm -- "$HOME/.local/bin/pi" ;;
+esac
 just stowall
 npm ci --prefix ~/.config/gondolin
 npm install --prefix ~/.pi/agent
@@ -240,15 +244,23 @@ npm install --prefix ~/.pi/agent
 agent-vm build docker
 ```
 
-A Pi reinstall or update can link `~/.local/bin/pi` to Pi's launcher again;
-`just doctor` reports it, and the `rm` line plus `just stowall` restore the VM
-wrapper. Typed `pi` still uses the zsh function meanwhile.
+If `~/.local/bin` itself is an old Stow directory link, unfold it before
+reinstalling Pi so the installer doesn't write into the checkout. If the
+retired link was the only `pi` command, use the
+[official Pi installer](https://pi.dev/docs/latest/quickstart#install) to
+recreate it. Keep existing `auth.json` and runtime settings. An existing Gondolin
+installation doesn't need dependency reinstalls or an image rebuild just to
+switch launchers.
 
-Inspect any retired extension which is a regular file or a valid link to another
-copy; do not overwrite it automatically. The new launcher's explicit allowlist
-prevents loading it, and doctor reports leftovers. Keep existing host
-`auth.json` and runtime settings. No provider login/model changes are required.
-Reload the login shell (`exec zsh -l`) so the `pi`/`claude` launchers win.
+Before starting plain Pi, move retired extensions (including valid links and
+regular files) out of auto-discovery; `just doctor` reports known leftovers.
+It also warns about any other auto-discovered extension that isn't a Stow
+link into this checkout (review or remove it), and about a `pi` on PATH that
+isn't the installer's. Doctor can't see zsh functions or aliases, so remove any
+custom `pi` ones, start a fresh login shell (`exec zsh -l`), then run
+`type -a pi` and `pi --version` to check the installer command wins. Start `pi` from a project and check that the footer shows
+`VM <id>` before typing anything. Future `pi update` commands run on the Mac
+and don't require Stow or a VM image rebuild.
 
 For a fresh Pi agent directory only:
 

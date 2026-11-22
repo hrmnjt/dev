@@ -60,7 +60,8 @@ brew bundle install
 just stowall
 
 # 9. Install and configure Pi
-# 9.1. Pi - https://pi.dev/docs/latest/quickstart#install
+# 9.1. Install Pi: https://pi.dev/docs/latest/quickstart#install
+# Pi's installer owns the pi command; Stow deploys the Gondolin extension.
 # 9.2. Reconcile Pi package metadata and remove retired backend dependencies
 npm install --prefix ~/.pi/agent
 # 9.3. Initialize Pi's intentional settings
@@ -117,7 +118,7 @@ llm start
 
 # 14. Enable optional integrations
 # 14.1. Pi/Claude status reaches Rex natively; no host command hooks are needed.
-# The explicit Pi extension list does not load Herdr's generated integration.
+# Plain Pi discovers extensions normally; review any Herdr-generated extension.
 # 14.2. Activate the Stow-deployed Herdr default-tabs plugin when using Herdr:
 herdr plugin link ~/.config/herdr/local-plugins/default-tabs
 herdr plugin list --plugin hrmnjt.default-tabs
@@ -297,6 +298,13 @@ expanded month by month. Full history lives in `git log`.
 
 ### 202611
 
+- 20261122: Pi has no launcher any more, so `pi update` works again. Removed
+  the zsh `pi` function, the Stow `~/.local/bin/pi` wrapper, `agent-vm pi` and
+  `trial-pi`; Pi's installer owns `pi` and discovers the Gondolin extension.
+  If the extension doesn't load, Pi starts with Mac tools (an accepted
+  trade-off), so check the footer shows `VM <id>` before typing. Sessions use
+  Pi's usual store, branch trials use a temporary profile, and doctor warns
+  about unmanaged extensions or a `pi` that isn't the installer's.
 - 20261122: Follow-ups from the first Gondolin deploy. The VM's uv now uses a
   separate `.venv-vm` (globally Git-ignored), so it never reuses or rebuilds a
   Mac-built `.venv`. Doctor validates TOML with a uv-found Python 3.11+ when

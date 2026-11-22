@@ -478,6 +478,41 @@ check_host_git_identity() {
   fi
 }
 
+# Pi auto-loads every global extension; only this checkout's Stow links are
+# reviewed. Others (such as Herdr's generated integration) are reported.
+check_pi_discovered_extensions() {
+  pi_unmanaged=0
+  for pi_entry in "$HOME/.pi/agent/extensions"/*; do
+    pi_name=${pi_entry##*/}
+    pi_source="$ROOT/pi/.pi/agent/extensions/$pi_name"
+    case "$pi_name" in
+      sandbox.ts) continue ;; # Reported as a retired extension by check_pi.
+      *.ts|*.js) pi_loaded=$pi_entry ;;
+      *)
+        # Pi loads a subdirectory only through an entry point.
+        pi_loaded=
+        for pi_candidate in index.ts index.js package.json; do
+          if [ -e "$pi_entry/$pi_candidate" ]; then
+            pi_loaded="$pi_entry/$pi_candidate"
+            pi_source="$pi_source/$pi_candidate"
+            break
+          fi
+        done
+        [ -n "$pi_loaded" ] || continue ;;
+    esac
+    if [ -e "$pi_loaded" ] && [ "$pi_loaded" -ef "$pi_source" ]; then
+      continue
+    fi
+    printf '      unmanaged extension: %s\n' "$pi_loaded"
+    pi_unmanaged=$((pi_unmanaged + 1))
+  done
+  if [ "$pi_unmanaged" -eq 0 ]; then
+    pass "Pi auto-discovered extensions"
+  else
+    warn "Pi auto-loads $pi_unmanaged unmanaged extension(s) (see pi/README.md)"
+  fi
+}
+
 check_pi() {
   if [ -f "$HOME/.pi/agent/settings.json" ] && jq empty "$HOME/.pi/agent/settings.json" >/dev/null 2>&1; then
     pass "Pi runtime settings"
@@ -504,11 +539,21 @@ check_pi() {
   else
     fail "Pi Gondolin extension missing (run: just stowall)"
   fi
-  # Pi's installer links ~/.local/bin/pi to its launcher, replacing the VM
-  # wrapper on reinstall; Stow then refuses to relink it.
-  if [ "$(readlink "$HOME/.local/bin/pi" 2>/dev/null)" = "../../.pi/agent/bin/pi" ]; then
-    fail "Pi installer link replaced the VM wrapper at ~/.local/bin/pi (see pi/README.md#deploy)"
-  fi
+  # The Pi installer owns this entry point now. Only the old Stow link is stale.
+  case "$(readlink "$HOME/.local/bin/pi" 2>/dev/null)" in
+    */gondolin/.local/bin/pi)
+      fail "Retired Pi Stow wrapper at ~/.local/bin/pi (see pi/README.md#deploy)" ;;
+    *)
+      # Zsh functions and aliases aren't visible here; pi/README.md covers type -a.
+      pi_command=$(command -v pi 2>/dev/null) || pi_command=
+      debug "pi on PATH: ${pi_command:-none}"
+      if [ -n "$pi_command" ] && [ "$pi_command" -ef "$HOME/.pi/agent/bin/pi" ]; then
+        pass "pi on PATH is Pi's installer command"
+      else
+        warn "pi on PATH isn't Pi's installer command (see pi/README.md#deploy)"
+      fi ;;
+  esac
+  check_pi_discovered_extensions
   for retired in sandbox.ts lib/native-policy.ts lib/native-runtime.ts; do
     if [ -e "$HOME/.pi/agent/extensions/$retired" ] || [ -L "$HOME/.pi/agent/extensions/$retired" ]; then
       fail "Retired Pi extension $retired remains (see pi/README.md)"

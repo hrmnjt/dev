@@ -1,9 +1,9 @@
 # Importing things that I want to keep locally
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 
-# Agents always enter through the shared VM launcher, even if a legacy binary
-# or a local PATH customization would otherwise shadow the Stow wrappers.
-pi() { command "$HOME/.local/bin/agent-vm" pi "$@" }
+# Claude always enters through the shared VM launcher, even if a Mac binary or
+# a local PATH customization would otherwise shadow the Stow wrapper. Pi is not
+# wrapped: its installer owns `pi`, and the Gondolin extension routes its tools.
 claude() { command "$HOME/.local/bin/agent-vm" claude "$@" }
 
 # Homebrew is initialized once for login shells in ~/.zprofile.
