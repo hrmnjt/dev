@@ -1,15 +1,16 @@
 # Claude Code in Gondolin
 
-Claude Code is pinned **inside the guest image**, not installed on the Mac.
-`claude` is a VM launcher. See [shared setup and branch trials](../gondolin/README.md).
+Typed `claude` starts Claude Code pinned **inside the guest image**. See
+[shared setup and branch trials](../gondolin/README.md). The Homebrew Mac CLI and
+desktop app stay installed with their own settings; see [Mac CLI](#mac-cli).
 The image builds and the live VM fixture passes; this candidate still requires
 real-CLI acceptance before deployment.
 
 ## Configuration
 
 Stow deploys `claude/.config/agent-vm/claude/` to
-`~/.config/agent-vm/claude/`. It deliberately does **not** deploy bypass settings
-to the host's `~/.claude`: a legacy Mac CLI must never inherit this VM policy.
+`~/.config/agent-vm/claude/`. Bypass settings never reach the host's `~/.claude`,
+so the Mac CLI cannot inherit this VM policy.
 
 The shared launcher copies only tracked settings, instructions and theme bytes
 into a read-only guest provider. No Mac Claude credentials, plugins, hooks,
@@ -54,26 +55,29 @@ agent. The user reviews and merges under an enforced main-branch ruleset.
 `Ctrl+V` uses the images-only host proxy; Playwright/Chromium and opt-in ingress
 are provided by the shared image. These actual CLI workflows still need a host trial.
 
-## Retire Mac agents after acceptance
+## Mac CLI
 
-Do not uninstall anything until the VM's authentication, image paste, status,
-history/memory, preview, commit/push/PR and clean shutdown have passed on the Mac.
-Then quit old Mac CLI sessions and run these yourself in a host terminal:
+Homebrew still installs the Mac CLI (`claude-code`) and the desktop app
+(`claude`). Stow deploys `claude/.claude/` to `~/.claude/` for that CLI only; the
+VM never reads it. Typed `claude` goes to the VM, so start the Mac CLI by path:
 
 ```bash
-brew uninstall --cask claude-code
-# No documented setting was found that disables all local desktop Code sessions.
-# The chosen fail-closed option is to remove the app, not assume they are disabled.
-brew uninstall --cask claude
+/opt/homebrew/bin/claude
+/opt/homebrew/bin/claude doctor
 ```
 
-The candidate Brewfile no longer installs either cask; editing it does not
-uninstall existing applications. Web chat remains available. Do not run blanket
-Brew cleanup. If Claude was installed another way, inspect/remove that install
-yourself, then confirm `whence -a claude` shows only the function/VM wrapper you
-intend. Remove only dangling old Stow links during [Pi deployment](../pi/README.md#deploy);
-leave existing credentials/runtime data alone. Existing Mac sessions are not
-stopped or migrated automatically.
+- Opus, with saved `xhigh` effort for `claude-opus-5-5`.
+- Auto permission mode by default (`permissions.defaultMode: "auto"`), using
+  Claude Code's classifier for approval decisions rather than bypassing checks.
+- Native Gruvbox Dark Hard; Ghostty owns the terminal background.
+- Host personal/work Git identity with `user.useConfigOnly`, no attribution,
+  Remote Control mobile notifications, Herdr's generated
+  `~/.claude/hooks/herdr-agent-state.sh` and Rex's `SessionStart` hook.
+- Outside-read blocking and mandatory Bash sandboxing, without exclusions or
+  unsandboxed retries. Hooks/plugins/MCP are outside the Bash sandbox.
+
+Retiring the Mac CLI or desktop app is a separate later decision, not part of
+this migration.
 
 ## Web sessions
 
