@@ -282,8 +282,10 @@ check_git_identities() {
 }
 
 check_claude_git_identity() {
+  claude_settings=$1
+  claude_label=$2
   if ! command_exists jq; then
-    warn "Claude Git identity skipped (jq unavailable)"
+    warn "$claude_label Git identity skipped (jq unavailable)"
     return
   fi
   # Validate the indexed Git env before exporting line-delimited assignments.
@@ -297,12 +299,12 @@ check_claude_git_identity() {
           ($env["GIT_CONFIG_VALUE_\($i)"] | type) == "string"))
       then $env | to_entries[] | "\(.key)=\(.value)"
       else error("invalid indexed Git environment") end
-  ' "$ROOT/claude/.config/agent-vm/claude/settings.json" 2>/dev/null) || {
-    fail "Claude Git identity (missing or invalid Git environment)"
+  ' "$claude_settings" 2>/dev/null) || {
+    fail "$claude_label Git identity (missing or invalid Git environment)"
     return
   }
   claude_tmp=$(mktemp -d "$TEMP_ROOT/dev-doctor-claude.XXXXXX") || {
-    fail "Claude Git identity (temporary directory unavailable)"
+    fail "$claude_label Git identity (temporary directory unavailable)"
     return
   }
   claude_repo="$claude_tmp/home/code/unknown/check"
@@ -326,17 +328,17 @@ EOF
     )
   }
   if ! claude_git control init -q --template= > "$claude_tmp/error" 2>&1; then
-    fail "Claude Git identity (fixture initialization failed)"
+    fail "$claude_label Git identity (fixture initialization failed)"
   elif ! claude_git control commit -q --allow-empty -m doctor-control > "$claude_tmp/error" 2>&1; then
-    warn "Claude Git identity skipped (Git could not guess a control identity)"
+    warn "$claude_label Git identity skipped (Git could not guess a control identity)"
   elif [ "$(claude_git claude config --type=bool --get user.useConfigOnly 2>/dev/null)" != true ]; then
-    fail "Claude Git identity (effective useConfigOnly is not true)"
+    fail "$claude_label Git identity (effective useConfigOnly is not true)"
   elif claude_git claude commit -q --allow-empty -m doctor-test > "$claude_tmp/error" 2>&1; then
-    fail "Claude Git identity fails closed in unknown paths"
+    fail "$claude_label Git identity fails closed in unknown paths"
   elif grep -Eq 'fatal: no (name|email) was given and auto-detection is disabled' "$claude_tmp/error"; then
-    pass "Claude Git identity fails closed in unknown paths"
+    pass "$claude_label Git identity fails closed in unknown paths"
   else
-    fail "Claude Git identity (commit failed for an unrelated reason)"
+    fail "$claude_label Git identity (commit failed for an unrelated reason)"
   fi
   debug_output "$(head -c 2000 "$claude_tmp/error")"
   rm -rf "$claude_tmp"
@@ -368,7 +370,8 @@ run_repository_checks() {
   check_toml
   check_git_configs
   check_git_identities
-  check_claude_git_identity
+  check_claude_git_identity "$ROOT/claude/.claude/settings.json" "Claude"
+  check_claude_git_identity "$ROOT/claude/.config/agent-vm/claude/settings.json" "VM Claude"
   check_justfile
 }
 
@@ -514,12 +517,6 @@ EOF
     debug_output "$vm_output"
   else
     fail "Shared Gondolin launcher missing (see gondolin/README.md)"
-  fi
-  if [ -d /Applications/Claude.app ] || [ -d /opt/homebrew/Caskroom/claude-code ]; then
-    warn "Legacy Mac Claude install remains; remove after VM acceptance (see claude/README.md)"
-  fi
-  if [ -d /opt/homebrew/Caskroom/codex ]; then
-    warn "Codex remains installed on the Mac; agents run only in VMs (see Brewfile)"
   fi
 }
 

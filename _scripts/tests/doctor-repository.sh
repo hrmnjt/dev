@@ -30,7 +30,7 @@ assert_result() {
 
 ROOT="$tmp/checkout with spaces"
 TEMP_ROOT="$tmp"
-mkdir -p "$ROOT/zsh" "$ROOT/scripts" "$ROOT/claude/.config/agent-vm/claude"
+mkdir -p "$ROOT/zsh" "$ROOT/scripts" "$ROOT/claude/.claude"
 # Keep init independent of the caller's Git configuration and index.
 (
   unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_CONFIG_COUNT GIT_CONFIG_PARAMETERS
@@ -69,7 +69,7 @@ for kind in valid false missing invalid-count missing-slot duplicate-override un
     duplicate-override) json='{"env":{"GIT_CONFIG_COUNT":"2","GIT_CONFIG_KEY_0":"user.useConfigOnly","GIT_CONFIG_VALUE_0":"true","GIT_CONFIG_KEY_1":"user.useConfigOnly","GIT_CONFIG_VALUE_1":"false"}}' ;;
     unrelated-error) json='{"env":{"GIT_CONFIG_COUNT":"4","GIT_CONFIG_KEY_0":"user.useConfigOnly","GIT_CONFIG_VALUE_0":"true","GIT_CONFIG_KEY_1":"user.name","GIT_CONFIG_VALUE_1":"Fixture","GIT_CONFIG_KEY_2":"user.email","GIT_CONFIG_VALUE_2":"fixture@doctor.invalid","GIT_CONFIG_KEY_3":"commit.cleanup","GIT_CONFIG_VALUE_3":"invalid"}}' ;;
   esac
-  printf '%s\n' "$json" > "$ROOT/claude/.config/agent-vm/claude/settings.json"
+  printf '%s\n' "$json" > "$ROOT/claude/.claude/settings.json"
   label="Claude Git identity: $kind"
   if [ "$kind" = inherited-env ]; then
     printf '[user]\n name = Leaked fixture\n email = leak@fixture.invalid\n' > "$tmp/leaked-config"
@@ -78,10 +78,10 @@ for kind in valid false missing invalid-count missing-slot duplicate-override un
         GIT_COMMITTER_NAME=Leaked GIT_COMMITTER_EMAIL=leak@fixture.invalid \
         GIT_DIR="$tmp/not-a-repo" GIT_WORK_TREE="$tmp" GIT_INDEX_FILE="$tmp/not-an-index" \
         GIT_CONFIG_PARAMETERS="'user.useConfigOnly=false'"
-      check_claude_git_identity 2>&1
+      check_claude_git_identity "$ROOT/claude/.claude/settings.json" Claude 2>&1
     )
   else
-    output=$(check_claude_git_identity 2>&1)
+    output=$(check_claude_git_identity "$ROOT/claude/.claude/settings.json" Claude 2>&1)
   fi
   case "$kind" in
     valid|inherited-env) assert_result 'PASSED: Claude Git identity fails closed in unknown paths' ;;

@@ -96,7 +96,7 @@ Notable commands and aliases include:
 | `claude` | Start Claude Code in a fresh Gondolin VM, never a Mac agent binary |
 
 The agent functions invoke the shared `~/.local/bin/agent-vm` explicitly, even
-if Homebrew or `.zshrc.local` puts a legacy agent binary earlier on PATH. There
+if Homebrew or `.zshrc.local` puts the Mac agent binaries earlier on PATH. There
 is no host fallback if the launcher/image/credentials are missing. See
 [VM setup and branch trials](../gondolin/README.md); host installs/deployment
 remain user actions. `!`/`!!` inside Pi remain deliberate host commands.

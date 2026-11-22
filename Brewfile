@@ -69,9 +69,12 @@ brew "podman"
 
 # Agent-aware terminal workspace manager
 brew "herdr"
-# Agents never run on the Mac: Codex (local agent mode) is no longer installed
-# here. Claude Code is pinned in the Gondolin image and Amp is not used for now.
-# No documented desktop setting disables all local Code sessions; use web chat.
+# OpenAI coding agent CLI
+cask "codex"
+# Anthropic coding agent CLI (settings deployed from claude/)
+cask "claude-code"
+# Claude desktop app
+cask "claude"
 # Hex desktop app
 cask "anomalyco/tap/hex"
 # Terminal

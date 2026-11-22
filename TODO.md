@@ -133,9 +133,9 @@ since Amp was deferred on 2026-11-16.
   tracked-config convention, Claude's devcontainer docs.*
 - **W-19 Clouds and the desktop app.** Claude Code on the web and Amp's cloud
   executor stay as a complement for phone, web, and long unattended work. The
-  Claude desktop app stays for chat; its local Code sessions are turned off, or
-  the app goes if no setting can. *Source: user requirement that agents never
-  run on the Mac.*
+  Claude desktop app and the Mac Claude Code and Codex installs stay as they
+  are; retiring them is a separate later decision (2026-11-22). *Source: user
+  choice.*
 
 ### Boundary
 
@@ -277,13 +277,10 @@ acceptance, credentials, rulesets and deployment remain pending.
 - [~] Per-primary-project state is implemented; `claude --resume` after restart
   works (user-confirmed). History/memory across worktrees and parallel
   sessions pending (W-14).
-- [~] Mac-only package settings were repurposed into VM-only config, so legacy
-  Mac Claude cannot inherit bypass mode. Actual Mac install removal awaits
-  VM acceptance and is a user operation (W-03).
-- [ ] Remove desktop app after acceptance: no documented reliable setting to
-  disable every local Code session was found. Candidate Brewfile omits both
-  Claude casks and Codex; installed apps remain untouched and doctor warns
-  while they remain (W-19).
+- [x] VM-only bypass settings live in `claude/.config/agent-vm/claude/`; the
+  Mac CLI keeps main's native sandbox settings in `claude/.claude/`, and the
+  Brewfile keeps the Claude, Claude Code and Codex casks (W-19). Doctor checks
+  fail-closed Git identity in both settings files.
 - [-] Remote Control push notifications: Claude requires a full-scope login
   token, and `setup-token` tokens are inference-only (W-02). Use Claude Code on
   the web for phone/remote work (W-19).

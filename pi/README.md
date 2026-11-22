@@ -195,10 +195,7 @@ for file in \
   "$HOME/.pi/agent/extensions/uv.ts" \
   "$HOME/.pi/agent/extensions/wal-writer.ts" \
   "$HOME/.pi/agent/extensions/lib/native-policy.ts" \
-  "$HOME/.pi/agent/extensions/lib/native-runtime.ts" \
-  "$HOME/.claude/settings.json" \
-  "$HOME/.claude/CLAUDE.md" \
-  "$HOME/.claude/themes/gruvbox-dark-hard.json"; do
+  "$HOME/.pi/agent/extensions/lib/native-runtime.ts"; do
   if [ -L "$file" ] && [ ! -e "$file" ]; then rm -- "$file"; fi
 done
 just stowall

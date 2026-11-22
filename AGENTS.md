@@ -8,8 +8,8 @@ on instructions that add to those guides rather than repeating them.
 
 The target deployment uses Gondolin as the shared sandbox. Pi's interface and
 provider/OAuth connection stay on the Mac; its model filesystem/shell tools run
-only in the VM. Claude Code runs entirely in separate session VMs; its Mac
-command is a launcher, not a host agent install. Pi's user `!`/`!!` remain
+only in the VM. Typed `claude` runs Claude Code in separate session VMs; the
+Homebrew Mac CLI keeps its native Bash sandbox settings. Pi's user `!`/`!!` remain
 host commands. See `gondolin/README.md` and the agent package guides.
 
 The complete worktree and linked common Git directory are mounted at the same

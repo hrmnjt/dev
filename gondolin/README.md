@@ -10,9 +10,9 @@ installs, logs in, rebuilds, deploys, or changes GitHub settings automatically.
   `read`, `write`, `edit` and `bash` tools run in one VM per Pi session, including
   nested/codemode calls. User `!`/`!!`, review UI, clipboard attachments and the
   deliberately narrow tldraw bridge remain host integrations.
-- `claude` is a **launcher**, not a Mac agent installation. Each launch starts
-  one disposable VM and attaches the terminal directly, with no tmux or Gondolin
-  CLI `Ctrl-]` escape interception. Claude starts as UID 1000 with permission
+- Typed `claude` is a **VM launcher**; the Mac CLI keeps its own settings. Each
+  launch starts one disposable VM and attaches the terminal directly, with no tmux
+  or Gondolin CLI `Ctrl-]` escape interception. Claude starts as UID 1000 with permission
   prompts bypassed.
 - Amp is not supported for now. A VM trial worked except image upload
   (`EPROTO` TLS handshake failure), and its server refuses CLIs more than a few
@@ -220,8 +220,7 @@ rebuild and repeat host acceptance. Old images are not deleted automatically.
 After branch acceptance, merge deliberately, quit running agents, and deploy
 **from the primary checkout**, following [Pi migration](../pi/README.md#deploy).
 Stow links are live source, not copies; do not merge/deploy a candidate whose
-VM tests have not passed. Remove Mac Claude Code and the Claude desktop app only
-after the VM workflow is accepted; see [Claude](../claude/README.md).
+VM tests have not passed.
 
 ## Checks and remaining acceptance
 

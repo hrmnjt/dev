@@ -94,7 +94,7 @@ claude setup-token
 # Configure/verify main-branch GitHub rulesets yourself, including private-repo support.
 agent-vm doctor
 # 10.3. Claude cloud execution remains complementary; see claude/README.md.
-# Remove legacy Mac Claude Code/desktop installs only after VM acceptance.
+# The Mac Claude Code CLI keeps its own settings; see claude/README.md#mac-cli.
 
 # 11. Complete required app permissions
 # 11.1. Grant AeroSpace Accessibility permission; see the aerospace/README.md
@@ -177,8 +177,8 @@ just doctor
 
 The full mode runs the same repository checks, then inspects Brew packages,
 expected commands, Stow links, the deployed Git identity, Pi dependencies and
-settings, Gondolin launchers/image markers/Keychain expiry, legacy Mac Claude
-installs, AeroSpace, Herdr, and host GitHub CLI authentication. This does not boot
+settings, Gondolin launchers/image markers/Keychain expiry, AeroSpace, Herdr,
+and host GitHub CLI authentication. This does not boot
 a VM, prove isolation, or test a push/PR.
 It reports remediation commands but never installs, rewrites, reloads, or
 repairs the setup. Add `--verbose` (or `-v`) to either mode to show the commands
@@ -312,7 +312,7 @@ expanded month by month. Full history lives in `git log`.
   guest. Seeded Claude's per-project state past onboarding and skipped its
   bypass-mode prompt; dropped Remote Control notifications, which inference-only
   `setup-token` tokens cannot use. Added an `fd` command and `wl-paste -l` to
-  the image, removed the Codex cask, made policy tests independent of
+  the image, made policy tests independent of
   symlinked `TMPDIR` and let Pi tests find the installed SDK or a disposable
   `_scratch/pi-sdk` copy. After the live fixture showed `sudo` without its
   setuid bit (Gondolin's macOS build drops special modes), the image records
@@ -345,10 +345,10 @@ expanded month by month. Full history lives in `git log`.
   images-only clipboard proxy and opt-in loopback previews. Added isolated branch
   trials, Stow-safe dependency resolution, VM/Pi fixtures and
   doctor renewal checks; retired
-  Seatbelt, uv and WAL extensions and disabled MCP. Moved Claude bypass settings
-  to VM-only config and removed Mac Claude casks from the candidate Brewfile;
-  image builds need a Docker or Podman engine.
-  Image build, kernel/CLI acceptance, rulesets, Mac retirement and deployment
+  Seatbelt, uv and WAL extensions and disabled MCP. Added VM-only Claude bypass
+  settings, separate from the Mac CLI's; image builds need a Docker or Podman
+  engine.
+  Image build, kernel/CLI acceptance, rulesets and deployment
   remain deliberate pending user steps, not verified results.
 - 20261101: Added the Tailscale desktop app cask to the Brewfile.
 
