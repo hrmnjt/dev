@@ -218,36 +218,6 @@ brew bundle cleanup          # preview installed packages absent from Brewfile
 brew bundle cleanup --force  # remove them only after reviewing the preview
 ```
 
-#### Retiring Herdr and cmux
-
-Herdr's tracked package and integrations are retired; cmux has no tracked
-configuration. Existing Macs need a deliberate host cleanup, not a VM command:
-
-1. Quit both apps after saving any work in their sessions. Keep Git worktrees,
-   branches and runtime data unless you deliberately choose to remove them.
-2. In the primary checkout's `claude/.claude/settings.json`, remove the first
-   `hooks.SessionStart` group: the one invoking
-   `~/.claude/hooks/herdr-agent-state.sh`. Keep Rex's separate hook. This file
-   is protected from VM edits. Once unreferenced, the generated Herdr hook can
-   be removed from `~/.claude/hooks/` too.
-3. Review `~/.pi/agent/extensions/` and move any generated Herdr integration out
-   of auto-discovery. `just doctor` reports unmanaged extensions; do not remove
-   unrelated extensions.
-4. Remove only dangling former Stow links for `~/.config/herdr/config.toml`,
-   `~/.config/nvim/lua/plugins/herdr.lua`, and the `default_tabs.sh` and
-   `herdr-plugin.toml` files inside `~/.config/herdr/local-plugins/default-tabs/`.
-   Older folded directory links may also be dangling; preserve regular files
-   and directories. `just stowall` cannot unstow the deleted package. Run
-   Neovim's `:Lazy clean` to remove its unused annotation plugin.
-5. Uninstall the packages on the Mac:
-
-   ```bash
-   brew uninstall herdr
-   if brew list --cask cmux >/dev/null 2>&1; then brew uninstall --cask cmux; fi
-   ```
-
-   If cmux was installed outside Homebrew, remove that app manually instead.
-
 #### Local models
 
 Run `llm start` in a host terminal. In Pi, use `/login llama.cpp` once,

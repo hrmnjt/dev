@@ -97,7 +97,6 @@ VM never reads it. Typed `claude` goes to the VM, so start the Mac CLI by path:
 
 The retired Herdr `SessionStart` entry in `claude/.claude/settings.json` still
 needs a deliberate host edit; this tree is read-only in the VM. Keep Rex's hook.
-See [terminal-manager cleanup](../README.md#retiring-herdr-and-cmux).
 
 Retiring the Mac CLI or desktop app is a separate later decision, not part of
 this migration.
