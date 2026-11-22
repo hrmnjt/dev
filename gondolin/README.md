@@ -27,10 +27,11 @@ installs, logs in, rebuilds, deploys, or changes GitHub settings automatically.
 - Mac home/config/credential directories are never mounted. Launching from the
   Mac home, its ancestor, or its credential/config directories is refused.
 
-The Stow package supplies `~/.config/gondolin/` and `~/.local/bin/{agent-vm,pi,
-claude,gondolin}`. Zsh functions use the launcher explicitly so an old Mac
-binary cannot win PATH. The host Pi executable is expected at
-`~/.pi/agent/bin/pi` (the current Pi installer location). `.stow-local-ignore`
+The Stow package supplies `~/.config/gondolin/` and
+`~/.local/bin/{agent-vm,claude,gondolin}`. The `claude` zsh function uses the
+VM launcher explicitly so an old Mac binary cannot win PATH. Pi has no
+launcher: its installer owns `pi` on PATH, and Pi auto-discovers the global
+Gondolin extension. `.stow-local-ignore`
 keeps branch-local `node_modules` out of deployment. SDK resolution uses the
 chosen installation prefix, not the canonical Stow source path; `npm ci` writes
 dependencies in the real deployed directory.
@@ -46,19 +47,34 @@ config="$PWD/gondolin/.config/gondolin"
 # Branch-local dependencies only, not ~/.pi/agent or the deployed shared package:
 npm ci --prefix "$config"
 node "$config/cli.mjs" build podman     # or: build docker
-node "$config/cli.mjs" trial-pi
 node "$config/cli.mjs" claude
 ```
 
-`trial-pi` uses a mode-0700 temporary agent directory with branch settings/themes,
-explicit branch extensions and the four retained built-ins. Discovered extensions
-(including the deployed native backend), project extensions, MCP servers and
-skills are not loaded. Host auth is linked, not mounted in the VM; Pi writes refreshed tokens
-through the link to the host file, but its lock lives in the temporary directory,
-so quit other Pi sessions before a trial to avoid concurrent token refreshes.
-The temporary directory is removed on exit. Normal `pi` also selects
-only the reviewed extension set explicitly, but preserves host settings/skills.
-Both use per-primary-project Pi session storage.
+To try **Pi** with the branch extensions, use a temporary profile that
+auto-discovers them the way deployed Pi does. Run this from the same shell,
+after preparing `config` and the image above:
+
+```bash
+(
+  set -eu
+  profile=$(mktemp -d "${TMPDIR:-/tmp}/pi-discovery.XXXXXX")
+  trap 'rm -r -- "$profile"' EXIT
+  agent="$PWD/pi/.pi/agent"
+  cp "$agent/settings.template.json" "$profile/settings.json"
+  mkdir "$profile/extensions"
+  for extension in "$agent"/extensions/*.ts; do
+    ln -s "$extension" "$profile/extensions/${extension##*/}"
+  done
+  ln -s "$agent/themes" "$profile/themes"
+  AGENT_VM_CONFIG="$config" PI_CODING_AGENT_DIR="$profile" \
+    PI_CODING_AGENT_SESSION_DIR="$profile/sessions" "$HOME/.pi/agent/bin/pi" --no-approve
+)
+```
+
+Check that the footer shows `VM <id>`, then quit without sending a model
+prompt. The profile has no host auth, settings, skills or other global
+extensions, and `--no-approve` skips project-local resources. It's removed on
+exit.
 
 ## Host credentials
 
@@ -152,7 +168,9 @@ placeholders. Pi's write/edit tools also run as `agent`, matching its bash tool.
 State is under `~/.local/state/agent-vm/<primary-hash>/<agent>/`:
 
 - `home/` is the only mutable guest-home mount, shared by that project's worktrees.
-- For Pi, `sessions/` contains host UI history and is **not** mounted in the VM.
+- Pi keeps sessions in its native host-side store, which isn't mounted in the
+  VM. A `pi/sessions/` folder here is from the retired `agent-vm pi` launcher;
+  see [Pi sessions](../pi/README.md#sessions).
 - Claude uses `home/claude-state/` for history/memory; tracked settings are served
   read-only through `/etc/agent-config`, including managed settings and personal
   instructions/themes. This separates mutable runtime state from `.claude` config.
@@ -189,7 +207,7 @@ extension instead. Real CLI image-paste detection remains a host acceptance chec
 ## Daily use
 
 ```bash
-pi                            # host UI, VM model tools
+pi                            # check the footer shows VM <id> before typing
 claude                        # non-root, no approval prompts
 claude --preview 3000         # opt-in HTTP ingress to guest localhost:3000
 claude --preview 3000 -- -c   # use -- before subsequent agent flags if needed

@@ -149,11 +149,11 @@ Verify the installation with `herdr-nvim doctor` from a herdr session.
 
 ## Agent notifications
 
-The shared VM launcher's explicit Pi extension list does not load Herdr's
-generated host integration, so automatic agent lifecycle notifications are not
-claimed for the candidate. Rex receives Pi/Claude status natively instead. The
-following Herdr notification settings/manual delivery test remain available
-independently of agent integration; see [Pi deployment](../pi/README.md).
+Plain `pi` can discover Herdr's generated host extension if installed;
+`just doctor` warns about it as unmanaged. Review it, or move it out of
+auto-discovery if you don't use it. Rex receives Pi/Claude status natively.
+The settings and manual delivery test below work independently of agent
+integration; see [Pi deployment](../pi/README.md#deploy).
 
 The tracked config
 uses Herdr's `terminal` delivery, so Ghostty shows a desktop notification when a
@@ -180,7 +180,8 @@ To test, run the following and switch away from Ghostty before it fires:
 
 Herdr is an optional worktree workflow alongside [Rex](../rex/README.md), covering
 creation, reopening and removal through managed workspaces and their default tabs.
-The plugin's `pi` command uses the shared VM launcher after deployment.
+The plugin invokes the `pi` on PATH, just like a normal shell. Check that the
+Pi tab's footer shows `VM <id>` before typing anything.
 
 Herdr's **New worktree** shortcut creates a branch from the parent workspace's
 current `HEAD`. Herdr does not currently provide a config option for changing

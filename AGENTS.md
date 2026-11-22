@@ -7,8 +7,9 @@ on instructions that add to those guides rather than repeating them.
 ## Execution environment
 
 The target deployment uses Gondolin as the shared sandbox. Pi's interface and
-provider/OAuth connection stay on the Mac; its model filesystem/shell tools run
-only in the VM. Typed `claude` runs Claude Code in separate session VMs; the
+provider/OAuth connection stay on the Mac; once its auto-discovered Gondolin
+extension loads, its model filesystem/shell tools run only in the VM. Typed
+`claude` runs Claude Code in separate session VMs; the
 Homebrew Mac CLI keeps its native Bash sandbox settings. Pi's user `!`/`!!` remain
 host commands. See `gondolin/README.md` and the agent package guides.
 
@@ -64,8 +65,12 @@ Design Pi changes toward these goals:
 - Prefer official Pi APIs and focused extensions over parallel frameworks or
   external services.
 - Keep model-facing filesystem/shell tools inside Gondolin, including nested
-  and codemode calls. Never fall back to host execution. Avoid new host-side
-  escape hatches; any exception must be narrow, explicit and user-approved.
+  and codemode calls. Once loaded, the extension must never fall back to host
+  execution. Pi has no launcher, so if the extension is missing or fails to
+  load, Pi starts with Mac tools; the user's footer check for `VM <id>` is the
+  accepted safeguard, so keep that status set only once the VM is ready. Avoid
+  new host-side escape hatches; any exception must be narrow, explicit and
+  user-approved.
 - Track intentional configuration while keeping mutable runtime state
   Git-ignored.
 - Preserve host-shell separation, same-path worktree/common-Git mounts,
