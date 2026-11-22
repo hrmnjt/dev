@@ -36,15 +36,12 @@ gh config set git_protocol ssh   # default comes from config.yml after stow
 gh auth status
 ```
 
-## Pi usage
+## Agent VM usage
 
-Pi's native bash tool can use normal networking and the existing CLI login for
-requested PR creation, checks, and reviews. Its filesystem writes remain confined
-to the launch directory, private scratch, and Git metadata. Initial authentication
-and changes to host-global configuration still need a host terminal because those
-files are outside the write boundary. Do not print tokens or authentication state.
-See [the Pi package guide](../pi/README.md#native-sandbox).
+Pi's model tools and typed `claude` use guest `gh`, not this host login.
+The launcher supplies a scoped GitHub token placeholder from the Mac Keychain
+and rewrites GitHub SSH remotes to HTTPS. Do not run `gh auth login` inside a
+work VM or print tokens. See [VM credentials and rulesets](../gondolin/README.md#host-credentials).
 
-Zsh no longer exports `GH_TOKEN` for a VM. Host `gh` uses its stored login;
-no new authentication is required. If a current shell inherited a token solely
-from the retired export, unset `GH_TOKEN` there to stop passing it to children.
+Host `gh` continues to use its stored login. Remove any old `GH_TOKEN` shell
+export that existed only for the retired VM setup; the launcher does not forward it.

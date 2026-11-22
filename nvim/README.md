@@ -1,8 +1,7 @@
 # Neovim
 
-A deliberately small [LazyVim](https://www.lazyvim.org/) configuration intended
-to replace day-to-day Zed use gradually. Mouse support, the macOS clipboard,
-and sensible editor defaults come from LazyVim.
+A small [LazyVim](https://www.lazyvim.org/) configuration with mouse support,
+the macOS clipboard and the repository's Gruvbox theme.
 
 Ghostty already supplies the JetBrains Mono Nerd Font used by the interface.
 
@@ -52,12 +51,7 @@ pickers, use `Alt-h` and `Alt-i`.
 | Discover commands | Press `Space` and wait |
 | Interactive Vim lesson | `:Tutor` then `Enter` |
 
-For the first week, avoid adding plugins. Learn file finding, project search,
-insert mode, saving, and quitting. Add configuration only after the same friction
-has appeared repeatedly.
-
-The tracked Zsh configuration exports Neovim as `EDITOR` and `VISUAL`. Keep Zed
-available as an escape hatch during the transition.
+The tracked Zsh configuration exports Neovim as `EDITOR` and `VISUAL`.
 
 ## Git with Lazygit
 
@@ -74,11 +68,7 @@ inside and outside Neovim.
 
 In Lazygit, use `Space` to stage or unstage the selected item, `a` to stage or
 unstage all changes, `c` to commit, and `?` to show context-sensitive help.
-Install the updated Brewfile and restart Neovim if the mappings are not present:
-
-```bash
-brew bundle install
-```
+If the mappings are missing, ensure Lazygit is installed and restart Neovim.
 
 ## hledger journals
 
@@ -127,23 +117,6 @@ half of the plugin (sidebar and file picker) is documented in the
 [Herdr README](../herdr/README.md#herdr-nvim-sidebar-and-file-picker); the
 sidebar's nvim daemon reuses this configuration because it runs under the
 default appname.
-
-```text
-nvim/.config/nvim/
-├── init.lua
-└── lua/
-    ├── config/
-    │   ├── lazy.lua       # official LazyVim-style bootstrap
-    │   ├── options.lua    # mouse, clipboard, and column guides
-    │   ├── keymaps.lua    # intentionally empty
-    │   └── autocmds.lua   # disable spell checking
-    └── plugins/
-        ├── ledger.lua     # hledger journal support and safe alignment
-        ├── markdown.lua   # disable rendered Markdown
-        ├── picker.lua     # show hidden and ignored files
-        ├── theme.lua      # Gruvbox
-        └── herdr.lua      # herdr-nvim annotations
-```
 
 `lazy-lock.json` remains host-local and Git-ignored, rather than Stow-managed.
 Plugin updates do not create tracked lock-file changes or a new deployment conflict.
