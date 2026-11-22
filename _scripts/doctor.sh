@@ -195,6 +195,9 @@ root = Path.cwd()
 failed = False
 for name in sys.argv[1:]:
     path = root / name
+    # Unstaged deletions remain in ls-files; dangling symlinks must still fail.
+    if not path.exists() and not path.is_symlink():
+        continue
     try:
         with path.open("rb") as handle:
             tomllib.load(handle)
@@ -385,7 +388,7 @@ run_repository_checks() {
 
 check_expected_commands() {
   missing_commands=""
-  for name in aerospace agent-vm borders brew claude fzf gh git gondolin herdr jq just lazygit nvim node npm pi qemu-system-aarch64 rg starship stow uv zsh; do
+  for name in aerospace agent-vm borders brew claude fzf gh git gondolin jq just lazygit nvim node npm pi qemu-system-aarch64 rg starship stow uv zsh; do
     if ! command_exists "$name"; then
       missing_commands="$missing_commands $name"
     fi
@@ -479,7 +482,7 @@ check_host_git_identity() {
 }
 
 # Pi auto-loads every global extension; only this checkout's Stow links are
-# reviewed. Others (such as Herdr's generated integration) are reported.
+# reviewed. Other auto-discovered extensions are reported.
 check_pi_discovered_extensions() {
   pi_unmanaged=0
   for pi_entry in "$HOME/.pi/agent/extensions"/*; do
@@ -595,34 +598,6 @@ check_aerospace() {
   fi
 }
 
-check_herdr() {
-  if ! command_exists herdr; then
-    fail "Herdr Pi integration (herdr unavailable)"
-    fail "Herdr default-tabs plugin (herdr unavailable)"
-    return
-  fi
-
-  herdr_integration_output=$(herdr integration status 2>&1)
-  herdr_integration_status=$?
-  debug "command: herdr integration status"
-  debug_output "$herdr_integration_output"
-  if [ "$herdr_integration_status" -eq 0 ]; then
-    pass "Herdr Pi integration"
-  else
-    fail "Herdr Pi integration"
-  fi
-
-  herdr_plugin_output=$(herdr plugin list --plugin hrmnjt.default-tabs 2>&1)
-  herdr_plugin_status=$?
-  debug "command: herdr plugin list --plugin hrmnjt.default-tabs"
-  debug_output "$herdr_plugin_output"
-  if [ "$herdr_plugin_status" -eq 0 ]; then
-    pass "Herdr default-tabs plugin"
-  else
-    fail "Herdr default-tabs plugin"
-  fi
-}
-
 check_github_auth() {
   if ! command_exists gh; then
     warn "GitHub CLI authentication unavailable (gh missing)"
@@ -653,7 +628,6 @@ run_host_checks() {
   check_host_git_identity
   check_pi
   check_aerospace
-  check_herdr
   check_github_auth
 }
 

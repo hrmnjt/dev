@@ -192,13 +192,11 @@ Test changes on a disposable saved canvas, never an unrelated board.
 
 `/exit` uses `ctx.shutdown()`, never `process.exit()`, allowing VM cleanup.
 
-### Rex and Herdr
+### Rex
 
 Pi reports OSC 7501 natively; no host hook or extra status extension is required.
 The VM does not wrap the host UI in tmux. See [Rex](../rex/README.md) for
-notifications/shortcuts. Herdr launches plain `pi`; review any generated
-[Herdr integration](../herdr/README.md#agent-notifications) before using it.
-Workspace creation and management remain user operations.
+notifications/shortcuts. Workspace creation and management remain user operations.
 
 ## Deploy
 

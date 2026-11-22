@@ -118,14 +118,10 @@ llm start
 
 # 14. Enable optional integrations
 # 14.1. Pi/Claude status reaches Rex natively; no host command hooks are needed.
-# Plain Pi discovers extensions normally; review any Herdr-generated extension.
-# 14.2. Activate the Stow-deployed Herdr default-tabs plugin when using Herdr:
-herdr plugin link ~/.config/herdr/local-plugins/default-tabs
-herdr plugin list --plugin hrmnjt.default-tabs
-# 14.3. Brave configuration
+# 14.2. Brave configuration
 # - Brave extensions: Bitwarden, Readwise Highlighter, and Dark Reader.
 # - Install the Gruvbox Slate Brave theme.
-# 14.4. Bitwarden desktop
+# 14.3. Bitwarden desktop
 # - Sign in, then enable Settings → Security → Unlock with Touch ID.
 # - Optionally enable Ask for Touch ID on app start.
 # - Keep the Brave extension; use Apple Passwords when a master password is needed.
@@ -141,7 +137,6 @@ herdr plugin list --plugin hrmnjt.default-tabs
 - [Claude Code (VM and web sessions)](claude/README.md)
 - [Gh](gh/README.md)
 - [Git](git/README.md)
-- [Herdr](herdr/README.md)
 - [Ivanti VPN](ivanti/README.md)
 - [Lazygit](lazygit/README.md)
 - [Local llama.cpp inference](llama/README.md)
@@ -223,6 +218,36 @@ brew bundle cleanup          # preview installed packages absent from Brewfile
 brew bundle cleanup --force  # remove them only after reviewing the preview
 ```
 
+#### Retiring Herdr and cmux
+
+Herdr's tracked package and integrations are retired; cmux has no tracked
+configuration. Existing Macs need a deliberate host cleanup, not a VM command:
+
+1. Quit both apps after saving any work in their sessions. Keep Git worktrees,
+   branches and runtime data unless you deliberately choose to remove them.
+2. In the primary checkout's `claude/.claude/settings.json`, remove the first
+   `hooks.SessionStart` group: the one invoking
+   `~/.claude/hooks/herdr-agent-state.sh`. Keep Rex's separate hook. This file
+   is protected from VM edits. Once unreferenced, the generated Herdr hook can
+   be removed from `~/.claude/hooks/` too.
+3. Review `~/.pi/agent/extensions/` and move any generated Herdr integration out
+   of auto-discovery. `just doctor` reports unmanaged extensions; do not remove
+   unrelated extensions.
+4. Remove only dangling former Stow links for `~/.config/herdr/config.toml`,
+   `~/.config/nvim/lua/plugins/herdr.lua`, and the `default_tabs.sh` and
+   `herdr-plugin.toml` files inside `~/.config/herdr/local-plugins/default-tabs/`.
+   Older folded directory links may also be dangling; preserve regular files
+   and directories. `just stowall` cannot unstow the deleted package. Run
+   Neovim's `:Lazy clean` to remove its unused annotation plugin.
+5. Uninstall the packages on the Mac:
+
+   ```bash
+   brew uninstall herdr
+   if brew list --cask cmux >/dev/null 2>&1; then brew uninstall --cask cmux; fi
+   ```
+
+   If cmux was installed outside Homebrew, remove that app manually instead.
+
 #### Local models
 
 Run `llm start` in a host terminal. In Pi, use `/login llama.cpp` once,
@@ -251,6 +276,10 @@ test transcripts and intermediate fixes live in `git log`; entries through
 
 ### 202611
 
+- 20261122: Retired Herdr's Brewfile entry, Stow package, Neovim integration
+  and doctor checks; removed cmux's stale mention. Existing Macs still need
+  app/generated-integration cleanup and a host edit of the protected Claude
+  hook. Doctor now skips unstaged TOML deletions, matching its JSON checks.
 - 20261122: Pruned migration diaries, test transcripts, duplicate guidance and
   the sample-model tutorial; kept setup, recovery and pending acceptance checks.
   Corrected the GitHub CLI guide for Gondolin.
@@ -429,8 +458,8 @@ The explosion month: Pi and Gondolin became the daily driver.
 - 20260531/29/28: Fixed review-summary, added a no-fetch option to `wt`,
   and added an AeroSpace trial config.
 - 20260524/25/26: Neovim dashboard-header iterations and snacks explorer;
-  tried cmux as an experimental multiplexer; added the Pi terminal review
-  extension; reorganized the Brewfile into personal vs. work sections.
+  added the Pi terminal review extension; reorganized the Brewfile into
+  personal vs. work sections.
 - 20260522: Replaced kickstart with LazyVim (python/sql/markdown extras).
 - 20260519: Added the Hunk review feedback workflow, universal usage
   tracking, and upgraded Gondolin to 0.12.0.
