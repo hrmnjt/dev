@@ -1,5 +1,5 @@
 #!/bin/sh
-# Disposable regressions for shell discovery and Claude's Git identity probe.
+# Disposable regressions for shell/TOML discovery and Claude's Git identity probe.
 set -eu
 repo=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 created=$(mktemp -d "${TMPDIR:-/tmp}/doctor-repository-test.XXXXXX")
@@ -8,10 +8,10 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 tmp=$(CDPATH= cd -- "$created" && pwd -P)
 awk '
-  /^check_shell_syntax\(\) \{$/ || /^check_claude_git_identity\(\) \{$/ { copying = 1; found++ }
+  /^check_shell_syntax\(\) \{$/ || /^check_toml\(\) \{$/ || /^check_claude_git_identity\(\) \{$/ { copying = 1; found++ }
   copying { print }
   copying && /^}$/ { copying = 0 }
-  END { if (found != 2) exit 1 }
+  END { if (found != 3) exit 1 }
 ' "$repo/_scripts/doctor.sh" > "$tmp/check.sh"
 . "$tmp/check.sh"
 pass() { printf 'PASSED: %s\n' "$1"; }
@@ -58,6 +58,25 @@ output=$(check_shell_syntax 2>&1)
 assert_result 'FAILED: Shell script syntax'
 rm "$ROOT/scripts/broken.sh"
 
+printf 'enabled = true\n' > "$ROOT/fixture.toml"
+git -C "$ROOT" add fixture.toml
+label='valid tracked TOML is accepted'
+output=$(cd "$ROOT" && check_toml 2>&1)
+assert_result 'PASSED: Tracked TOML'
+rm "$ROOT/fixture.toml"
+label='unstaged TOML deletion is skipped'
+output=$(cd "$ROOT" && check_toml 2>&1)
+assert_result 'PASSED: Tracked TOML'
+printf 'invalid = [\n' > "$ROOT/fixture.toml"
+label='invalid tracked TOML is rejected'
+output=$(cd "$ROOT" && check_toml 2>&1)
+assert_result 'FAILED: Tracked TOML'
+rm "$ROOT/fixture.toml"
+ln -s "$tmp/absent.toml" "$ROOT/fixture.toml"
+label='dangling tracked TOML symlink is rejected'
+output=$(cd "$ROOT" && check_toml 2>&1)
+assert_result 'FAILED: Tracked TOML'
+
 command_exists jq || { printf 'jq required for these regression fixtures\n' >&2; exit 1; }
 for kind in valid false missing invalid-count missing-slot duplicate-override unrelated-error inherited-env; do
   case "$kind" in
@@ -93,4 +112,4 @@ done
 if find "$tmp" -name 'dev-doctor-shell.*' -o -name 'dev-doctor-claude.*' | grep . >/dev/null; then
   printf 'FAILED: fixture cleanup\n' >&2; exit 1
 fi
-printf '11 repository doctor regression checks passed\n'
+printf '15 repository doctor regression checks passed\n'

@@ -29,7 +29,7 @@ sessions or configuration directory are mounted.
 - Claude's built-in `--worktree` writes under `.claude/worktrees/`, which is
   read-only in the VM; create worktrees with the Rex shortcuts instead.
 - Auto-updates disabled; upgrades mean pin bumps, image rebuild and acceptance.
-- Host Herdr/Rex command hooks removed. Native OSC 7501 goes directly through the
+- No host command hooks. Native OSC 7501 goes directly through the
   PTY to Rex; no host RPC/socket access is given to the guest.
 - Global settings/instructions/themes are read-only. Runtime history and memory
   live in a separate per-primary-project `claude-state` directory, shared across
@@ -91,10 +91,13 @@ VM never reads it. Typed `claude` goes to the VM, so start the Mac CLI by path:
   Claude Code's classifier for approval decisions rather than bypassing checks.
 - Native Gruvbox Dark Hard; Ghostty owns the terminal background.
 - Host personal/work Git identity with `user.useConfigOnly`, no attribution,
-  Remote Control mobile notifications, Herdr's generated
-  `~/.claude/hooks/herdr-agent-state.sh` and Rex's `SessionStart` hook.
+  Remote Control mobile notifications and Rex's `SessionStart` hook.
 - Outside-read blocking and mandatory Bash sandboxing, without exclusions or
   unsandboxed retries. Hooks/plugins/MCP are outside the Bash sandbox.
+
+The retired Herdr `SessionStart` entry in `claude/.claude/settings.json` still
+needs a deliberate host edit; this tree is read-only in the VM. Keep Rex's hook.
+See [terminal-manager cleanup](../README.md#retiring-herdr-and-cmux).
 
 Retiring the Mac CLI or desktop app is a separate later decision, not part of
 this migration.

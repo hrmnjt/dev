@@ -67,8 +67,6 @@ brew "container"
 # Linux containers in a Podman machine; see podman/README.md
 brew "podman"
 
-# Agent-aware terminal workspace manager
-brew "herdr"
 # OpenAI coding agent CLI
 cask "codex"
 # Anthropic coding agent CLI (settings deployed from claude/)

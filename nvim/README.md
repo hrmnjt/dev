@@ -95,28 +95,6 @@ not a lossless transformation of directives, includes, and comments.
 - Disable `render-markdown.nvim` and Neovim text conceal so Markdown remains
   visible as plain source, including code fences when the cursor moves away.
 - Disable spell checking in every buffer.
-- Add herdr-nvim annotations for sending code review comments to the agent
-  running in a [herdr](../herdr/README.md) workspace.
-
-### herdr-nvim annotations
-
-Inside a [herdr](../herdr/README.md) session,
-[`herdr-nvim`](https://github.com/ChmaraX/herdr-nvim) annotates lines or
-selections and sends them as review comments to the workspace agent, with
-`file:line` and Git context:
-
-| Keymap | Command | Action |
-|---|---|---|
-| `Space a c` | `:Herdr comment` | comment the current line / selection |
-| `Space a l` | `:Herdr list` | list comments; hover to jump, `⏎` edit, `d` delete |
-| `Space a s` | `:Herdr send` | paste all comments into the agent's input |
-| `Space a S` | `:Herdr submit` | send and auto-submit all comments |
-
-Comments are in-memory only and clear after a successful send. The herdr-side
-half of the plugin (sidebar and file picker) is documented in the
-[Herdr README](../herdr/README.md#herdr-nvim-sidebar-and-file-picker); the
-sidebar's nvim daemon reuses this configuration because it runs under the
-default appname.
 
 `lazy-lock.json` remains host-local and Git-ignored, rather than Stow-managed.
 Plugin updates do not create tracked lock-file changes or a new deployment conflict.
