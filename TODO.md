@@ -3,32 +3,10 @@
 ## Gondolin
 
 Merged to `main` and deployed: Pi and Claude already run in VMs. The remaining
-host acceptance checks are closed or dropped; what's left is two image changes.
+host acceptance checks are closed or dropped, and both image changes are done.
 Setup, boundaries and checks live in the
 [shared VM guide](gondolin/README.md#checks-and-remaining-acceptance); agent
 specifics in [Pi](pi/README.md) and [Claude Code](claude/README.md).
-
-### In progress
-
-Close this before picking up the next item.
-
-- [ ] Root disk: branch `feat/gondolin/larger-root-disk` grows it from 2.4 GiB
-  (455 MiB free) to 16 GiB and adds `e2fsprogs` to the image. Build its image
-  and check `df -h /` in a VM, then open a PR. 16 GiB is a starting guess, not
-  a measurement: each session's disk layer is sparse and deleted on exit, so
-  unused space costs the Mac nothing. Gondolin runs `resize2fs` (from
-  `e2fsprogs`) in the VM at boot to grow the filesystem; the base image has it
-  today, and listing it keeps a base update from dropping it.
-
-### Next
-
-- [ ] Chromium trust for Gondolin's CA: add `libnss3-tools` to the image (about
-  6 MB) and, at boot, import `/etc/gondolin/mitm/ca.crt` (`gondolin-mitm-ca`)
-  into `~/.pki/nssdb`. Tried in a VM on 2026-11-25: Playwright then loads
-  external HTTPS without `ignoreHTTPSErrors`. The guest home is shared,
-  host-backed state, so replace the entry by name at each boot (or keep
-  `~/.pki` on a tmpfs). Then drop the `ignoreHTTPSErrors` advice from the
-  guide. Its own branch, after the root disk merges.
 
 ### Checked
 
@@ -40,7 +18,11 @@ From a Claude VM on 2026-11-22, plus daily use:
 - The running image matches the current source fingerprint.
 - `.venv-vm` isolation is active, and writes to the deployed launcher source
   are refused.
-- Playwright reaches external HTTPS only with `ignoreHTTPSErrors`.
+- Root disk: 16 GiB, merged in #225; `df -h /` showed 16G with 14G free
+  (2026-11-25).
+- Chromium trust: the image adds `libnss3-tools`, and each boot replaces
+  `gondolin-mitm-ca` in `~/.pki/nssdb`. Playwright loaded external HTTPS
+  without `ignoreHTTPSErrors` in a VM on 2026-11-25.
 - `main` requires PRs and blocks deletion and force pushes; recent commits
   merged through PRs. The repository is public, so private-repository ruleset
   support doesn't apply. The bypass-actor check was closed on 2026-11-25.
