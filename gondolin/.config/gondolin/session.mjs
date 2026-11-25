@@ -8,6 +8,20 @@ import { secretDefinitions } from "./credentials.mjs";
 import { startClipboard } from "./clipboard.mjs";
 import { loadGondolin } from "./sdk.mjs";
 
+// Chromium ignores the system CA bundle and reads trust from the user's NSS
+// database ($1), here fed Gondolin's CA on stdin. The guest home is shared host
+// state: create the database once (a parallel first boot may win the race), then
+// replace the entry by name, since NSS refuses a changed CA under an existing
+// name. `-f /dev/null` answers NSS password prompts: without it, -N on an
+// existing database loops forever with no terminal. Only -A reads stdin.
+const NSS_TRUST = `set -euo pipefail
+umask 077
+db=$1
+mkdir -p "$db"
+[ -e "$db/cert9.db" ] || certutil -N --empty-password -f /dev/null -d "sql:$db" </dev/null || [ -e "$db/cert9.db" ]
+certutil -D -n gondolin-mitm-ca -f /dev/null -d "sql:$db" </dev/null 2>/dev/null || true
+certutil -A -n gondolin-mitm-ca -t C,, -f /dev/null -d "sql:$db"`;
+
 export async function createSession(options, dependencies = {}) {
   const {agent, cwd = process.cwd(), preview, resources = {}, outputDirectory, setupToken = false, signal, installationDirectory} = options;
   signal?.throwIfAborted();
@@ -137,6 +151,11 @@ export async function createSession(options, dependencies = {}) {
       await checked("guest state/config setup",["/bin/bash","-c",`mkdir -p ${HOME}/claude-state ${HOME}/.cache ${HOME}/.local/share /etc/claude-code; ln -sfn /etc/agent-config/claude/CLAUDE.md ${HOME}/claude-state/CLAUDE.md; ln -sfn /etc/agent-config/claude/themes ${HOME}/claude-state/themes; ln -sfn /etc/agent-config/claude/settings.json /etc/claude-code/managed-settings.json`]);
       // These probes must actually fail, not merely be configured read-only.
       await checked("non-root access/write-denial probes",["/usr/local/bin/agent-enter","/bin/bash","-c",`test "$(id -u)" = 1000 && test -r "$1" && test -w "$1" && test -w "$HOME" && ! touch /etc/agent-config/.write-probe && ! touch "$HOME/.pi/.write-probe" && ! touch "$HOME/.claude/.write-probe"`,"probe",project.workspace]);
+      // Root opens the CA (/etc/gondolin is root-only); certutil runs as the agent,
+      // so UID 1000 owns the database. A failure stops launch like every stage:
+      // the guide promises this trust, and a silently untrusted session would
+      // push agents back to disabling certificate checks in project code.
+      await checked("Chromium CA trust",["/bin/bash","-c",'exec /usr/local/bin/agent-enter /bin/bash -c "$1" nss-trust "$2" < "$3"',"chromium-ca",NSS_TRUST,`${HOME}/.pki/nssdb`,"/etc/gondolin/mitm/ca.crt"]);
     }
     let ingress;
     if (preview) {

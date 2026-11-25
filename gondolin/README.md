@@ -176,9 +176,13 @@ the Mac's `.venv`, in the worktree. Bare `uv pip` still finds `.venv`; pass
 avoids hardlink warnings, since uv's cache is on the guest-home mount.
 
 Gondolin intercepts guest HTTPS with its own CA. System tools trust it, and
-the launcher points Node at `/run/gondolin/ca-certificates.crt`. Chromium uses
-its own NSS store, so Playwright needs `ignoreHTTPSErrors` for external HTTPS;
-local HTTP previews are unaffected. The launcher also synchronizes the guest
+the launcher points Node at `/run/gondolin/ca-certificates.crt`. Chromium ignores
+that bundle and takes added roots only from the agent's NSS database, so each
+boot imports the CA into `~/.pki/nssdb` as `gondolin-mitm-ca`, replacing any
+earlier entry; Playwright loads external HTTPS without `ignoreHTTPSErrors`.
+That database lives in the shared guest home.
+A failed import stops launch; deleting that project's `home/.pki` on the Mac
+lets the next boot recreate it. The launcher also synchronizes the guest
 clock at boot and every 30 seconds in Claude sessions to avoid certificate
 failures after Mac sleep.
 

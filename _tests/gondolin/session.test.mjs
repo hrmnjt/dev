@@ -4,13 +4,14 @@ import os from "node:os";
 import path from "node:path";
 import {test} from "node:test";
 import {execFileSync,spawnSync} from "node:child_process";
+import {X509Certificate} from "node:crypto";
 import * as sdk from "../../gondolin/.config/gondolin/node_modules/@earendil-works/gondolin/dist/src/index.js";
 import {createSession} from "../../gondolin/.config/gondolin/session.mjs";
 import {imageSpec} from "../../gondolin/.config/gondolin/image.mjs";
 import {launchOptions} from "../../gondolin/.config/gondolin/cli.mjs";
 import {loadGondolin} from "../../gondolin/.config/gondolin/sdk.mjs";
 
-function mock(t,{failCreate = false,failProbe = false,startupOutput} = {}) {
+function mock(t,{failCreate = false,failProbe = false,startupOutput,guestResult} = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(),"agent-vm-session-"));
   fs.mkdirSync(path.join(root,"workspace"));
   execFileSync("git",["init","-q",path.join(root,"workspace")]);
@@ -19,7 +20,7 @@ function mock(t,{failCreate = false,failProbe = false,startupOutput} = {}) {
   const vm = {id:"fixture-vm",fs:{readFile:async () => JSON.stringify({fingerprint:"fixture"})},
     exec(command,opts) {
       calls.push({command,opts});
-      const result = nextResult ?? {exitCode:failProbe ? 1:0,...startupOutput?.(specs.at(-1))};nextResult = null;
+      const result = nextResult ?? guestResult?.(command) ?? {exitCode:failProbe ? 1:0,...startupOutput?.(specs.at(-1))};nextResult = null;
       return {then:(resolve,reject) => Promise.resolve(result).then(resolve,reject),async *output() {opts?.signal?.throwIfAborted();yield {data:Buffer.from("guest-output")};}};
     },
     close:async () => {closed++;}, setIngressRoutes:routes => {calls.push({routes});},
@@ -119,6 +120,67 @@ test("guest clock follows the Mac from boot and, for Claude, through Mac sleep",
   }
 });
 
+const CA = "/etc/gondolin/mitm/ca.crt";
+const trustCalls = f => f.calls.filter(c => c.command?.includes(CA));
+
+test("each boot trusts Gondolin's CA in the agent's NSS database: root reads it, UID 1000 writes it",async t => {
+  for (const agent of ["claude","pi"]) {
+    const f = mock(t);
+    await (await createSession({agent,cwd:path.join(f.root,"workspace")},f.deps)).close();
+    const trust = trustCalls(f);assert.equal(trust.length,1,agent);
+    // Root's shell opens the root-only CA; agent-enter drops to UID 1000 for certutil.
+    const {command} = trust[0];
+    assert.deepEqual(command.slice(0,2),["/bin/bash","-c"]);
+    assert.equal(command[2],'exec /usr/local/bin/agent-enter /bin/bash -c "$1" nss-trust "$2" < "$3"');
+    assert.deepEqual(command.slice(-2),["/home/agent/.pki/nssdb",CA]);
+    const probes = f.calls.findIndex(c => c.command?.[0] === "/usr/local/bin/agent-enter" && c.command.at(-2) === "probe");
+    assert.ok(probes >= 0 && f.calls.indexOf(trust[0]) > probes,"runs once the probes confirm the agent can write $HOME");
+  }
+});
+
+test("a failed CA import stops launch with certutil's output and cleans up",async t => {
+  const f = mock(t,{guestResult:command => command.includes(CA) ? {exitCode:255,stderr:"certutil: could not authenticate to token NSS Certificate DB.\n"} : undefined});
+  await assert.rejects(createSession({agent:"claude",cwd:path.join(f.root,"workspace")},f.deps),
+    /Guest initialization failed during "Chromium CA trust" \(exit 255; no host fallback\)\.\nstderr: "certutil: could not authenticate/);
+  assert.equal(f.closed,1);assert.equal(f.clipboardClosed,1);
+});
+
+test("the NSS import creates the database once and replaces a changed CA by name",async t => {
+  const missing = ["certutil","openssl"].filter(tool => spawnSync(tool,["--version"]).error?.code === "ENOENT");
+  if (missing.length) {t.skip(`${missing.join(" and ")} unavailable (libnss3-tools in the VM)`);return;}
+  const f = mock(t);
+  await (await createSession({agent:"pi",cwd:path.join(f.root,"workspace")},f.deps)).close();
+  // Root's exact command without the privilege drop, against temporary homes.
+  const [{command}] = trustCalls(f), drop = "/usr/local/bin/agent-enter ";assert.ok(command[2].includes(drop));
+  const boot = (db,ca) => spawnSync("bash",["-c",command[2].replace(drop,""),...command.slice(3,-2),db,ca],{encoding:"utf8",timeout:10000});
+  const issue = name => {
+    const file = path.join(f.root,name+".pem");
+    execFileSync("openssl",["req","-x509","-newkey","rsa:2048","-nodes","-keyout",path.join(f.root,name+".key"),"-out",file,"-days","1","-subj","/CN=gondolin-mitm-ca"],{stdio:"ignore"});
+    return file;
+  };
+  const fingerprint = pem => new X509Certificate(pem).fingerprint256;
+  const db = path.join(f.root,"home/.pki/nssdb"), first = issue("first"), rotated = issue("rotated");
+  for (const ca of [first,first,rotated]) {
+    const result = boot(db,ca);assert.equal(result.status,0,result.stderr);
+    const entries = execFileSync("certutil",["-L","-d","sql:"+db],{encoding:"utf8"}).split("\n").filter(line => line.startsWith("gondolin-mitm-ca "));
+    assert.equal(entries.length,1);assert.match(entries[0],/\sC,,\s*$/);
+    assert.equal(fingerprint(execFileSync("certutil",["-L","-n","gondolin-mitm-ca","-a","-d","sql:"+db])),fingerprint(fs.readFileSync(ca)));
+  }
+  assert.equal(fs.statSync(db).mode & 0o777,0o700);
+  // Removing cert9.db makes -N meet an initialized key database, as when a parallel
+  // first boot creates the database between the check and -N. Without
+  // `-f /dev/null`, NSS asks for the old password forever when there is no terminal.
+  const initialized = (name,...password) => {
+    const dir = path.join(f.root,name,".pki/nssdb");fs.mkdirSync(dir,{recursive:true});
+    execFileSync("certutil",["-N",...password,"-d","sql:"+dir],{stdio:"ignore"});fs.rmSync(path.join(dir,"cert9.db"));
+    return dir;
+  };
+  const raced = boot(initialized("raced","--empty-password"),first);assert.equal(raced.error,undefined,"no prompt");assert.equal(raced.status,0,raced.stderr);
+  const password = path.join(f.root,"password");fs.writeFileSync(password,"fixture-password\n");
+  const refused = boot(initialized("locked","-f",password),first);assert.equal(refused.error,undefined,"fails instead of hanging");assert.notEqual(refused.status,0);
+  assert.notEqual(boot(db,path.join(f.root,"missing.pem")).status,0);
+});
+
 test("Pi file writes run as the guest's non-root user and report guest errors",async t => {
   const f = mock(t);
   const session = await createSession({agent:"pi",cwd:path.join(f.root,"workspace")},f.deps);
@@ -141,6 +203,7 @@ test("setup-token is a throwaway VM with no mounts, state, supplied credentials 
   // No host mounts, but a VFS so Gondolin can inject its TLS interception CA.
   assert.deepEqual(f.specs[0].vfs.mounts,{});assert.equal(f.specs[0].tcp,undefined);
   assert.ok(!f.calls.some(c => c.command?.[0] === "/usr/bin/bindfs"));
+  assert.equal(trustCalls(f).length,0,"no guest home to hold an NSS database");
   assert.equal(f.specs[0].env.GH_TOKEN,undefined);assert.equal(session.state,undefined);
   assert.equal(fs.existsSync(path.join(f.root,"state")),false);await session.close();
 });
@@ -212,6 +275,7 @@ test("image identity is pinned and command publication is opt-in",() => {
   const recipe = fs.readFileSync("gondolin/.config/gondolin/Dockerfile","utf8");
   assert.match(recipe,/usermod --login agent/);assert.match(recipe,/groupmod --new-name agent node/);
   assert.doesNotMatch(recipe,/useradd.*--uid 1000/);
+  assert.match(recipe,/\blibnss3-tools\b/,"certutil for the boot-time Chromium CA import");
   assert.match(recipe,/-perm \/7022 -printf '%m\\t%p\\n' > \/etc\/agent-image-modes/);
   assert.match(recipe,/"4755" && \$2 == "\/usr\/bin\/sudo"/);
   assert.match(imageSpec().pins.nodeImage,/@sha256:[a-f0-9]{64}$/);

@@ -246,6 +246,11 @@ test transcripts and intermediate fixes live in `git log`; entries through
 
 ### 202611
 
+- 20261125: Playwright's Chromium in agent VMs now trusts Gondolin's HTTPS
+  interception CA, so external HTTPS works without `ignoreHTTPSErrors`. The
+  image adds `libnss3-tools`, and each boot imports the CA into the guest
+  home's `~/.pki/nssdb`; a failed import stops launch. Rebuild the image
+  before launching.
 - 20261125: Grew each agent VM's root disk from about 2.4 GiB (455 MiB free)
   to 16 GiB, set by `disk` in Gondolin's `config.json`. The image now installs
   `e2fsprogs` for the boot-time resize, so rebuild it before launching.
