@@ -263,7 +263,6 @@ session. Later reloads tear down the old VM before the new runtime starts.
 
 Use the [shared VM/Pi checks](../gondolin/README.md#checks-and-remaining-acceptance)
 for dependencies, SDK discovery, unit tests and opt-in host integration.
-Outstanding migration/UI checks are tracked in [TODO.md](../TODO.md).
 Retired Seatbelt tests are not evidence of VM enforcement.
 
 ## Local models and themes
