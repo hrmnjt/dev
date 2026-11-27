@@ -283,8 +283,8 @@ day-in-the-life trials; Claude
 real sign-in placeholders, Ctrl+V, terminal status/bell, preview/Playwright,
 commit/push/PR and restart/history/memory; Pi overflow through real VM reads,
 codemode, review/answer/tldraw and reload/shutdown; and ruleset enforcement.
-Track unobserved checks in [TODO.md](../TODO.md), then retire that tracker, not
-these reusable acceptance checks. Mac agent retirement is a separate decision.
+The migration's acceptance tracker in `TODO.md` is retired; these reusable
+checks stay. Mac agent retirement is a separate decision.
 
 References: [Pi containerization/example](https://github.com/earendil-works/pi/tree/main/packages/coding-agent/examples/extensions/gondolin),
 [Gondolin custom images/networking](https://earendil-works.github.io/gondolin/),
