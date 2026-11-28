@@ -2,9 +2,6 @@
 # LG_CONFIG_FILE to config.yml,nord.yml; later files override earlier ones.
 # See NORD.md.
 gui:
-  authorColors:
-    "*": "#8fbcbb"
-
   theme:
     activeBorderColor:
       - "#88c0d0"
@@ -32,3 +29,6 @@ gui:
       - "#bf616a"
     defaultFgColor:
       - "#d8dee9"
+    # Overrides the Gruvbox author color; see config.yml.
+    authorColors:
+      "*": "#8fbcbb"
