@@ -1,4 +1,4 @@
--- Worktree and project actions only.
+-- Worktree and project actions, and which programs a restart resumes.
 -- Appearance preferences remain manual: rex/README.md.
 
 -- Projects for Cmd+Shift+K, and for New/Open outside a Git checkout. List
@@ -11,7 +11,19 @@ local projects = {
   "~/code/work/doh/CoreDataEngineering",
 }
 
--- New and Open load worktrees.lua from this file's own folder, so trying a
+-- Session Restore brings sessions, tabs and panes back after a Rex server
+-- restart. Resume only Claude Code and Pi, and only in projects under ~/code;
+-- agents not used here never resume. Other panes come back as shells.
+rex.set("resume.trust.claude.dir", "~/code")
+-- Rex 0.1.0-preview.25 ships no Pi rule, so set it in full; a whole rule
+-- also replaces a built-in one where it exists.
+rex.set("resume.trust.pi", { command = { "pi", "--session", rex.match.uuid }, dir = "~/code" })
+-- Turning off a rule this Rex doesn't ship is accepted and does nothing.
+for _, agent in ipairs({ "codex", "opencode", "gemini", "copilot", "crush" }) do
+  rex.set("resume.trust." .. agent, false)
+end
+
+-- The actions load worktrees.lua from this file's own folder, so trying a
 -- branch's copy with `rex do <checkout>/rex/.config/rex/init.lua --action ...`
 -- never runs the deployed one.
 local here = (debug.getinfo(1, "S").source or ""):gsub("^@", ""):match("^(/.*)/[^/]+$")
@@ -55,12 +67,13 @@ local function terminal_directory(ctx)
   return directory
 end
 
--- New, Open and Delete ask in the command palette inside this action, so they
--- need no menu session, fzf, or Remote Control. Never wrap this in pcall: Rex
+-- Every action asks in the command palette inside this action, so none needs
+-- a menu session, fzf, or Remote Control. Never wrap this in pcall: Rex
 -- refuses prompts there.
 local function palette_action(mode, ctx)
   if not ctx.session_id then error("Run this action from a terminal in the local Rex app", 0) end
-  local directory = terminal_directory(ctx)
+  -- Projects works from any pane; the others act on the focused terminal's checkout.
+  local directory = mode ~= "project" and terminal_directory(ctx) or nil
   local module = here and (here .. "/worktrees.lua")
   local file = module and io.open(module, "r")
   if not file then error("Deploy rex/worktrees.lua with just stowall first", 0) end
@@ -73,51 +86,17 @@ local function palette_action(mode, ctx)
   }, rex)
 end
 
--- Projects still chooses with fzf in a short-lived menu session.
-local function worktree_menu(mode, ctx)
-  if not ctx.session_id or not ctx.client_id then
-    error("Run this action from a terminal in the local Rex app", 0)
-  end
-  local home = assert(os.getenv("HOME"), "HOME is not set")
-  local config = os.getenv("XDG_CONFIG_HOME") or (home .. "/.config")
-  local helper = config .. "/rex/worktrees.lua"
-  local file = io.open(helper, "r")
-  if not file then error("Deploy rex/worktrees.lua with just stowall first", 0) end
-  file:close()
-  local binary_dir = os.getenv("REX_BIN_DIR")
-  local binary = binary_dir and (binary_dir .. "/rex") or "rex"
-  local arguments = checked(rex.json.encode{
-    mode = mode, source_session = ctx.session_id, source_block = ctx.block_id,
-    projects = expanded_projects(home),
-  })
-
-  -- A separate, short-lived menu session runs fzf in its own terminal.
-  local menu = checked(rex.call("session.create", {
-    label = "rex-worktrees-" .. mode,
-    initial_windows = {{ layout = rex.layout.block{
-      flavor = "com.superlogical.terminal.shell",
-      options = {
-        cwd = home,
-        command = { binary, "--autostart=false", "-C", ctx.client_id,
-          "do", helper, "--args", arguments },
-        exit = { on_completion = false },
-      },
-    }}},
-  }))
-  rex.client.queue("session.select", { session_id = menu.session_id })
-end
-
 -- Cmd shortcuts never reach terminal programs, so every Ctrl key stays theirs.
 for _, item in ipairs({
-  { "new", "cmd+shift+n", "Create Worktree", "worktree_new", palette_action },
-  { "open", "cmd+shift+o", "Open Worktree or Branch", "worktree_open", palette_action },
-  { "delete", "cmd+shift+backspace", "Delete Current Worktree", "worktree_delete", palette_action },
-  { "project", "cmd+shift+k", "Open All Projects or a Path", "project_switch", worktree_menu },
+  { "new", "cmd+shift+n", "Create Worktree", "worktree_new" },
+  { "open", "cmd+shift+o", "Open Worktree or Branch", "worktree_open" },
+  { "delete", "cmd+shift+backspace", "Delete Current Worktree", "worktree_delete" },
+  { "project", "cmd+shift+k", "Open a Project or Path", "project_switch" },
 }) do
-  local mode, launch = item[1], item[5]
+  local mode = item[1]
   rex.action{
     name = item[4], title = item[3], category = "Worktrees",
-    run = function(ctx) launch(mode, ctx) end,
+    run = function(ctx) palette_action(mode, ctx) end,
   }
   rex.bind(item[2], item[4])
 end

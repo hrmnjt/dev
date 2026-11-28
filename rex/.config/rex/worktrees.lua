@@ -1,8 +1,6 @@
--- Worktree actions. init.lua loads this file from its own folder for New,
--- Open and Delete (Cmd+Shift+N/O/Backspace) and calls M.action, which asks in
--- Rex's command palette. Projects still runs it with `rex do worktrees.lua
--- --args <json>` in a temporary menu terminal. Loading it without args.mode
--- only returns its testable module.
+-- Worktree and project actions. init.lua loads this file from its own folder
+-- for New, Open, Delete and Projects (Cmd+Shift+N/O/Backspace/K) and calls
+-- M.action, which asks in Rex's command palette.
 --
 -- Rex Lua quirks, checked on 0.1.0-preview.25:
 -- - Palette prompts fail under pcall, so never ask inside one.
@@ -11,7 +9,6 @@
 -- - After a pcall inside a closure catches an error, that closure's writes to
 --   outer locals are lost; write table fields instead.
 local M = {}
-local CANCEL = "worktree action cancelled"
 local TERMINAL = "com.superlogical.terminal"
 local BASE = "main"
 local function checked(value, err)
@@ -105,39 +102,6 @@ local function reflog_time(path)
   for stamp in tail:gmatch("> (%d+) [-+]%d%d%d%d\t") do latest = tonumber(stamp) end
   return latest
 end
-
-local Menu = {}
-Menu.__index = Menu
-function Menu.new(r) return setmetatable({ rex = r }, Menu) end
-function Menu:run(title, rows, extra)
-  local argv = { "fzf", "--read0", "--print0", "--no-sort", "--layout=reverse",
-    "--header=" .. visible(title), "--prompt=worktree> " }
-  for _, arg in ipairs(extra or {}) do table.insert(argv, arg) end
-  local result = checked(self.rex.exec(argv, {
-    stdin = table.concat(rows, "\0") .. "\0",
-    env = { FZF_DEFAULT_OPTS = "", FZF_DEFAULT_OPTS_FILE = "/dev/null" },
-    -- No timeout: fzf owns /dev/tty while the user is choosing.
-  }))
-  if result.code == 1 or result.code == 130 then fail(CANCEL) end
-  if not result.ok then fail("fzf failed: " .. visible(result.stderr or "")) end
-  return result.stdout
-end
-function Menu:query(title, row)
-  local output = self:run(title, { row }, { "--disabled", "--print-query" })
-  local query = trim(output:match("^([^%z]*)") or "")
-  if query == "" then fail(CANCEL) end
-  return query
-end
-function Menu:pick(title, choices)
-  if #choices == 0 then fail("No choices available") end
-  local rows = {}
-  for i, item in ipairs(choices) do rows[i] = i .. "\t" .. visible(item[1]) end
-  local output = self:run(title, rows, { "--delimiter=\t", "--with-nth=2.." })
-  local index = tonumber(output:match("^(%d+)\t"))
-  if not index or not choices[index] then fail("Invalid picker result") end
-  return choices[index][2]
-end
-M.Menu = Menu
 
 -- Rex's command palette (rex.ui). A cancelled or timed-out prompt returns nil,
 -- so the action does nothing; any other unanswered prompt stops it with why.
@@ -284,12 +248,10 @@ function Workflow:worktrees()
   return self:locate(parse_worktrees(raw))
 end
 -- Returns nil when the user cancels the project prompt.
-function Workflow.new(args, r, menu, ui)
-  local self = setmetatable({ args = args, rex = r, menu = menu or Menu.new(r),
-    ui = ui or Palette.new(r), attached = {} }, Workflow)
+function Workflow.new(args, r, ui)
+  local self = setmetatable({ args = args, rex = r, ui = ui or Palette.new(r), attached = {} }, Workflow)
   self.host = checked(r.call("server.status")).host_id
-  self.helper = r.session_id
-  -- The project menu chooses its checkouts after the user picks an action.
+  -- Projects chooses its checkout after asking.
   if args.mode == "project" then return self end
   local top, err
   if args.mode == "open" then
@@ -394,16 +356,14 @@ function Workflow:collect_terminals()
   local found, directories, seen = {}, {}, {}
   local live = self:sessions()
   for session in pairs(live) do
-    if session ~= self.helper then
-      -- Discovery is best-effort; deletion rechecks the source tab strictly.
-      local ok, windows = pcall(self.windows, self, session)
-      for _, window in ipairs(ok and windows or {}) do
-        for _, terminal in ipairs(window.terminals) do
-          local directory = terminal.directory
-          if directory then
-            table.insert(found, { session = session, window = window.id, block = terminal.block, directory = directory })
-            if not seen[directory] then seen[directory] = true; table.insert(directories, directory) end
-          end
+    -- Discovery is best-effort; deletion rechecks the source tab strictly.
+    local ok, windows = pcall(self.windows, self, session)
+    for _, window in ipairs(ok and windows or {}) do
+      for _, terminal in ipairs(window.terminals) do
+        local directory = terminal.directory
+        if directory then
+          table.insert(found, { session = session, window = window.id, block = terminal.block, directory = directory })
+          if not seen[directory] then seen[directory] = true; table.insert(directories, directory) end
         end
       end
     end
@@ -459,8 +419,8 @@ function Workflow:projects()
   return found
 end
 -- Palette list of configured projects: open first, the current one last.
--- Returns nil when cancelled.
-function Workflow:pick_project()
+-- Returns the project, { text = typed } when typing is allowed, or nil.
+function Workflow:pick_project(typing)
   local projects, present, commands, matches = self:projects(), {}, {}, {}
   for _, project in ipairs(projects) do
     matches[project.path] = {}
@@ -500,8 +460,10 @@ function Workflow:pick_project()
     for _, item in ipairs(group) do table.insert(items, item) end
   end
   -- Rex shows the title inside the filter field: keep every title short.
-  local id = self.ui:pick{ title = "Project", items = items,
-    placeholder = "Not in a Git checkout; filter projects", confirm = "Choose project" }
+  local id = self.ui:pick{ title = "Project", items = items, allow_other = typing or nil,
+    placeholder = typing and "Filter, or type a checkout path" or "Not in a Git checkout; filter projects",
+    confirm = "Choose project" }
+  if type(id) == "table" then return id end
   return id ~= nil and checked(by_id[id], "Unknown project choice") or nil
 end
 function Workflow:focus(session, window)
@@ -554,43 +516,28 @@ function Workflow:open_path(path)
   self:focus(session, window)
   return session
 end
+-- Projects (Cmd+Shift+K) switches to one listed project's primary checkout,
+-- or to a typed checkout path that is used once and never saved; either way
+-- it focuses that checkout's tab or opens it in the project's session.
 function Workflow:project()
-  local choice = self.menu:pick("Projects: open every listed project, or type a path", {
-    { "[all projects] open a session for each listed project without one", "all" },
-    { "[path] type a Git checkout path to open; it is not added to the list", "path" },
-  })
-  if choice == "all" then return self:open_projects() end
-  return self:open_typed()
+  local choice = self:pick_project(true)
+  if choice == nil then return nil end
+  if choice.text then return self:open_typed(choice.text) end
+  if not choice.present then fail("Project directory is missing: " .. visible(choice.path)) end
+  self:load(self:git(choice.path, "rev-parse", "--show-toplevel"))
+  return self:open_path(self.primary)
 end
-function Workflow:open_projects()
-  -- A project with any open worktree tab is left alone, including legacy sessions.
-  local seen, failures = {}, {}
-  for _, project in ipairs(self:projects()) do
-    local ok, err = pcall(function()
-      if not project.present then fail("directory is missing") end
-      self:load(self:git(project.path, "rev-parse", "--show-toplevel"))
-      if seen[self.primary] then return end
-      seen[self.primary] = true
-      local open = false
-      for _, matches in pairs(self:associations()) do if count(matches) > 0 then open = true end end
-      if not open then self:create(self.trees[1]) end
-    end)
-    if not ok then table.insert(failures, project.path .. ": " .. tostring(err)) end
-  end
-  if #failures > 0 then fail("Could not open every project session:\n" .. table.concat(failures, "\n")) end
-  return self.args.source_session
-end
-function Workflow:open_typed()
-  -- A one-off project: the path is used once and never saved.
-  local typed = self.menu:query("Git checkout path, absolute or ~/; not saved; blank cancels", "Open path")
+function Workflow:open_typed(typed)
+  typed = trim(typed)
+  if typed == "" then return nil end
   local path = typed
   if typed == "~" or typed:sub(1, 2) == "~/" then
     path = checked(os.getenv("HOME"), "HOME is not set") .. typed:sub(2)
   end
   if path:sub(1, 1) ~= "/" then fail("Type an absolute or ~/ path: " .. visible(typed)) end
   if not self:is_directory(path) then fail("Directory not found: " .. visible(path)) end
-  local ok, top = pcall(self.git, self, path, "rev-parse", "--show-toplevel")
-  if not ok then fail("Not a Git checkout: " .. visible(path)) end
+  local top = self:try_git(path, "rev-parse", "--show-toplevel")
+  if not top then fail("Not a Git checkout: " .. visible(path)) end
   self:load(top)
   return self:open_path(self.checkout)
 end
@@ -1117,72 +1064,25 @@ function Workflow:delete()
   return self.args.source_session
 end
 M.Workflow = Workflow
-M.cancelled = CANCEL
 
--- New, Open and Delete, run inside init.lua's own actions. Nothing here may
--- wrap a prompt in pcall, so cancelling returns instead of raising.
-local PALETTE = { new = "new_branch", open = "open", delete = "delete" }
+-- Every action runs inside init.lua's own Rex action. Nothing here may wrap a
+-- prompt in pcall, so cancelling returns instead of raising.
+local PALETTE = { new = "new_branch", open = "open", delete = "delete", project = "project" }
 function M.action(mode, args, r)
   if not PALETTE[mode] then fail("Invalid worktree action") end
-  for _, name in ipairs({ "source_session", "source_block", "directory" }) do
+  -- Projects works from any pane; the others act on the focused terminal.
+  local required = mode == "project" and { "source_session" } or { "source_session", "source_block", "directory" }
+  for _, name in ipairs(required) do
     if type(args[name]) ~= "string" or args[name] == "" then
       fail("Run this action from a terminal in the local Rex app")
     end
   end
   local request = { mode = mode }
   for key, value in pairs(args) do request[key] = value end
-  local workflow = Workflow.new(request, r, nil, Palette.new(r))
+  local workflow = Workflow.new(request, r, Palette.new(r))
   if not workflow then return nil end
   workflow[PALETTE[mode]](workflow)
   return nil
 end
 
--- Projects, run by `rex do` in its temporary menu session.
-function M.main(args, r, terminal)
-  terminal = terminal or io
-  for _, name in ipairs({ "source_session" }) do
-    if type(args[name]) ~= "string" or args[name] == "" then fail("Launch using the Rex worktree keybindings") end
-  end
-  if not r.session_id or r.session_id == args.source_session then fail("Launch using the Rex worktree keybindings") end
-  if args.mode ~= "project" then fail("Invalid worktree action") end
-  if args.mode == "project" and type(args.projects) ~= "table" then fail("Launch using the Rex worktree keybindings") end
-  local is_menu = false
-  for _, session in ipairs(checked(r.call("session.list")).sessions or {}) do
-    if session.session_id == r.session_id and session.label == "rex-worktrees-" .. args.mode then is_menu = true end
-  end
-  if not is_menu then fail("Only invoke this helper in its temporary menu session") end
-  local menu, destination, workflow = Menu.new(r), args.source_session, nil
-  local ok, err = pcall(function()
-    workflow = Workflow.new(args, r, menu)
-    destination = workflow[args.mode](workflow)
-  end)
-  if not ok and tostring(err) ~= CANCEL then
-    -- Do not depend on fzf to display its own launch/render errors. Preserve
-    -- newlines, remove terminal controls, and keep this terminal until Enter.
-    local message = tostring(err):gsub("[%z\1-\8\11-\31\127]", "?")
-    terminal.write("\nWorktree action stopped:\n" .. message .. "\n\n")
-    terminal.write("Press Enter to close this menu.")
-    terminal.flush()
-    terminal.read("*l")
-  end
-  local function destroy_helper()
-    -- As above, even destruction needs this RPC stream attached to its target.
-    checked(r.session.attach{ session_id = r.session_id })
-    checked(r.call("session.destroy", { session_id = r.session_id }))
-  end
-  -- Do not let a selection failure strand the menu; closing our own session is last.
-  pcall(function()
-    local live = checked(r.call("session.list")).sessions or {}
-    for _, session in ipairs(live) do
-      if session.session_id == destination then
-        local target = ok and workflow and workflow.destination or nil
-        r.client.queue("session.select", target or { session_id = destination })
-        break
-      end
-    end
-  end)
-  destroy_helper()
-end
-
-if rex.args and rex.args.mode then M.main(rex.args, rex) end
 return M

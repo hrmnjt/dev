@@ -246,6 +246,13 @@ test transcripts and intermediate fixes live in `git log`; entries through
 
 ### 202611
 
+- 20261128: Rex Projects (Cmd+Shift+K) now asks in the command palette:
+  choose a listed project or type a checkout path; `[all projects]`, the menu
+  session and `fzf` prompts are gone, so no Rex action needs Remote Control.
+  `init.lua` sets resume rules: after a Rex server restart, Session Restore
+  brings back sessions, tabs and panes, Claude Code and Pi resume only under
+  `~/code`, and other agents never do. Pi's rule is set in full because
+  preview.25 ships none.
 - 20261128: Rex Delete (Cmd+Shift+Backspace) now confirms in the command
   palette with Cancel first, naming the project, branch and path and the
   programs it will stop. Its tab closes before Git runs, and

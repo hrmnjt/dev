@@ -86,11 +86,9 @@ If activity is missing, run Pi directly in Rex without tmux/screen and check tha
 
 ## Worktrees
 
-Requires a local Rex terminal and Git. **New**, **Open** and **Delete** ask in
-Rex's command palette (control API revision 17 or newer), so they need no
-`fzf`, menu session or **Remote Control**. **Projects** still chooses with
-`fzf` (in Brewfile) in a temporary menu session and needs Rex's
-**Remote Control** permission until it moves to the palette too. Actions also
+Requires a local Rex terminal and Git. Every action asks in Rex's command
+palette (control API revision 17 or newer), so none needs `fzf`, a menu
+session or **Remote Control**. Actions also
 appear under **Worktrees** in the **Cmd+Shift+P** command palette.
 
 Use **one session per project → one tab per worktree → panes for programs**.
@@ -98,7 +96,7 @@ Rex's CLI/API calls tabs “windows”; these are not separate macOS windows.
 
 | Key | Action |
 | --- | --- |
-| **Cmd+Shift+K** | Open a session for every listed project that has none, or type a checkout path to open as a one-off project. Works from any pane. |
+| **Cmd+Shift+K** | Pick a listed project, or type a checkout path; focus its checkout's tab or open it in the project's session. Works from any pane. |
 | **Cmd+Shift+N** | Type a branch name; track a matching fetched remote branch, otherwise create it from **local `main`**. Open its worktree as a focused tab in the project's session. No fetch. |
 | **Cmd+Shift+O** | Pick from the project's worktrees, newest activity first, each with its next step, then local branches without one. Focus its tab, reopen it, or create its worktree. |
 | **Cmd+Shift+Backspace** | Confirm closing the worktree's tab, stopping its programs, and removing its checkout. Other tabs stay open. Keep the branch. |
@@ -199,19 +197,17 @@ local projects = {
 ```
 
 List primary checkouts with absolute or `~/` paths, then check and reload.
-**Cmd+Shift+K** offers two rows:
 
-- `[all projects]` gives each listed project without a session a plain shell
-  session in its primary checkout. A project with any open worktree tab, even
-  in a subdirectory or an old session, is left alone, and focus returns to where
-  you were. Missing or non-Git entries are reported after the rest open.
-- `[path]` asks for an absolute or `~/` path inside a Git checkout, then
-  switches to that checkout's tab or opens it in the project's session. The path
-  is used once and never added to the list.
+**Cmd+Shift+K** asks **Project**: listed projects with open sessions first and
+the current one last, each marked `session open`, `session closed`,
+`current session` or `missing`. Choosing one focuses its primary checkout's tab,
+or opens that tab in the project's session (or a new session). Or type an
+absolute or `~/` path inside any Git checkout and press Return: Projects
+switches to that checkout's tab or opens it the same way. A typed path is used
+once and never added to the list.
 
 From a terminal outside any Git checkout, **Cmd+Shift+N** and **Cmd+Shift+O**
-ask for the project first. That list shows open projects first and the current
-one last; missing directories are marked `missing`.
+ask for the project first, from the same list.
 
 ### Safety and recovery
 
@@ -230,9 +226,31 @@ one last; missing directories are marked `missing`.
   even if the action is stopped or the config reloads. If Git refuses removal,
   Delete says why; the checkout and branch remain and the tab is closed, so
   reopen it with **Cmd+Shift+O**.
-- After a Rex server restart, Rex restores sessions and tabs itself. Reopen any
-  missing worktree tab from **Cmd+Shift+O**, and missing project sessions with
-  **Cmd+Shift+K**.
+- **Shift+Cmd+T** (Rex's Undo Close) reopens the pane or tab you closed most
+  recently, with its programs, for about a minute. Delete's close can't be
+  undone, by design.
+
+### Restart and resume
+
+Rex keeps sessions on its server. After a Rex server restart, Session Restore
+brings back every session, tab and pane with its label and directory; nothing
+here recreates them. A pane's program comes back only if it reported how to
+resume and a rule in `init.lua` trusts it:
+
+- **Pi** resumes in the same session, from Pi releases after 1.6.1, which
+  report their resume command themselves.
+- **Claude Code** on the Mac resumes in the same conversation once Rex's hook
+  is installed with `rex skill setup`. Claude in a Gondolin VM can't report
+  (no Mac environment reaches the VM), so it comes back as a shell in its
+  worktree; run `claude -c` there.
+- Both resume only in projects under `~/code`. Codex, OpenCode, Gemini CLI,
+  Copilot CLI and Crush never resume. Every other pane comes back as a shell
+  in its folder.
+
+`rex config check` lists the rules in force. To see why a pane's program
+didn't resume, run `rex block call -b "$REX_BLOCK" program_resume_records` in
+that pane and read its `untrusted_reason`. A missing worktree tab reopens from
+**Cmd+Shift+O**, and a missing project session from **Cmd+Shift+K**.
 
 ### Moving from worktree sessions
 
@@ -257,16 +275,16 @@ prompts and menus:
 ```
 
 Requires a running Rex server; it does not change real sessions. Real shortcuts,
-palette and `fzf` interaction, tab selection, and tab-only program shutdown
-still need interactive verification.
+palette interaction, tab selection, tab-only program shutdown, and resuming
+programs after a restart still need interactive verification.
 
-To try a branch's New, Open or Delete before deploying it, run its `init.lua`
-from a Rex terminal; the palette actions then load the `worktrees.lua` beside
-it, never the deployed copy:
+To try a branch's actions before deploying them, run its `init.lua` from a Rex
+terminal; the actions then load the `worktrees.lua` beside it, never the
+deployed copy:
 
 ```bash
 rex do ~/code/github.com/hrmnjt/dev-feat-rex-example/rex/.config/rex/init.lua \
-  --action worktree_open   # or worktree_new, worktree_delete
+  --action worktree_open   # or worktree_new, worktree_delete, project_switch
 ```
 
 A trial's final tab focus is a client action sent from the CLI, so it needs
