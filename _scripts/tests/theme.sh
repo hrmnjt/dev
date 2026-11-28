@@ -169,16 +169,19 @@ else
 fi
 
 # Neovim: evaluate the plugin spec with Neovim, or any Lua with a vim.env stub.
+# The spec and lazy.lua's install screen share config.theme from arg[3].
 cat > "$tmp/check.lua" <<'LUA'
 if not vim then
   vim = { env = setmetatable({}, { __index = function(_, key) return os.getenv(key) end }) }
 end
+package.path = arg[3] .. "/?.lua;" .. package.path
 local got
 for _, plugin in ipairs(dofile(arg[1])) do
   if plugin[1] == "LazyVim/LazyVim" then got = plugin.opts.colorscheme end
 end
-if got ~= arg[2] then
-  io.stderr:write(("expected %s, got %s\n"):format(arg[2], tostring(got)))
+local install = require("config.theme").selected()
+if got ~= arg[2] or install ~= arg[2] then
+  io.stderr:write(("expected %s, got %s (install: %s)\n"):format(arg[2], tostring(got), tostring(install)))
   os.exit(1)
 end
 LUA
@@ -192,12 +195,14 @@ else
 fi
 if (( ${#lua_check[@]} )); then
   new_home nvim
-  spec="$repo/nvim/.config/nvim/lua/plugins/theme.lua"
-  "${lua_check[@]}" "$tmp/check.lua" "$spec" gruvbox
+  lua_dir="$repo/nvim/.config/nvim/lua" spec="$repo/nvim/.config/nvim/lua/plugins/theme.lua"
+  "${lua_check[@]}" "$tmp/check.lua" "$spec" gruvbox "$lua_dir"
   theme nord > "$TEST_LOG/output"
-  "${lua_check[@]}" "$tmp/check.lua" "$spec" nord
+  "${lua_check[@]}" "$tmp/check.lua" "$spec" nord "$lua_dir"
   printf 'garbage\n' > "$selection"
-  "${lua_check[@]}" "$tmp/check.lua" "$spec" gruvbox
+  "${lua_check[@]}" "$tmp/check.lua" "$spec" gruvbox "$lua_dir"
+  grep -F 'colorscheme = { require("config.theme").selected(), "habamax" }' \
+    "$lua_dir/config/lazy.lua" > /dev/null
   printf 'PASSED: nvim (%s)\n' "${lua_check[0]}"
 else
   printf 'SKIPPED: nvim (no nvim or Lua)\n'

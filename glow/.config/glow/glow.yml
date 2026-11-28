@@ -1,4 +1,5 @@
-# GLOW_STYLE in zsh points to the tracked Gruvbox JSON stylesheet using $HOME.
+# GLOW_STYLE in zsh points to the tracked Gruvbox or Nord JSON stylesheet,
+# following `just theme`, using $HOME.
 # Keep a portable fallback for shells that do not export that variable.
 style: "auto"
 # mouse support (TUI-mode only)
