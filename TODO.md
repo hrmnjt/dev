@@ -17,11 +17,6 @@ API revision 24) on 2026-11-27.
 
 ### Next
 
-- [ ] **Mac trial of palette New and Open.** Branch
-  `feat/rex/palette-new-and-open`. Done when both shortcuts have been tried on
-  disposable worktrees on the Mac with Remote Control turned off (see
-  [Checks](rex/README.md#checks)), including a cancelled prompt, an invalid
-  name and an existing branch, and the branch is merged.
 - [ ] **Safe deletion (Cmd+Shift+Backspace).** Done when the native
   confirmation names the project, branch and path and lists any working or
   waiting programs in the tab; the tab closes for real before Git runs;

@@ -666,12 +666,22 @@ test("about 15 worktrees list quickly without fetching or changing Git state", f
   end
   local marker = f.root .. "/marker"
   write(marker, "")
+  -- Program starts are slow on macOS: per-worktree Git must run in parallel,
+  -- so commands that run one after another stay few however many worktrees.
+  local runs = { waited = 0, started = 0 }
+  f.server.rex.exec = setmetatable({ start = function(argv, options)
+    runs.started = runs.started + 1; return real.exec.start(argv, options)
+  end }, { __call = function(_, argv, options)
+    runs.waited = runs.waited + 1; return real.exec(argv, options)
+  end })
   local started = os.time()
   local ui = palette(f, { false })
   assert(f:action("open") == nil)
   local elapsed = os.time() - started
   assert(elapsed < 30, "listing took " .. elapsed .. "s")
   assert(#ui:last("pick").items == 15)
+  assert(runs.waited <= 7, runs.waited .. " commands ran one after another")
+  assert(runs.started >= 45, runs.started .. " commands ran in parallel")
   local changed = execute({ "/usr/bin/find", f.primary .. "/.git", "-newer", marker })
   assert(changed == "", "Open changed Git state:\n" .. changed)
 end)
