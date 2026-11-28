@@ -70,7 +70,7 @@ Rex theme if it is too faint.
 | Glow | `glow/.config/glow/themes/nord.json` | The Gruvbox style's structure with Nord colours, selected through `GLOW_STYLE`. |
 | Lazygit | `lazygit/.config/lazygit/nord.yml` | Theme keys only, merged after `config.yml` through `LG_CONFIG_FILE`. |
 | AeroSpace borders | `aerospace/.config/aerospace/aerospace.toml`, `_scripts/theme.sh` | Frost active, translucent nord3 inactive. Startup reads the selection and the script updates running borders; keep both colour pairs in sync. |
-| macOS and wallpaper | `_scripts/theme.sh`, `wallpapers/` | Dark mode, blue accent and a sepia Dota 2 collage wallpaper. |
+| macOS and wallpaper | `_scripts/theme.sh`, `wallpapers/` | Dark mode, blue accent and a Dota 2 collage wallpaper recoloured to this palette. |
 | Pi | `pi/.pi/agent/themes/nord.json` | Pick `nord` in Pi's settings; Pi's `settings.json` is host-local. |
 | Claude Code | `claude/.config/agent-vm/claude/themes/nord.json` | The VM launcher reads the selection at each `claude` start and serves `custom:nord` as the managed theme; restart open sessions. The Mac CLI stays Gruvbox, since its theme is a key in the tracked `settings.json`. |
 | Zed | None | Stays Gruvbox: Zed has no built-in Nord, and its theme lives in tracked settings. |
