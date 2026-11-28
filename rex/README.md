@@ -24,8 +24,10 @@ In the command palette (**Cmd+Shift+P**), run **Apply Appearance Preferences**.
 It applies these Rex settings at once, without quitting Rex or needing Remote
 Control:
 
-- Dark appearance with the Gruvbox theme from `themes/gruvbox-dark-hard`
-  (imported and selected), using the theme's selection colors.
+- Dark appearance with the theme `just theme` selected (imported and
+  selected), using the theme's selection colors: Gruvbox from
+  `themes/gruvbox-dark-hard`, or Nord from `themes/nord` after
+  `just theme nord`.
 - JetBrainsMono Nerd Font Mono, Regular, 18 pt (the font cask is in
   Brewfile), with smoothing and ligatures.
 - Improved text contrast, programs' own colors kept (no forced theme palette)
@@ -40,9 +42,8 @@ after changing the table or the theme file, since Rex stores its own copy of
 an imported theme. Any choice can still be changed in Settings; reset a
 pane-specific zoom there by hand.
 
-`themes/nord` is the Nord counterpart for `just theme nord`; the action still
-imports Gruvbox, so after switching, import `themes/nord` in **Settings →
-Themes** as a Ghostty theme. See [Nord](../NORD.md).
+After `just theme nord` or `just theme gruvbox`, run the action again to switch
+Rex. It reads the same selection as Zsh and Neovim; see [Nord](../NORD.md).
 
 ## Pi notifications
 

@@ -5,8 +5,10 @@ local root = assert(real.args.root, "pass root=the-repository-path")
 local fixture_root = real.args.fixture
 local wiring = { actions = {}, bindings = {}, created = {}, queued = {}, native = {}, settings = {},
   deployed = true, host = "local", directory = "/repo with spaces" }
+-- Deployed files open; reading one returns wiring.theme, the `just theme`
+-- selection (nil means none was made).
 io.open = function()
-  if wiring.deployed then return { close = function() end } end
+  if wiring.deployed then return { close = function() end, read = function() return wiring.theme end } end
 end
 rex = {
   json = real.json,
@@ -93,7 +95,12 @@ assert(#queued == 18 and set["terminal.typography.font"] == "JetBrainsMono Nerd 
 assert(set["terminal.typography.size"] == 18 and set["terminal.typography.style"] == "Regular")
 assert(set["terminal.selection.copy_on_select"] == false and set["notifications.activity.sounds"] == false)
 assert(set["terminal.colors.palette"] == false and set["interface.splits_focus.autobalance"] == true)
-wiring.queued = {}
+-- After `just theme nord` the same action imports and selects Nord instead.
+wiring.queued, wiring.theme = {}, "nord"
+wiring.actions.appearance_apply.run({})
+assert(#wiring.queued == 18 and wiring.queued[2].action == "client.theme.import"
+  and wiring.queued[2].args.path == root .. "/rex/.config/rex/themes/nord", tostring(wiring.queued[2].args.path))
+wiring.queued, wiring.theme = {}, nil
 local bound = 0
 for key in pairs(wiring.bindings) do
   bound = bound + 1
