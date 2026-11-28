@@ -262,6 +262,14 @@ test transcripts and intermediate fixes live in `git log`; entries through
 
 ### 202611
 
+- 20261128: Typed `claude` now follows `just theme`: the launcher reads the
+  selection at each start and serves `custom:nord` as the managed theme when
+  Nord is selected; restart open sessions after a switch. The Mac CLI stays
+  Gruvbox, and the docs no longer claim a Mac copy of the Nord theme. The Nord
+  wallpaper is now a sepia Dota 2 collage instead of the generated aurora.
+  Lazygit 0.66 moved `authorColors` under `gui.theme` and rewrote both configs
+  through their Stow links; that migration is committed. lazy.nvim's install
+  screen uses the selected theme.
 - 20261128: Added Nord as a secondary theme, switched with
   `just theme nord|gruvbox`; Gruvbox stays the default and the
   `macos-gruvbox`/`wallpaper` recipes are gone. The choice is one line in
