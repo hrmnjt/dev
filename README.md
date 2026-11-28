@@ -262,6 +262,10 @@ test transcripts and intermediate fixes live in `git log`; entries through
 
 ### 202611
 
+- 20261128: Added Pi's Nord theme, `pi/.pi/agent/themes/nord.json`, which the
+  Nord entry promised but never shipped: VM agents can't write `.pi` paths.
+  It sets the Gruvbox theme's 51 colors to Nord values; pick `nord` in Pi's
+  `/settings`.
 - 20261128: Typed `claude` now follows `just theme`: the launcher reads the
   selection at each start and serves `custom:nord` as the managed theme when
   Nord is selected; restart open sessions after a switch. The Mac CLI stays
