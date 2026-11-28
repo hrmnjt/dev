@@ -86,11 +86,11 @@ If activity is missing, run Pi directly in Rex without tmux/screen and check tha
 
 ## Worktrees
 
-Requires a local Rex terminal and Git. **New** and **Open** ask in Rex's
-command palette (control API revision 17 or newer), so they need no `fzf`,
-menu session or **Remote Control**. **Delete** and **Projects** still choose
-with `fzf` (in Brewfile) in a temporary menu session and need Rex's
-**Remote Control** permission until they move to the palette too. Actions also
+Requires a local Rex terminal and Git. **New**, **Open** and **Delete** ask in
+Rex's command palette (control API revision 17 or newer), so they need no
+`fzf`, menu session or **Remote Control**. **Projects** still chooses with
+`fzf` (in Brewfile) in a temporary menu session and needs Rex's
+**Remote Control** permission until it moves to the palette too. Actions also
 appear under **Worktrees** in the **Cmd+Shift+P** command palette.
 
 Use **one session per project → one tab per worktree → panes for programs**.
@@ -101,7 +101,7 @@ Rex's CLI/API calls tabs “windows”; these are not separate macOS windows.
 | **Cmd+Shift+K** | Open a session for every listed project that has none, or type a checkout path to open as a one-off project. Works from any pane. |
 | **Cmd+Shift+N** | Type a branch name; track a matching fetched remote branch, otherwise create it from **local `main`**. Open its worktree as a focused tab in the project's session. No fetch. |
 | **Cmd+Shift+O** | Pick from the project's worktrees, newest activity first, each with its next step, then local branches without one. Focus its tab, reopen it, or create its worktree. |
-| **Cmd+Shift+Backspace** | Confirm stopping all programs in the worktree's tab and removing its checkout. Other tabs stay open. Keep the branch. |
+| **Cmd+Shift+Backspace** | Confirm closing the worktree's tab, stopping its programs, and removing its checkout. Other tabs stay open. Keep the branch. |
 | **Cmd+K** | Switch between Rex sessions. |
 
 Every Ctrl key still reaches the shell, Neovim, and Pi. Custom bindings live in
@@ -179,6 +179,13 @@ worktree's tab, reopens a closed worktree as one shell tab, or creates the
 worktree for a branch. Open checks the tabs again after you choose, so a tab opened meanwhile
 is focused rather than duplicated.
 
+### Delete
+
+Delete asks **Delete**, with **Cancel** first. The other row names the branch,
+the project and the checkout's path, and lists what it will stop: foreground
+programs in the tab's panes and agents still working or waiting, such as
+`stops nvim, Claude (waiting)`. Esc cancels.
+
 ### Projects
 
 Projects are the checkouts listed in the `projects` table at the top of
@@ -216,11 +223,13 @@ one last; missing directories are marked `missing`.
   mixed-directory tabs, duplicate worktree tabs, and unknown/remote blocks in
   the target tab. It never uses `--force` or deletes a branch. Ignored files
   follow normal Git worktree-removal behavior.
-- Delete stops only the target tab's programs **before** Git removes the checkout.
-  Sibling tabs and their programs remain untouched. When deleting the last tab,
-  it first opens a primary-checkout shell tab to keep the project session usable.
-  If Git refuses removal, the checkout and branch remain, but the worktree's tab
-  may be closed. Use **Cmd+Shift+O** to reopen it.
+- Delete closes only the target tab, for real, **before** Git removes the
+  checkout; sibling tabs and their programs remain untouched. When deleting the
+  last tab, it first opens and focuses a primary-checkout shell tab to keep the
+  project session usable. `git worktree remove` runs detached, so it finishes
+  even if the action is stopped or the config reloads. If Git refuses removal,
+  Delete says why; the checkout and branch remain and the tab is closed, so
+  reopen it with **Cmd+Shift+O**.
 - After a Rex server restart, Rex restores sessions and tabs itself. Reopen any
   missing worktree tab from **Cmd+Shift+O**, and missing project sessions with
   **Cmd+Shift+K**.
@@ -251,13 +260,13 @@ Requires a running Rex server; it does not change real sessions. Real shortcuts,
 palette and `fzf` interaction, tab selection, and tab-only program shutdown
 still need interactive verification.
 
-To try a branch's New or Open before deploying it, run its `init.lua` from a
-Rex terminal; New and Open then load the `worktrees.lua` beside it, never the
-deployed copy:
+To try a branch's New, Open or Delete before deploying it, run its `init.lua`
+from a Rex terminal; the palette actions then load the `worktrees.lua` beside
+it, never the deployed copy:
 
 ```bash
 rex do ~/code/github.com/hrmnjt/dev-feat-rex-example/rex/.config/rex/init.lua \
-  --action worktree_open   # or worktree_new
+  --action worktree_open   # or worktree_new, worktree_delete
 ```
 
 A trial's final tab focus is a client action sent from the CLI, so it needs

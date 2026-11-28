@@ -51,7 +51,8 @@ local function projects_expanded(list)
   assert(list[1] == home .. "/code/github.com/hrmnjt/dev")
   for _, path in ipairs(list) do assert(path:sub(1, 1) == "/", "~/ must be expanded: " .. path) end
 end
-for _, pair in ipairs({ {"new", "cmd+shift+n", "worktree_new"}, {"open", "cmd+shift+o", "worktree_open"} }) do
+for _, pair in ipairs({ {"new", "cmd+shift+n", "worktree_new"}, {"open", "cmd+shift+o", "worktree_open"},
+  {"delete", "cmd+shift+backspace", "worktree_delete"} }) do
   assert(wiring.bindings[pair[2]].action == pair[3])
   wiring.actions[pair[3]].run(context)
   -- Palette actions: no menu session, fzf, `rex -C`, or Remote Control.
@@ -60,9 +61,10 @@ for _, pair in ipairs({ {"new", "cmd+shift+n", "worktree_new"}, {"open", "cmd+sh
   local call = wiring.native[#wiring.native]
   assert(call.mode == pair[1] and call.r == rex)
   assert(call.args.directory == wiring.directory and call.args.source_session == "source" and call.args.source_block == "block")
-  projects_expanded(call.args.projects)
+  if pair[1] == "delete" then assert(call.args.projects == nil, "delete never offers projects")
+  else projects_expanded(call.args.projects) end
 end
-for _, pair in ipairs({ {"delete", "cmd+shift+backspace", "worktree_delete"}, {"project", "cmd+shift+k", "project_switch"} }) do
+for _, pair in ipairs({ {"project", "cmd+shift+k", "project_switch"} }) do
   local action = pair[3]
   assert(wiring.bindings[pair[2]].action == action)
   wiring.actions[action].run(context)
@@ -74,14 +76,11 @@ for _, pair in ipairs({ {"delete", "cmd+shift+backspace", "worktree_delete"}, {"
   assert(argv[3] == "-C" and argv[4] == "client" and argv[5] == "do")
   assert(argv[6]:match("/rex/worktrees.lua$") and argv[7] == "--args")
   local args = assert(real.json.decode(argv[8]))
-  assert(args.mode == pair[1] and args.source_session == "source" and args.source_block == "block")
-  assert(args.directory == (pair[1] ~= "project" and wiring.directory or nil))
-  if pair[1] == "delete" then assert(args.projects == nil, "delete never offers projects")
-  else projects_expanded(args.projects) end
-  assert(options.cwd ~= wiring.directory, "menu cannot occupy the deleted checkout")
-  assert(options.exit.on_completion == false)
+  assert(args.mode == pair[1] and args.source_session == "source" and args.directory == nil)
+  projects_expanded(args.projects)
+  assert(options.cwd == home and options.exit.on_completion == false)
 end
-assert(#wiring.queued == 2 and #wiring.native == 2)
+assert(#wiring.queued == 1 and #wiring.native == 3)
 local bound = 0
 for key in pairs(wiring.bindings) do
   bound = bound + 1
@@ -105,7 +104,7 @@ wiring.host = "remote"; refused(context); refused(context, "worktree_new"); refu
 wiring.host, wiring.directory = "local", nil; refused(context); refused(context, "worktree_open")
 -- The project picker never reads the focused terminal's location.
 wiring.host = "remote"; wiring.actions.project_switch.run({ session_id = "source", client_id = "client" })
-assert(#wiring.created == 3)
+assert(#wiring.created == 2)
 wiring.host = "local"
 wiring.directory, wiring.deployed = "/repo with spaces", false
 refused(context); refused(context, "worktree_new"); refused(context, "worktree_open")
@@ -153,7 +152,6 @@ local function menu(selection, confirm, hook)
     if title:match("^Projects") then self.project_rows = choices; return choose(choices, self.project or 1) end
     self.rows = choices
     if self.hook then self.hook() end
-    if title:match("^DELETE") then return self.confirm end
     return choose(choices, self.selection)
   end
   return ui
@@ -166,7 +164,7 @@ end
 local function fake(primary)
   local f = { live = { source = "main", helper = "menu" }, paths = { source = {primary}, helper = {} },
     tabs = {}, created = {}, sessions_created = {}, closed = {}, killed = {}, focused = {}, targets = {},
-    attached = {}, process_failures = {}, view_failures = {}, status = {} }
+    attached = {}, process_failures = {}, view_failures = {}, status = {}, foreground = {} }
   local r = { exec = real.exec, json = real.json, layout = real.layout, session_id = "helper", session = {}, block = {}, client = {} }
   f.rex = r
   local function attached(session) return f.attached_all or f.attached[session] end
@@ -199,6 +197,10 @@ local function fake(primary)
     end
     local directory = (args.block_id == "focused" or args.block_id == "1") and f.block_override or nil
     directory = directory or (f.paths[args.session_id] or {})[tonumber(args.block_id) or 1]
+    local program = f.foreground[args.session_id .. ":" .. args.block_id]
+    if program then
+      return { foreground = { cwd = directory, pid = 200, name = program }, child = { cwd = directory, pid = 100, name = "zsh" } }
+    end
     return { foreground = { cwd = directory or nil } }
   end
   function r.client.queue(action, args)
@@ -360,6 +362,17 @@ local function fixture()
     return path
   end
   function f:source_at(path) self.server.paths.source = {path} end
+  -- Runs Delete, answering its palette confirmation (true/nil: delete,
+  -- false: cancel) after an optional hook, and keeps the prompt for checks.
+  function f:delete(path, answer, hook)
+    self.prompts = palette(self, { function(spec)
+      self.confirmation = spec
+      if hook then hook() end
+      if answer == false then return nil, "cancelled" end
+      return "delete"
+    end })
+    return self:flow(path):delete()
+  end
   function f:trees()
     local _, n = git(self.primary, "worktree", "list", "--porcelain", "-z"):gsub("worktree ", "")
     return n
@@ -708,7 +721,7 @@ test("palette action arguments are required", function(f)
     args[name] = nil
     fails(function() core.action("open", args, f.server.rex) end, "terminal in the local Rex app")
   end
-  fails(function() f:action("delete") end, "Invalid worktree action")
+  fails(function() f:action("project") end, "Invalid worktree action")
 end)
 test("renamed session is still found by its terminal directory", function(f)
   local path, id = f:linked()
@@ -755,7 +768,7 @@ test("source process failures still block deletion", function(f)
   local path = f:linked(); f:source_at(path)
   table.insert(f.server.paths.source, f.root)
   f.server.process_failures["source:2"] = true
-  fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "terminal process failed")
+  fails(function() f:delete(path) end, "terminal process failed")
   assert(#f.server.killed == 0 and #f.server.closed == 0 and f:trees() == 2)
 end)
 test("ambiguous worktree tabs fail closed", function(f)
@@ -773,7 +786,7 @@ test("directory collisions never overwrite", function(f)
 end)
 test("primary protected even when not on main", function(f)
   git(f.primary, "checkout", "-b", "other")
-  fails(function() run(f:flow(), function(flow) flow:delete() end) end, "primary checkout")
+  fails(function() f:delete() end, "primary checkout")
   assert(#f.server.killed == 0 and #f.server.closed == 0)
 end)
 test("modified, staged, and untracked files block teardown", function(f)
@@ -781,7 +794,7 @@ test("modified, staged, and untracked files block teardown", function(f)
   for _, kind in ipairs({"modified", "staged", "untracked"}) do
     write(path .. (kind == "untracked" and "/untracked" or "/tracked"), "keep")
     if kind == "staged" then git(path, "add", "tracked") end
-    fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "modified, staged, or untracked")
+    fails(function() f:delete(path) end, "modified, staged, or untracked")
     assert(#f.server.killed == 0 and #f.server.closed == 0)
     git(path, "reset", "--hard", "HEAD") -- fixture only
   end
@@ -790,41 +803,39 @@ end)
 test("delete stops only its tab first and keeps branch", function(f)
   local path = f:linked(); f:source_at(path)
   f.server.after_kill = function() assert(read(path .. "/tracked") == "base\n") end
-  run(f:flow(path), function(flow) flow:delete() end)
+  f:delete(path)
   assert(#f.server.killed == 0 and #f.server.closed == 1 and f.server.closed[1].window_id == "source-tab")
   assert(f.server.live.source and f.server.created[1].path == f.primary)
   assert(f:trees() == 1 and git(f.primary, "rev-parse", "feature-a"):gsub("\n$", "") == f.base)
 end)
 test("delete cancellation leaves session and checkout intact", function(f)
   local path = f:linked(); f:source_at(path)
-  fails(function() run(f:flow(path, menu(nil, false)), function(flow) flow:delete() end) end, core.cancelled)
+  assert(f:delete(path, false) == nil)
   assert(#f.server.killed == 0 and #f.server.closed == 0 and f:trees() == 2)
 end)
 test("files written during confirmation block tab teardown", function(f)
   local path = f:linked(); f:source_at(path)
-  local ui = menu(nil, nil, function() write(path .. "/new-file", "keep") end)
-  fails(function() run(f:flow(path, ui), function(flow) flow:delete() end) end, "modified, staged, or untracked")
+  fails(function() f:delete(path, true, function() write(path .. "/new-file", "keep") end) end, "modified, staged, or untracked")
   assert(#f.server.killed == 0 and #f.server.closed == 0)
 end)
 test("files written during shutdown preserve checkout", function(f)
   local path = f:linked(); f:source_at(path)
   f.server.after_kill = function() write(path .. "/new-file", "keep") end
-  fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "modified or untracked")
+  fails(function() f:delete(path) end, "modified or untracked")
   assert(#f.server.closed == 1 and read(path .. "/new-file") == "keep")
 end)
 test("locked worktree and mixed terminal tab refused", function(f)
   local path = f:linked(); f:source_at(path)
   git(f.primary, "worktree", "lock", path)
-  fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "locked")
+  fails(function() f:delete(path) end, "locked")
   git(f.primary, "worktree", "unlock", path)
   table.insert(f.server.paths.source, f.primary)
-  fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "unrelated")
+  fails(function() f:delete(path) end, "unrelated")
   assert(#f.server.killed == 0 and #f.server.closed == 0)
 end)
 test("changed source block directory cancels deletion", function(f)
   local path = f:linked(); f:source_at(path)
-  local ui = menu(nil, nil, function() f.server.block_override = f.primary end)
-  fails(function() run(f:flow(path, ui), function(flow) flow:delete() end) end, "changed directory")
+  fails(function() f:delete(path, true, function() f.server.block_override = f.primary end) end, "changed directory")
   assert(#f.server.killed == 0 and #f.server.closed == 0)
 end)
 test("creation/focus failures leave recoverable worktree without duplicate session", function(f)
@@ -843,15 +854,14 @@ test("submodule worktree refused before teardown", function(f)
   local path = f:linked(); f:source_at(path)
   git(path, "update-index", "--add", "--cacheinfo", "160000," .. f.base .. ",submodule")
   git(path, "commit", "-m", "fixture gitlink"); execute({ "/bin/mkdir", path .. "/submodule" })
-  fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "submodules")
+  fails(function() f:delete(path) end, "submodules")
   assert(#f.server.killed == 0 and #f.server.closed == 0)
 end)
 test("unknown terminals and late unrelated panes block deletion", function(f)
   local path = f:linked(); f:source_at(path); table.insert(f.server.paths.source, false)
-  fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "unknown, remote")
+  fails(function() f:delete(path) end, "unknown, remote")
   table.remove(f.server.paths.source)
-  local ui = menu(nil, nil, function() table.insert(f.server.paths.source, f.primary) end)
-  fails(function() run(f:flow(path, ui), function(flow) flow:delete() end) end, "unrelated")
+  fails(function() f:delete(path, true, function() table.insert(f.server.paths.source, f.primary) end) end, "unrelated")
   assert(#f.server.killed == 0 and #f.server.closed == 0)
 end)
 test("nested repository not adopted as parent checkout", function(f)
@@ -898,14 +908,16 @@ test("relative times and program status timestamps", function(f)
   assert(core.epoch("yesterday") == nil and core.epoch("2026-11-27T19:02:47") == nil)
 end)
 test("manual invocation cannot close a working session", function(f)
-  fails(function() core.main({mode = "delete"}, f.server.rex) end, "keybindings")
+  fails(function() core.main({mode = "project"}, f.server.rex) end, "keybindings")
   fails(function()
-    core.main({mode = "delete", source_session = "source", source_block = "focused", directory = f.primary}, f.server.rex)
+    core.main({mode = "project", source_session = "source", projects = { f.primary }}, f.server.rex)
   end, "temporary menu session")
-  -- New and Open run in the palette, never in a menu session.
-  fails(function()
-    core.main({mode = "open", source_session = "source", source_block = "focused", directory = f.primary}, f.server.rex)
-  end, "Invalid worktree action")
+  -- New, Open and Delete run in the palette, never in a menu session.
+  for _, mode in ipairs({ "open", "delete" }) do
+    fails(function()
+      core.main({mode = mode, source_session = "source", source_block = "focused", directory = f.primary}, f.server.rex)
+    end, "Invalid worktree action")
+  end
   assert(#f.server.killed == 0)
 end)
 test("cancelled main action returns to source and closes only its menu", function(f)
@@ -926,7 +938,7 @@ test("native Git preserves tracked changes staged or modified during shutdown", 
       write(path .. "/tracked", "shutdown changes\n")
       if kind == "staged" then git(path, "add", "tracked") end
     end
-    fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "modified or untracked")
+    fails(function() f:delete(path) end, "modified or untracked")
     assert(read(path .. "/tracked") == "shutdown changes\n" and f:trees() == 2)
     git(path, "reset", "--hard", "HEAD") -- fixture only
   end
@@ -934,8 +946,54 @@ end)
 test("native Git refuses a worktree locked during program shutdown", function(f)
   local path = f:linked(); f:source_at(path)
   f.server.after_kill = function() git(f.primary, "worktree", "lock", path) end
-  fails(function() run(f:flow(path), function(flow) flow:delete() end) end, "locked")
+  -- The failure says what happened and how to get the tab back.
+  local ok, err = pcall(function() f:delete(path) end)
+  assert(not ok); contains(err, "locked"); contains(err, "Git kept " .. path); contains(err, "reopen it with Open")
   assert(#f.server.closed == 1 and f:trees() == 2)
+end)
+test("delete confirmation names project, branch, path and running programs; Cancel first", function(f)
+  local path = f:linked("feat/rex/example"); f:source_at(path)
+  table.insert(f.server.paths.source, path)
+  f.server.foreground["source:1"] = "nvim"
+  f.server.status["source:2"] = { { state = "blocked", effective_app = "claude-code", updated_at = "2026-11-28T08:00:00Z" } }
+  assert(f:delete(path, false) == nil)
+  local spec = f.confirmation
+  assert(spec.title == "Delete" and spec.items[1].id == "cancel", "Cancel comes first")
+  local item = spec.items[2]
+  assert(item.id == "delete" and item.title == "Delete feat/rex/example", item.title)
+  contains(item.subtitle, "repo with spaces · "); contains(item.subtitle, "repo-with-spaces-feat-rex-example")
+  assert(item.detail == "stops nvim, Claude (waiting)", item.detail)
+  contains(spec.placeholder, "feat/rex/example is kept")
+  assert(#f.server.closed == 0 and f:trees() == 2)
+  f.server.foreground, f.server.status = {}, {}
+  assert(f:delete(path, false) == nil and f.confirmation.items[2].detail == "closes its tab")
+end)
+test("delete removes the checkout with a detached git worktree remove", function(f)
+  local path = f:linked(); f:source_at(path)
+  local detached = {}
+  f.server.rex.exec = setmetatable({ start = function(argv, options)
+    if argv[4] == "worktree" and argv[5] == "remove" then table.insert(detached, options.detach) end
+    return real.exec.start(argv, options)
+  end }, { __call = function(_, argv, options) return real.exec(argv, options) end })
+  f:delete(path)
+  assert(#detached == 1 and detached[1] == true and f:trees() == 1)
+end)
+test("deleting the last tab focuses the new primary-checkout tab", function(f)
+  local path = f:linked(); f:source_at(path)
+  f:delete(path)
+  local created, target = f.server.created[1], f.server.targets[#f.server.targets]
+  assert(created.path == f.primary and target.session_id == "source" and target.window_id == created.window)
+end)
+test("Delete runs as a palette action and cancelling does nothing", function(f)
+  local path = f:linked(); f:source_at(path)
+  local ui = palette(f, { false })
+  assert(f:action("delete", path) == nil and #ui.asked == 1)
+  assert(#f.server.closed == 0 and f:trees() == 2)
+  palette(f, { "delete" })
+  f:action("delete", path)
+  assert(#f.server.closed == 1 and f:trees() == 1)
+  palette(f, {})
+  fails(function() f:action("delete", f.root, { projects = { f.primary } }) end, "not a git repository")
 end)
 test("fzf launch errors are printed in full and acknowledged without invoking fzf again", function(f)
   f.server.live.helper = "rex-worktrees-project"
@@ -1117,25 +1175,20 @@ test("delete preserves sibling tabs and their programs, including unreadable one
   f:source_at(path)
   local keep = f.server.created[1]
   f.server.process_failures["source:" .. keep.window .. "-block"] = true
-  flow = f:flow(path)
-  flow:delete()
+  f:delete(path)
   assert(f.server.live.source and #f.server.closed == 1 and #f.server.killed == 0)
   assert(#f.server.created == 1 and f.server.tabs.source[1].window_id == keep.window)
   assert(read(sibling .. "/tracked") == "base\n" and f:trees() == 2)
 end)
 test("a late sibling tab is preserved rather than blocking deletion", function(f)
   local path = f:linked(); f:source_at(path)
-  local ui = menu(nil, nil, function()
-    local flow = f:flow()
-    flow:open_path(f.primary)
-  end)
-  run(f:flow(path, ui), function(flow) flow:delete() end)
+  f:delete(path, true, function() f:flow():open_path(f.primary) end)
   assert(#f.server.closed == 1 and #f.server.created == 1 and f.server.live.source)
   assert(f.server.created[1].path == f.primary)
 end)
 test("failed last-tab fallback does not stop source programs", function(f)
   local path = f:linked(); f:source_at(path); f.server.create_failure = true
-  fails(function() f:flow(path):delete() end, "creation failed")
+  fails(function() f:delete(path) end, "creation failed")
   assert(#f.server.closed == 0 and f.server.live.source and f:trees() == 2)
 end)
 local passed = 0

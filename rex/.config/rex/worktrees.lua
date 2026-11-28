@@ -1,8 +1,8 @@
--- Worktree actions. init.lua loads this file from its own folder for New and
--- Open (Cmd+Shift+N/O) and calls M.action, which asks in Rex's command palette.
--- Delete and Projects still run it locally with `rex do worktrees.lua --args
--- <json>` in a temporary menu terminal. Loading it without args.mode only
--- returns its testable module.
+-- Worktree actions. init.lua loads this file from its own folder for New,
+-- Open and Delete (Cmd+Shift+N/O/Backspace) and calls M.action, which asks in
+-- Rex's command palette. Projects still runs it with `rex do worktrees.lua
+-- --args <json>` in a temporary menu terminal. Loading it without args.mode
+-- only returns its testable module.
 --
 -- Rex Lua quirks, checked on 0.1.0-preview.25:
 -- - Palette prompts fail under pcall, so never ask inside one.
@@ -1006,9 +1006,11 @@ function Workflow:clean_target()
   end
   return target
 end
+-- Checks the source tab strictly: one tab, only local terminals, all inside
+-- this checkout. Returns its window, the session's tab count, and the
+-- programs running in it (foreground programs and agents working or waiting).
 function Workflow:validate_source()
   local session = self.args.source_session
-  if self.helper == session then fail("Deletion requires a separate menu session") end
   local windows = self:windows(session)
   local source
   for _, window in ipairs(windows) do
@@ -1021,7 +1023,7 @@ function Workflow:validate_source()
     fail("Source tab missing or checkout has multiple tabs")
   end
   -- Re-read only the source tab strictly; unrelated tabs cannot block deletion.
-  local directories = {}
+  local directories, programs = {}, {}
   self:attach(session)
   local view = checked(self.rex.session.view{ session_id = session })
   for _, window in ipairs(view.windows or {}) do
@@ -1033,6 +1035,14 @@ function Workflow:validate_source()
           end
           local process = self:process(session, block.block_id)
           table.insert(directories, (process.foreground or {}).cwd or (process.child or {}).cwd or false)
+          local foreground, child = process.foreground or {}, process.child or {}
+          if foreground.pid and foreground.pid ~= child.pid and foreground.name then
+            table.insert(programs, visible(foreground.name))
+          end
+          local agent = self:agent({ { session = session, block = block.block_id } })
+          if agent and (agent.state == "working" or agent.state == "blocked") then
+            table.insert(programs, agent.name .. (agent.state == "blocked" and " (waiting)" or " (working)"))
+          end
         end
       end
     end
@@ -1046,15 +1056,31 @@ function Workflow:validate_source()
       fail("Source tab has a terminal in another nested repository")
     end
   end
-  return source.id, #windows
+  return source.id, #windows, programs
 end
+local function home_path(path)
+  local home = os.getenv("HOME")
+  if home and inside(path, home) then return "~" .. path:sub(#home + 1) end
+  return path
+end
+-- Delete asks in the palette, naming the project, branch and path and the
+-- programs it will stop; Cancel comes first. It closes the worktree's tab
+-- for real before Git runs, then removes the checkout with a detached
+-- `git worktree remove`, so an action timeout or config reload can't leave
+-- it half-removed. The branch is kept. Returns nil when cancelled.
 function Workflow:delete()
   local target = self:clean_target()
-  local window = self:validate_source()
-  local yes = self.menu:pick("DELETE " .. visible(target.branch ~= "" and target.branch or "detached") .. " at " .. visible(self.checkout) .. "? Branch is kept.", {
-    { "Cancel", false }, { "Remove worktree and STOP ALL programs in its Rex tab only", true },
-  })
-  if not yes then fail(CANCEL) end
+  local window, _, programs = self:validate_source()
+  local branch = visible(target.branch ~= "" and target.branch or "detached")
+  local choice = self.ui:pick{ title = "Delete", confirm = "Choose",
+    placeholder = "Branch " .. branch .. " is kept",
+    items = {
+      { id = "cancel", title = "Cancel", subtitle = "Keep the worktree and its tab" },
+      { id = "delete", title = "Delete " .. branch, icon = "folder",
+        subtitle = visible(basename(self.primary)) .. " · " .. visible(home_path(self.checkout)),
+        detail = #programs > 0 and ("stops " .. table.concat(programs, ", ")) or "closes its tab" },
+    } }
+  if choice ~= "delete" then return nil end
   self:clean_target()
   local process = self:process(self.args.source_session, self.args.source_block)
   local directory = (process.foreground or {}).cwd or (process.child or {}).cwd
@@ -1062,26 +1088,42 @@ function Workflow:delete()
   local current, total = self:validate_source()
   if current ~= window then fail("Source tab changed; deletion cancelled") end
   -- Preserve a discoverable project session when removing its last worktree tab.
+  local fallback
   if total == 1 then
     local primary = self.trees[1]
     if not self:available(primary) then fail("Primary checkout unavailable; no tabs were closed") end
-    self:create(primary)
+    fallback = { self:create(primary) }
   end
+  -- Not undoable: an undoable close keeps the tab's programs running.
   checked(self.rex.call("session.close_window", { session_id = self.args.source_session, window_id = window }))
   for _, remaining in ipairs(self:windows(self.args.source_session)) do
     if remaining.id == window then fail("Rex tab is still running; checkout was not removed") end
   end
-  -- Git rechecks cleanliness and locks after the tab's programs stop.
-  self:git(self.primary, "worktree", "remove", self.checkout)
+  -- Git rechecks cleanliness and locks after the tab's programs stop. It runs
+  -- detached so it finishes even if this action is stopped.
+  local argv = git_argv(self.primary, "worktree", "remove", self.checkout)
+  local ok, start = pcall(function() return self.rex.exec.start end)
+  local handle = ok and start and start(argv, { env = GIT_ENV, detach = true }) or nil
+  local result = handle and handle:wait(20)
+  if not handle then result = self.rex.exec(argv, { timeout = 20, env = GIT_ENV }) end
+  if not result then
+    fail("Git is still removing " .. visible(self.checkout) .. " in the background; check `git worktree list` shortly")
+  end
+  if not result.ok then
+    fail("Git kept " .. visible(self.checkout) .. ": " .. trim(result.stderr or result.stdout or "")
+      .. "\nIts tab is closed; reopen it with Open (Cmd+Shift+O)")
+  end
+  if fallback then self:focus(fallback[1], fallback[2]) end
   return self.args.source_session
 end
 M.Workflow = Workflow
 M.cancelled = CANCEL
 
--- New and Open, run inside init.lua's own actions. Nothing here may wrap a
--- prompt in pcall, so cancelling returns instead of raising.
+-- New, Open and Delete, run inside init.lua's own actions. Nothing here may
+-- wrap a prompt in pcall, so cancelling returns instead of raising.
+local PALETTE = { new = "new_branch", open = "open", delete = "delete" }
 function M.action(mode, args, r)
-  if mode ~= "new" and mode ~= "open" then fail("Invalid worktree action") end
+  if not PALETTE[mode] then fail("Invalid worktree action") end
   for _, name in ipairs({ "source_session", "source_block", "directory" }) do
     if type(args[name]) ~= "string" or args[name] == "" then
       fail("Run this action from a terminal in the local Rex app")
@@ -1091,21 +1133,18 @@ function M.action(mode, args, r)
   for key, value in pairs(args) do request[key] = value end
   local workflow = Workflow.new(request, r, nil, Palette.new(r))
   if not workflow then return nil end
-  if mode == "new" then workflow:new_branch() else workflow:open() end
+  workflow[PALETTE[mode]](workflow)
   return nil
 end
 
--- Delete and Projects, run by `rex do` in their temporary menu session.
+-- Projects, run by `rex do` in its temporary menu session.
 function M.main(args, r, terminal)
   terminal = terminal or io
-  -- The project picker needs no terminal directory; deletion acts on one.
-  local required = args.mode == "project" and { "source_session" } or { "source_session", "source_block", "directory" }
-  for _, name in ipairs(required) do
+  for _, name in ipairs({ "source_session" }) do
     if type(args[name]) ~= "string" or args[name] == "" then fail("Launch using the Rex worktree keybindings") end
   end
   if not r.session_id or r.session_id == args.source_session then fail("Launch using the Rex worktree keybindings") end
-  local modes = { delete = true, project = true }
-  if not modes[args.mode] then fail("Invalid worktree action") end
+  if args.mode ~= "project" then fail("Invalid worktree action") end
   if args.mode == "project" and type(args.projects) ~= "table" then fail("Launch using the Rex worktree keybindings") end
   local is_menu = false
   for _, session in ipairs(checked(r.call("session.list")).sessions or {}) do
@@ -1122,7 +1161,6 @@ function M.main(args, r, terminal)
     -- newlines, remove terminal controls, and keep this terminal until Enter.
     local message = tostring(err):gsub("[%z\1-\8\11-\31\127]", "?")
     terminal.write("\nWorktree action stopped:\n" .. message .. "\n\n")
-    terminal.write("If Git refused removal after closing the source tab, its checkout remains; use Open to reopen it.\n")
     terminal.write("Press Enter to close this menu.")
     terminal.flush()
     terminal.read("*l")
