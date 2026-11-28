@@ -61,7 +61,7 @@ apply() {
       accent=4 # blue
       active=0xff88c0d0
       inactive=0x804c566a
-      wallpaper="$WALLPAPER_DIR/nord-aurora-dark.jpg"
+      wallpaper="$WALLPAPER_DIR/dota-2-nord-dark.jpg"
       ;;
   esac
 
