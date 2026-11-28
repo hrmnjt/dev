@@ -31,7 +31,7 @@ new_home() {
   unset XDG_STATE_HOME
   mkdir -p "$HOME/.config/ghostty" "$HOME/.local/share/wallpapers" "$TEST_LOG"
   ln -s "$repo/ghostty/.config/ghostty/nord.conf" "$HOME/.config/ghostty/nord.conf"
-  for image in pink-floyd-gruvbox-dark.jpg nord-aurora-dark.jpg; do
+  for image in pink-floyd-gruvbox-dark.jpg dota-2-nord-dark.jpg; do
     ln -s "$repo/wallpapers/.local/share/wallpapers/$image" "$HOME/.local/share/wallpapers/$image"
   done
   selection="$HOME/.local/state/hrmnjt-dev/theme"
@@ -50,7 +50,7 @@ theme nord > "$TEST_LOG/output-again"
 [[ $(readlink "$overlay") == nord.conf && -f "$overlay" ]]
 [[ $(last defaults) == "write -g AppleAccentColor -int 4" ]]
 [[ $(last borders) == "active_color=0xff88c0d0 inactive_color=0x804c566a" ]]
-grep -F "$HOME/.local/share/wallpapers/nord-aurora-dark.jpg" "$TEST_LOG/osascript" > /dev/null
+grep -F "$HOME/.local/share/wallpapers/dota-2-nord-dark.jpg" "$TEST_LOG/osascript" > /dev/null
 theme gruvbox > "$TEST_LOG/output-gruvbox"
 [[ $(cat "$selection") == gruvbox && ! -e "$overlay" && ! -L "$overlay" ]]
 [[ $(last defaults) == "write -g AppleAccentColor -int 1" ]]
@@ -96,7 +96,7 @@ untouched
 printf 'PASSED: folded-ghostty\n'
 
 new_home undeployed
-rm "$HOME/.config/ghostty/nord.conf" "$HOME/.local/share/wallpapers/nord-aurora-dark.jpg"
+rm "$HOME/.config/ghostty/nord.conf" "$HOME/.local/share/wallpapers/dota-2-nord-dark.jpg"
 TEST_BORDERS_STATUS=1 theme nord > "$TEST_LOG/output"
 [[ $(cat "$selection") == nord && ! -L "$overlay" && ! -e "$TEST_LOG/borders" ]]
 [[ $(wc -l < "$TEST_LOG/osascript" | tr -d ' ') == 1 ]] # dark mode only
