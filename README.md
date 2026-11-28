@@ -246,6 +246,9 @@ test transcripts and intermediate fixes live in `git log`; entries through
 
 ### 202611
 
+- 20261128: Bumped the agent VM image pins: Claude Code 2.1.332, Playwright
+  1.65.1, uv 0.13.10, Node 24.22.3 (security release) and Alpine 3.23.8;
+  Gondolin 0.14.0 is still the latest. Rebuild the image before launching.
 - 20261128: Rex appearance now applies from the command palette with
   **Apply Appearance Preferences**: dark Gruvbox theme, font, colors, splits
   and notifications as Rex for Mac `client.setting.*` actions, listed in
