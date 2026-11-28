@@ -7,7 +7,7 @@ credentials, image and branch trials](../gondolin/README.md).
 ## Configuration
 
 `pi/.pi/agent/` contains intentional settings, ten focused extensions and the
-Gruvbox theme. Mutable settings, authentication, sessions and dependencies remain
+Gruvbox and Nord themes. Mutable settings, authentication, sessions and dependencies remain
 host-local, not Stow source. `--no-folding` keeps `~/.pi` a real directory.
 
 The template preserves `openai/gpt-6.1-sol/high`, its exact-model override, the
@@ -273,6 +273,7 @@ URL. `/llama` downloads/loads/unloads models; loaded model IDs appear in `/model
 Do not expose the router or model cache to the VM. See [llama.cpp](../llama/README.md).
 
 Themes are discovered under `~/.pi/agent/themes/`; `gruvbox-dark` remains the
-tracked choice. New Pi source/config resources are read-only to VM tools;
+tracked choice. After `just theme nord`, pick `nord` in Pi's settings; the
+choice stays in host-local `settings.json`. See [Nord](../NORD.md). New Pi source/config resources are read-only to VM tools;
 changes to those protected trees require a deliberate host edit/deployment,
 not an agent bypass. Keep private session material local unless a cloud handoff is approved.

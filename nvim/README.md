@@ -87,7 +87,9 @@ not a lossless transformation of directives, includes, and comments.
 ### Changes on top of LazyVim
 
 - Use classic Gruvbox Dark Hard (`contrast = "hard"`) with a transparent
-  background so Ghostty controls the terminal backdrop.
+  background so Ghostty controls the terminal backdrop. After `just theme nord`,
+  new Neovim instances use `gbprod/nord.nvim`, also transparent; the selection
+  is read at start (see [Nord](../NORD.md)).
 - Show 80/120-column guides.
 - Include hidden and Git-ignored files in pickers by default.
 - Install and theme Lazygit for LazyVim's built-in Git interface.

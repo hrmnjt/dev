@@ -1,7 +1,9 @@
 # Gruvbox Dark Hard
 
 Classic [Gruvbox](https://github.com/morhetz/gruvbox) Dark Hard is the visual
-reference for this setup. Use native app themes where available; this document
+reference and default theme for this setup. [Nord](NORD.md) is the secondary
+theme, switched with `just theme`; with nothing selected, every surface below
+is Gruvbox. Use native app themes where available; this document
 is a palette and mapping, not a generated theme framework. App UI chrome may
 differ even when its editor and terminal surfaces match.
 
@@ -34,10 +36,11 @@ differ even when its editor and terminal surfaces match.
 | Claude Code | `claude/.config/agent-vm/claude/themes/gruvbox-dark-hard.json` | Native custom-theme tokens use classic foreground/accent colors, Dark Hard surfaces, and muted green/red diff backgrounds; Ghostty owns the terminal background. |
 | Rex | `rex/.config/rex/themes/gruvbox-dark-hard` | Ghostty-format import with matching cursor/selection colors; app-owned chrome. `rex/README.md` records manual typography/sRGB choices and theme refresh commands during beta. |
 | AeroSpace borders | `aerospace/.config/aerospace/aerospace.toml` | Bright yellow active, subdued gray inactive. The native workspace indicator is styled in AeroSpace's UI. |
-| macOS and wallpaper | `Justfile`, `wallpapers/` | Dark mode, native orange accent, tracked Pink Floyd Gruvbox wallpaper. |
+| macOS and wallpaper | `_scripts/theme.sh`, `wallpapers/` | Dark mode, native orange accent, tracked Pink Floyd Gruvbox wallpaper. |
 | Brave | Manual setup in `README.md` | Gruvbox Slate browser theme; not managed by this repository. |
 | Obsidian | Not themed here yet | A CSS snippet remains a separate optional visual project. |
 
 The palette is a reference for choosing future colors, not a requirement to
-replace app-provided themes or force every semantic role to one hex value. Add
-a generator only if another actual theme profile makes duplication painful.
+replace app-provided themes or force every semantic role to one hex value. Nord
+is a second profile and still doesn't need a generator: each app keeps one
+small hand-written file per theme. Reconsider if a third theme arrives.

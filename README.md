@@ -103,8 +103,8 @@ agent-vm doctor
 # permissions when using the Ivanti VPN commands; see the ivanti/README.md
 # 11.3. Sign in to required browser, email, messaging, and work applications
 
-# 12. Gruvbox macOS appearance
-just macos-gruvbox
+# 12. Theme: Gruvbox by default; `just theme nord` switches (see NORD.md)
+just theme gruvbox
 
 # 12.1. Review and apply intentional behavioral defaults
 ./_scripts/macos-defaults.sh preview
@@ -130,6 +130,7 @@ llm start
 #### Setup references
 
 - [Gruvbox Dark Hard palette and application map](GRUVBOX.md)
+- [Nord palette and theme switch](NORD.md)
 - [AeroSpace](aerospace/README.md)
 - [Ghostty](ghostty/README.md)
 - [Glow](glow/README.md)
@@ -174,6 +175,7 @@ Run focused script regressions separately; doctor does not run them:
 ./_scripts/tests/doctor-repository.sh
 ./_scripts/tests/sshsetup.sh
 ./_scripts/tests/rex-worktrees.sh
+./_scripts/tests/theme.sh
 ```
 
 These use disposable fixtures rather than changing your real home or sessions.
@@ -205,6 +207,19 @@ that was previously absent.
 A restore first captures the current state as another backup. The script does
 not restart Dock or Finder, move existing screenshots, or apply settings
 silently; log out and back in after applying or restoring when necessary.
+
+#### Switching themes
+
+Gruvbox Dark Hard is the default and Nord the alternative:
+
+```bash
+just theme          # print the selected theme
+just theme nord     # or: just theme gruvbox
+```
+
+Reload Ghostty with Cmd+Shift+, afterwards; open shells and new Neovim
+instances follow on their own. Rex and Pi switch in their own settings. See
+[Nord](NORD.md) for what each app does.
 
 #### Managing packages
 
@@ -246,6 +261,14 @@ test transcripts and intermediate fixes live in `git log`; entries through
 
 ### 202611
 
+- 20261128: Added Nord as a secondary theme, switched with
+  `just theme nord|gruvbox`; Gruvbox stays the default and the
+  `macos-gruvbox`/`wallpaper` recipes are gone. The choice is one line in
+  `~/.local/state/hrmnjt-dev/theme`. Zsh rereads it before each prompt for fzf,
+  Glow, Lazygit and Starship, and Neovim reads it at start. The recipe links a
+  Ghostty overlay and sets AeroSpace borders, the macOS accent and a generated
+  Nord wallpaper. Rex and Pi switch in their own settings. Zed and Claude Code
+  stay Gruvbox; Claude's Nord theme is ready but unused. See `NORD.md`.
 - 20261128: Agent VMs now use Asia/Dubai local time instead of UTC, set by
   `timezone` in Gondolin's `config.json` and applied at each boot, so changing
   it needs no rebuild. Bumped the image pins: Claude Code 2.1.332, Playwright

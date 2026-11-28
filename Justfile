@@ -23,16 +23,11 @@ stowall:
 unstowall:
     stow --no-folding -t ~ -D [!_]*/
 
-# --- macOS appearance ---
+# --- Theme ---
 
-# Apply gruvbox-inspired macOS appearance settings and wallpaper.
-# Run on the host Mac after `just stowall`. Some UI colors may require logging out/in.
-macos-gruvbox:
-    osascript -e 'tell application "System Events" to tell appearance preferences to set dark mode to true'
-    defaults write -g AppleAccentColor -int 1
-    just wallpaper
-
-# Set the tracked gruvbox wallpaper for every desktop/space.
-# The image is deployed by stow to ~/.local/share/wallpapers/.
-wallpaper:
-    wallpaper="${HOME}/.local/share/wallpapers/pink-floyd-gruvbox-dark.jpg"; osascript -e "tell application \"System Events\" to tell every desktop to set picture to POSIX file \"$wallpaper\""
+# Switching records the choice for Zsh and Neovim, links Ghostty's overlay, and
+# on macOS sets dark mode, the accent colour, the wallpaper and AeroSpace borders.
+# Run on the host Mac after `just stowall`. See NORD.md.
+# Print the selected theme, or switch to gruvbox (the default) or nord.
+theme name="":
+    @/bin/sh ./_scripts/theme.sh {{quote(name)}}
