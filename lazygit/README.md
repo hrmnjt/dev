@@ -3,8 +3,12 @@
 Gruvbox colors for
 [Lazygit](https://github.com/jesseduffield/lazygit), used both as a standalone
 terminal interface and through LazyVim's built-in Snacks integration. Commit
-authors and their graph lines use Gruvbox aqua instead of Lazygit's random
-colors, avoiding low-contrast blues on the dark background.
+authors and their graph lines use one palette color (Gruvbox aqua, Nord frost)
+instead of Lazygit's random colors.
+
+Lazygit 0.66 moved `authorColors` under `gui.theme` and rewrites a config that
+still has the old key when it starts. The files are Stow links, so that rewrite
+lands in this checkout; commit it rather than restoring the old layout.
 
 The tracked Zsh environment sets `XDG_CONFIG_HOME=~/.config`, so Stow deploys:
 
