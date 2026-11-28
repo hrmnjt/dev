@@ -10,19 +10,12 @@ API revision 24) on 2026-11-27.
 
 ### Goals
 
-- Deleting a worktree stays at least as safe as today.
 - After a Rex restart, tabs and panes come back by themselves, and Pi resumes
   its session; our own code no longer handles restart recovery.
 - Terminal preferences apply without quitting Rex.
 
 ### Next
 
-- [ ] **Safe deletion (Cmd+Shift+Backspace).** Done when the native
-  confirmation names the project, branch and path and lists any working or
-  waiting programs in the tab; the tab closes for real before Git runs;
-  `git worktree remove` runs detached, so a timeout or config reload can't leave
-  a half-deleted checkout; a failed removal is reported clearly; and sibling
-  tabs and the last-tab fallback behave as today.
 - [ ] **Projects (Cmd+Shift+K).** The palette opens one listed project or a
   typed path; the `[all projects]` row goes. Done when the helper sessions, the
   nested `rex do` launch, the `fzf` menu and the open-all code are all gone.
@@ -35,9 +28,8 @@ API revision 24) on 2026-11-27.
 - [ ] **Terminal preferences.** Done when the guide's preferences are applied
   with `client.setting.*` actions instead of the `defaults write` block;
   `rex.set` covers only resume settings today.
-- [ ] **Tests and docs.** Done when the fixture tests cover deletion (a source
-  tab that changes during the prompt, a failed removal) and the project picker;
-  and `rex/README.md` and the changelog describe Delete, Projects, Session
+- [ ] **Tests and docs.** Done when the fixture tests cover the project
+  picker, and `rex/README.md` and the changelog describe Projects, Session
   Restore and undo close (Shift+Cmd+T), replacing the old restart-recovery
   steps.
 

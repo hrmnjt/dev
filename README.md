@@ -246,6 +246,12 @@ test transcripts and intermediate fixes live in `git log`; entries through
 
 ### 202611
 
+- 20261128: Rex Delete (Cmd+Shift+Backspace) now confirms in the command
+  palette with Cancel first, naming the project, branch and path and the
+  programs it will stop. Its tab closes before Git runs, and
+  `git worktree remove` runs detached so it can't be cut off midway; a refused
+  removal says why. Delete no longer needs Remote Control; only Projects still
+  uses the `fzf` menu.
 - 20261128: Rex New (Cmd+Shift+N) and Open (Cmd+Shift+O) now ask in the
   command palette with no menu session, `fzf` or Remote Control. New asks again
   for invalid or occupied names and offers Open for existing branches. Open

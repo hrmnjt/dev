@@ -55,9 +55,9 @@ local function terminal_directory(ctx)
   return directory
 end
 
--- New and Open ask in the command palette inside this action, so they need no
--- menu session, fzf, or Remote Control. Never wrap this in pcall: Rex refuses
--- prompts there.
+-- New, Open and Delete ask in the command palette inside this action, so they
+-- need no menu session, fzf, or Remote Control. Never wrap this in pcall: Rex
+-- refuses prompts there.
 local function palette_action(mode, ctx)
   if not ctx.session_id then error("Run this action from a terminal in the local Rex app", 0) end
   local directory = terminal_directory(ctx)
@@ -68,17 +68,16 @@ local function palette_action(mode, ctx)
   local worktrees = dofile(module)
   worktrees.action(mode, {
     directory = directory, source_session = ctx.session_id, source_block = ctx.block_id,
-    projects = expanded_projects(assert(os.getenv("HOME"), "HOME is not set")),
+    -- Delete only ever acts on the focused terminal's own checkout.
+    projects = mode ~= "delete" and expanded_projects(assert(os.getenv("HOME"), "HOME is not set")) or nil,
   }, rex)
 end
 
--- Delete and Projects still choose with fzf in a short-lived menu session.
+-- Projects still chooses with fzf in a short-lived menu session.
 local function worktree_menu(mode, ctx)
   if not ctx.session_id or not ctx.client_id then
     error("Run this action from a terminal in the local Rex app", 0)
   end
-  -- The project menu works from any pane; deletion needs the terminal's directory.
-  local directory = mode ~= "project" and terminal_directory(ctx) or nil
   local home = assert(os.getenv("HOME"), "HOME is not set")
   local config = os.getenv("XDG_CONFIG_HOME") or (home .. "/.config")
   local helper = config .. "/rex/worktrees.lua"
@@ -88,14 +87,11 @@ local function worktree_menu(mode, ctx)
   local binary_dir = os.getenv("REX_BIN_DIR")
   local binary = binary_dir and (binary_dir .. "/rex") or "rex"
   local arguments = checked(rex.json.encode{
-    mode = mode, directory = directory,
-    source_session = ctx.session_id, source_block = ctx.block_id,
-    -- Delete only ever acts on the focused terminal's own checkout.
-    projects = mode ~= "delete" and expanded_projects(home) or nil,
+    mode = mode, source_session = ctx.session_id, source_block = ctx.block_id,
+    projects = expanded_projects(home),
   })
 
-  -- A separate, short-lived menu session survives closing the target tab.
-  -- Delete stops only that tab's programs BEFORE Git removes the checkout.
+  -- A separate, short-lived menu session runs fzf in its own terminal.
   local menu = checked(rex.call("session.create", {
     label = "rex-worktrees-" .. mode,
     initial_windows = {{ layout = rex.layout.block{
@@ -115,7 +111,7 @@ end
 for _, item in ipairs({
   { "new", "cmd+shift+n", "Create Worktree", "worktree_new", palette_action },
   { "open", "cmd+shift+o", "Open Worktree or Branch", "worktree_open", palette_action },
-  { "delete", "cmd+shift+backspace", "Delete Current Worktree", "worktree_delete", worktree_menu },
+  { "delete", "cmd+shift+backspace", "Delete Current Worktree", "worktree_delete", palette_action },
   { "project", "cmd+shift+k", "Open All Projects or a Path", "project_switch", worktree_menu },
 }) do
   local mode, launch = item[1], item[5]
