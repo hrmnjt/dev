@@ -1,8 +1,19 @@
--- Run locally with `rex do worktrees.lua --args <json>` in the menu terminal.
--- Loading this file without args.mode only returns its testable module.
+-- Worktree actions. init.lua loads this file from its own folder for New and
+-- Open (Cmd+Shift+N/O) and calls M.action, which asks in Rex's command palette.
+-- Delete and Projects still run it locally with `rex do worktrees.lua --args
+-- <json>` in a temporary menu terminal. Loading it without args.mode only
+-- returns its testable module.
+--
+-- Rex Lua quirks, checked on 0.1.0-preview.25:
+-- - Palette prompts fail under pcall, so never ask inside one.
+-- - Store a yielding call's result before looping over it: an action sees nil
+--   for `for x in rex.exec(...).stdout:gmatch(...)`.
+-- - After a pcall inside a closure catches an error, that closure's writes to
+--   outer locals are lost; write table fields instead.
 local M = {}
 local CANCEL = "worktree action cancelled"
 local TERMINAL = "com.superlogical.terminal"
+local BASE = "main"
 local function checked(value, err)
   if value == nil then error(err or "Rex returned no result", 0) end
   return value
@@ -34,6 +45,66 @@ local function slug(r, value)
   local name = value:gsub("[^a-zA-Z0-9-]+", "-"):gsub("^-+", ""):gsub("-+$", "")
   return name ~= "" and name or "worktree-" .. digest(r, value):sub(1, 8)
 end
+local function readable(path)
+  local file = io.open(path, "r")
+  if file then file:close() end
+  return file ~= nil
+end
+local function first_line(path)
+  local file = io.open(path, "r")
+  if not file then return nil end
+  local text = file:read("*l")
+  file:close()
+  return text
+end
+local function plural(n, word) return n .. " " .. word .. (n == 1 and "" or "s") end
+
+-- "2 hours ago" from Unix seconds.
+function M.ago(now, t)
+  if not t or t <= 0 then return "no activity" end
+  local s = now - t
+  if s < 60 then return "just now" end
+  local function unit(value, word) return plural(math.floor(value), word) .. " ago" end
+  if s < 3600 then return unit(s / 60, "minute") end
+  if s < 86400 then return unit(s / 3600, "hour") end
+  if s < 2 * 86400 then return "yesterday" end
+  if s < 14 * 86400 then return unit(s / 86400, "day") end
+  if s < 60 * 86400 then return unit(s / (7 * 86400), "week") end
+  if s < 365 * 86400 then return unit(s / (30 * 86400), "month") end
+  return unit(s / (365 * 86400), "year")
+end
+local ago = M.ago
+
+-- Unix seconds from an RFC 3339 timestamp, such as program status updated_at.
+function M.epoch(text)
+  if type(text) ~= "string" then return nil end
+  local y, mo, d, h, mi, s, zone =
+    text:match("^(%d%d%d%d)-(%d%d)-(%d%d)[Tt ](%d%d):(%d%d):(%d%d)%.?%d*(.*)$")
+  if not y then return nil end
+  y, mo = tonumber(y), tonumber(mo)
+  if mo <= 2 then y = y - 1 end
+  local era = math.floor(y / 400)
+  local yoe = y - era * 400
+  local doy = math.floor((153 * ((mo + 9) % 12) + 2) / 5) + tonumber(d) - 1
+  local days = era * 146097 + yoe * 365 + math.floor(yoe / 4) - math.floor(yoe / 100) + doy - 719468
+  local t = days * 86400 + tonumber(h) * 3600 + tonumber(mi) * 60 + tonumber(s)
+  local sign, oh, om = zone:match("^([+-])(%d%d):?(%d%d)$")
+  if sign then return t - (sign == "+" and 1 or -1) * (tonumber(oh) * 3600 + tonumber(om) * 60) end
+  if zone == "Z" or zone == "z" then return t end
+end
+
+-- Newest timestamp in a reflog, read from its tail without running Git.
+local function reflog_time(path)
+  local file = io.open(path, "r")
+  if not file then return nil end
+  local size = file:seek("end") or 0
+  file:seek("set", math.max(0, size - 4096))
+  local tail = file:read("*a") or ""
+  file:close()
+  local latest
+  for stamp in tail:gmatch("> (%d+) [-+]%d%d%d%d\t") do latest = tonumber(stamp) end
+  return latest
+end
 
 local Menu = {}
 Menu.__index = Menu
@@ -57,7 +128,6 @@ function Menu:query(title, row)
   if query == "" then fail(CANCEL) end
   return query
 end
-function Menu:branch() return self:query("Track matching remote branch, otherwise local main; no fetch; blank cancels", "Create branch") end
 function Menu:pick(title, choices)
   if #choices == 0 then fail("No choices available") end
   local rows = {}
@@ -69,14 +139,49 @@ function Menu:pick(title, choices)
 end
 M.Menu = Menu
 
+-- Rex's command palette (rex.ui). A cancelled or timed-out prompt returns nil,
+-- so the action does nothing; any other unanswered prompt stops it with why.
+local Palette = {}
+Palette.__index = Palette
+local UNANSWERED = {
+  no_client = "No Rex app could show the prompt",
+  unsupported = "This Rex app can't show prompts; update it",
+  busy = "Another Rex prompt is open; answer or close it first",
+  failed = "Rex couldn't show the prompt",
+}
+function Palette.new(r) return setmetatable({ rex = r }, Palette) end
+function Palette:ask(kind, spec)
+  local ui = self.rex.ui
+  if type(ui) ~= "table" or not ui[kind] then
+    fail("This Rex can't ask in the command palette; update Rex (control API revision 17 or newer)")
+  end
+  local value, why, detail = ui[kind](spec)
+  if value ~= nil then return value end
+  if why == "cancelled" or why == "timeout" then return nil end
+  fail((UNANSWERED[why] or ("Rex prompt ended: " .. visible(why)))
+    .. (detail and (": " .. visible(detail)) or ""))
+end
+function Palette:input(spec) return self:ask("input", spec) end
+function Palette:pick(spec) return self:ask("pick", spec) end
+M.Palette = Palette
+
 local Workflow = {}
 Workflow.__index = Workflow
-function Workflow:git(directory, ...)
+local GIT_ENV = { GIT_DIR = false, GIT_WORK_TREE = false, GIT_COMMON_DIR = false, GIT_INDEX_FILE = false }
+local function git_argv(directory, ...)
   local argv = { "git", "-C", directory }
   for _, arg in ipairs({...}) do table.insert(argv, arg) end
-  return execute(self.rex, argv, { timeout = 120, env = {
-    GIT_DIR = false, GIT_WORK_TREE = false, GIT_COMMON_DIR = false, GIT_INDEX_FILE = false,
-  } })
+  return argv
+end
+function Workflow:git(directory, ...)
+  return execute(self.rex, git_argv(directory, ...), { timeout = 120, env = GIT_ENV })
+end
+-- Git output, or nil and Git's reason; never raises.
+function Workflow:try_git(directory, ...)
+  local result, err = self.rex.exec(git_argv(directory, ...), { timeout = 120, env = GIT_ENV })
+  if not result then return nil, err end
+  if not result.ok then return nil, "git failed: " .. trim(result.stderr or result.stdout or "") end
+  return result.stdout
 end
 function Workflow:physical(path)
   return line(execute(self.rex, { "/bin/pwd", "-P" }, { cwd = path, timeout = 10 }))
@@ -85,6 +190,22 @@ function Workflow:is_directory(path) return checked(self.rex.exec({ "/bin/test",
 function Workflow:exists(path)
   return checked(self.rex.exec({ "/bin/test", "-e", path })).ok
     or checked(self.rex.exec({ "/bin/test", "-L", path })).ok
+end
+-- Newest modification time of paths, with macOS stat, else GNU stat.
+function Workflow:mtimes(paths, cwd)
+  if #paths == 0 then return nil end
+  local flavors = self.stat_flavor and { self.stat_flavor } or { { "-f", "%m" }, { "-c", "%Y" } }
+  for _, flavor in ipairs(flavors) do
+    local argv = { "/usr/bin/stat", flavor[1], flavor[2], "--" }
+    for _, path in ipairs(paths) do table.insert(argv, path) end
+    local result = self.rex.exec(argv, { cwd = cwd, timeout = 10 })
+    local output = result and result.stdout or ""
+    local newest, numeric = nil, true
+    for value in output:gmatch("[^\n]+") do
+      if value:match("^%d+$") then newest = math.max(newest or 0, tonumber(value)) else numeric = false end
+    end
+    if newest and numeric then self.stat_flavor = flavor; return newest end
+  end
 end
 function Workflow:worktrees()
   local records, record = {}, {}
@@ -105,17 +226,20 @@ function Workflow:worktrees()
   end
   return records
 end
-function Workflow.new(args, r, menu)
-  local self = setmetatable({ args = args, rex = r, menu = menu or Menu.new(r), attached = {} }, Workflow)
+-- Returns nil when the user cancels the project prompt.
+function Workflow.new(args, r, menu, ui)
+  local self = setmetatable({ args = args, rex = r, menu = menu or Menu.new(r),
+    ui = ui or Palette.new(r), attached = {} }, Workflow)
   self.host = checked(r.call("server.status")).host_id
   self.helper = r.session_id
   -- The project menu chooses its checkouts after the user picks an action.
   if args.mode == "project" then return self end
-  local ok, top = pcall(self.git, self, args.directory, "rev-parse", "--show-toplevel")
-  if not ok then
+  local top, err = self:try_git(args.directory, "rev-parse", "--show-toplevel")
+  if not top then
     -- Deletion only ever targets the source terminal's own checkout.
-    if not args.projects or args.mode == "delete" then error(top, 0) end
-    local project = self:pick_project("Projects: this terminal is not in a Git checkout")
+    if not args.projects or args.mode == "delete" then fail(err) end
+    local project = self:pick_project()
+    if not project then return nil end
     if not project.present then fail("Project directory is missing: " .. visible(project.path)) end
     top = self:git(project.path, "rev-parse", "--show-toplevel")
   end
@@ -132,17 +256,26 @@ function Workflow:load(top)
   return self
 end
 function Workflow:attach(session)
-  -- API revision 7 rejects view/block/destroy requests on an unattached RPC
-  -- stream with 409 "stream is not attached to session" (verified live).
-  -- Attach scopes this connection; it does not select or restore the UI session.
-  if not self.attached[session] then
+  if self.attached_all or self.attached[session] then return end
+  if self.rex.session.attach then
+    -- Scripts: API revision 7 rejects view/block/destroy requests on an
+    -- unattached RPC stream with 409 "stream is not attached to session"
+    -- (verified live). Attach scopes this connection; it does not select or
+    -- restore the UI session.
     checked(self.rex.session.attach{ session_id = session })
     self.attached[session] = true
+  else
+    -- Palette actions have no rex.session.attach. attach_all reaches every
+    -- session without joining one, and lasts only for this action (verified on
+    -- preview.25).
+    checked(self.rex.call("session.attach_all", { event_scope = "session" }))
+    self.attached_all = true
   end
 end
 function Workflow:sessions()
   local live = {}
-  for _, session in ipairs(checked(self.rex.call("session.list")).sessions or {}) do
+  local list = checked(self.rex.call("session.list")).sessions or {}
+  for _, session in ipairs(list) do
     live[session.session_id] = session.label or session.session_id
   end
   return live
@@ -156,47 +289,61 @@ function Workflow:windows(session)
   local view = checked(self.rex.session.view{ session_id = session })
   local windows = {}
   for _, window in ipairs(view.windows or {}) do
-    local item = { id = window.window_id, directories = {}, blocks = {} }
+    local item = { id = window.window_id, blocks = {}, terminals = {} }
     for _, layer in ipairs(window.layers or {}) do
       for _, block in ipairs(layer.blocks or {}) do
         item.blocks[block.block_id] = true
-        if block.host_id ~= self.host or block.creator_name ~= TERMINAL then
-          table.insert(item.directories, false)
-        else
+        local directory = false
+        if block.host_id == self.host and block.creator_name == TERMINAL then
           local ok, process = pcall(self.process, self, session, block.block_id)
-          table.insert(item.directories, ok and ((process.foreground or {}).cwd or (process.child or {}).cwd) or false)
+          directory = ok and ((process.foreground or {}).cwd or (process.child or {}).cwd) or false
         end
+        table.insert(item.terminals, { block = block.block_id, directory = directory })
       end
     end
     table.insert(windows, item)
   end
   return windows
 end
-function Workflow:associate(paths, tabs)
-  local live, matches, roots = self:sessions(), {}, {}
-  for _, path in ipairs(paths) do matches[path] = {}; table.insert(roots, path) end
-  table.sort(roots, function(a, b) return #a > #b end)
+-- Every local terminal whose directory is in a checkout, with that checkout's
+-- root. A listing reuses one scan (self.scan); everything else rescans.
+function Workflow:terminals()
+  if self.scan then return self.scan end
+  local found, roots = {}, {}
+  local live = self:sessions()
   for session in pairs(live) do
     if session ~= self.helper then
       -- Discovery is best-effort; deletion rechecks the source tab strictly.
-      local readable, windows = pcall(self.windows, self, session)
-      for _, window in ipairs(readable and windows or {}) do
-        for _, directory in ipairs(window.directories) do
+      local ok, windows = pcall(self.windows, self, session)
+      for _, window in ipairs(ok and windows or {}) do
+        for _, terminal in ipairs(window.terminals) do
+          local directory = terminal.directory
           if directory then
-            local ok, root = pcall(function()
-              local physical = self:physical(directory)
-              for _, candidate in ipairs(roots) do
-                if inside(physical, candidate) then
-                  local actual = self:physical(line(self:git(physical, "rev-parse", "--show-toplevel")))
-                  return actual == candidate and candidate or nil
-                end
-              end
-            end)
-            if ok and root then matches[root][tabs and window.id or session] = session end
+            if roots[directory] == nil then
+              local resolved, root = pcall(function()
+                local physical = self:physical(directory)
+                return self:physical(line(self:git(physical, "rev-parse", "--show-toplevel")))
+              end)
+              roots[directory] = resolved and root or false
+            end
+            if roots[directory] then
+              table.insert(found, { session = session, window = window.id,
+                block = terminal.block, root = roots[directory] })
+            end
           end
         end
       end
     end
+  end
+  return found
+end
+function Workflow:associate(paths, tabs)
+  local matches = {}
+  for _, path in ipairs(paths) do matches[path] = {} end
+  local terminals = self:terminals()
+  for _, terminal in ipairs(terminals) do
+    local found = matches[terminal.root]
+    if found then found[tabs and terminal.window or terminal.session] = terminal.session end
   end
   return matches
 end
@@ -214,14 +361,17 @@ function Workflow:projects()
     local resolved = present and self:physical(path) or path
     if not seen[resolved] then
       seen[resolved] = true
-      table.insert(found, { path = resolved, name = basename(path) .. "  " .. path, present = present })
+      table.insert(found, { path = resolved, name = basename(path), configured = path, present = present })
     end
   end
   if #found == 0 then fail("No projects configured; list them in the projects table in init.lua") end
   return found
 end
-function Workflow:pick_project(title)
+-- Palette list of configured projects: open first, the current one last.
+-- Returns nil when cancelled.
+function Workflow:pick_project()
   local projects, matches = self:projects(), {}
+  self.scan = self:terminals()
   for _, project in ipairs(projects) do
     matches[project.path] = {}
     if project.present then
@@ -233,20 +383,28 @@ function Workflow:pick_project(title)
       end)
     end
   end
+  self.scan = nil
   -- Include worktree-only sessions; labels are never project identity.
-  local groups = { {}, {}, {} }
+  local groups, by_id = { {}, {}, {} }, {}
   for _, project in ipairs(projects) do
     local sessions, group, status = matches[project.path], 2, "session closed"
     if not project.present then status = "missing"
     elseif sessions[self.args.source_session] then group, status = 3, "current session"
     elseif count(sessions) > 0 then group, status = 1, "session open" end
-    table.insert(groups[group], { "[" .. status .. "] " .. project.name, project })
+    by_id[project.path] = project
+    table.insert(groups[group], { id = project.path, title = visible(project.name),
+      subtitle = visible(project.configured), detail = status, icon = "folder" })
   end
-  local choices = {}
+  local items = {}
   for _, group in ipairs(groups) do
-    for _, choice in ipairs(group) do table.insert(choices, choice) end
+    for _, item in ipairs(group) do table.insert(items, item) end
   end
-  return self.menu:pick(title, choices)
+  local id = self.ui:pick{
+    title = (self.args.mode == "new" and "New worktree" or "Open worktree")
+      .. ": this terminal isn't in a Git checkout; choose a project",
+    placeholder = "Filter projects", items = items, confirm = "Choose project",
+  }
+  return id ~= nil and checked(by_id[id], "Unknown project choice") or nil
 end
 function Workflow:focus(session, window)
   self.destination = { session_id = session, window_id = window }
@@ -297,30 +455,6 @@ function Workflow:open_path(path)
   if not session then session, window = self:create(tree) end
   self:focus(session, window)
   return session
-end
-function Workflow:open_all()
-  -- Git remembers the worktrees; Rex holds their tabs. Never restore programs.
-  self.trees = self:worktrees()
-  local failures, destination, target = {}
-  for _, tree in ipairs(self.trees) do
-    if self:available(tree) then
-      local matches = self:associations(true)[tree.path]
-      local n, window = count(matches)
-      local session = window and matches[window]
-      if n == 0 then
-        local ok, result, created = pcall(self.create, self, tree)
-        if ok then session, window = result, created
-        else table.insert(failures, tree.path .. ": " .. tostring(result)) end
-      elseif n > 1 then
-        table.insert(failures, tree.path .. ": several Rex tabs use this checkout")
-      end
-      -- Primary comes first and remains the destination even as tabs are added.
-      if n <= 1 and session and not destination then destination, target = session, window end
-    end
-  end
-  if #failures > 0 then fail("Could not open every worktree tab:\n" .. table.concat(failures, "\n")) end
-  if destination then self:focus(destination, target) end
-  return destination
 end
 function Workflow:project()
   local choice = self.menu:pick("Projects: open every listed project, or type a path", {
@@ -383,6 +517,9 @@ function Workflow:remote_branch(branch)
   end
   return matches[1]
 end
+function Workflow:worktree_path(branch)
+  return parent(self.primary) .. "/" .. slug(self.rex, basename(self.primary)) .. "-" .. slug(self.rex, branch)
+end
 function Workflow:add_branch(branch, new)
   self:git(self.primary, "check-ref-format", "--branch", branch)
   self:git(self.primary, "check-ref-format", "refs/heads/" .. branch) -- no @{-1} expansion
@@ -393,43 +530,301 @@ function Workflow:add_branch(branch, new)
       return self:open_path(tree.path)
     end
   end
-  local path = parent(self.primary) .. "/" .. slug(self.rex, basename(self.primary)) .. "-" .. slug(self.rex, branch)
+  local path = self:worktree_path(branch)
   if self:exists(path) then fail("Directory already exists; will not overwrite it: " .. visible(path)) end
   if new then
     local remote = self:remote_branch(branch)
     if remote then
       self:git(self.primary, "worktree", "add", "--track", "-b", branch, path, remote)
     else
-      self:git(self.primary, "show-ref", "--verify", "refs/heads/main")
-      self:git(self.primary, "worktree", "add", "-b", branch, path, "main")
+      self:git(self.primary, "show-ref", "--verify", "refs/heads/" .. BASE)
+      self:git(self.primary, "worktree", "add", "-b", branch, path, BASE)
     end
   else
     self:git(self.primary, "worktree", "add", path, branch)
   end
   return self:open_path(path) -- failure leaves the branch/checkout for recovery with Open
 end
-function Workflow:new_branch() return self:add_branch(self.menu:branch(), true) end
-function Workflow:open()
-  local matches, choices, checked_out, closed = self:associations(true), {}, {}, 0
+function Workflow:valid_branch(branch)
+  return self:try_git(self.primary, "check-ref-format", "--branch", branch) ~= nil
+    and self:try_git(self.primary, "check-ref-format", "refs/heads/" .. branch) ~= nil
+end
+function Workflow:local_branch(branch)
+  return self:try_git(self.primary, "show-ref", "--verify", "--quiet", "refs/heads/" .. branch) ~= nil
+end
+-- New asks for a branch name until it can create one. An invalid name or an
+-- occupied directory asks again with the text kept and the reason in the
+-- title; an existing branch offers Open. Blank or cancelled does nothing.
+function Workflow:new_branch()
+  local project = visible(basename(self.primary))
+  local question = "New worktree in " .. project
+  local typed
+  while true do
+    local answer = self.ui:input{ title = question, value = typed,
+      placeholder = "type/scope/short-description", confirm = "Create worktree" }
+    if answer == nil or trim(answer) == "" then return nil end
+    typed = answer
+    local branch = trim(answer)
+    if not self:valid_branch(branch) then
+      question = "'" .. visible(branch) .. "' isn't a valid branch name. New worktree in " .. project
+    elseif self:local_branch(branch) then
+      self.trees = self:worktrees()
+      local subtitle = "Create its worktree from the branch as it is"
+      for _, tree in ipairs(self.trees) do
+        if tree.branch == branch then subtitle = "Focus its worktree tab, or reopen it" end
+      end
+      local choice = self.ui:pick{ title = "Branch " .. visible(branch) .. " already exists in " .. project,
+        items = {
+          { id = "open", title = "Open " .. visible(branch), subtitle = subtitle, icon = "branch" },
+          { id = "rename", title = "Choose another name", subtitle = "Edit the branch name" },
+        }, confirm = "Choose" }
+      if choice == nil then return nil end
+      if choice == "open" then return self:add_branch(branch) end
+      question = "New worktree in " .. project
+    elseif self:exists(self:worktree_path(branch)) then
+      question = visible(self:worktree_path(branch)) .. " already exists. New worktree in " .. project
+    else
+      return self:add_branch(branch, true)
+    end
+  end
+end
+
+-- Open's status list -------------------------------------------------------
+local OPERATIONS = {
+  { "rebase-merge/head-name", "rebase" }, { "rebase-apply/rebasing", "rebase" },
+  { "rebase-apply/applying", "am" }, { "MERGE_HEAD", "merge" },
+  { "CHERRY_PICK_HEAD", "cherry-pick" }, { "REVERT_HEAD", "revert" }, { "BISECT_LOG", "bisect" },
+}
+local URGENCY = { blocked = 5, error = 4, done = 3, working = 2, idle = 1 }
+local function agent_name(app)
+  if type(app) ~= "string" or app == "" then return "Agent" end
+  local lower = app:lower()
+  if lower:match("^claude") then return "Claude" end
+  if lower == "pi" then return "Pi" end
+  if lower == "codex" then return "Codex" end
+  return visible(app)
+end
+-- The ref to compare against: main's upstream, else local main, else nil.
+function Workflow:base()
+  local upstream = self:try_git(self.primary, "rev-parse", "--verify", "--quiet",
+    "--symbolic-full-name", BASE .. "@{upstream}")
+  if upstream and line(upstream) ~= "" then return line(upstream) end
+  if self:local_branch(BASE) then return "refs/heads/" .. BASE end
+end
+function Workflow:branches()
+  local raw = self:git(self.primary, "for-each-ref",
+    "--format=%(refname:strip=2)%00%(committerdate:unix)%00%(upstream:track)%00%(subject)", "refs/heads")
+  local list, by_name = {}, {}
+  for row in raw:gmatch("[^\n]+") do
+    local name, date, track, subject = row:match("^([^%z]*)%z([^%z]*)%z([^%z]*)%z(.*)$")
+    if name then
+      local ref = { name = name, date = tonumber(date), gone = track == "[gone]", subject = subject }
+      table.insert(list, ref)
+      by_name[name] = ref
+    end
+  end
+  return list, by_name
+end
+-- The worst program status in the worktree's terminals, and its newest report.
+function Workflow:agent(terminals)
+  local best, newest
+  for _, terminal in ipairs(terminals) do
+    self:attach(terminal.session)
+    local status = self.rex.block.call(TERMINAL, "program_status",
+      { session_id = terminal.session, block_id = terminal.block })
+    local records = status and status.records or {}
+    for _, record in ipairs(records) do
+      local urgency = URGENCY[record.state] or 1
+      local stamp = M.epoch(record.updated_at)
+      if stamp and stamp > (newest or 0) then newest = stamp end
+      if not best or urgency > best.urgency then
+        best = { urgency = urgency, state = record.state, name = agent_name(record.effective_app or record.app) }
+      end
+    end
+  end
+  return best, newest
+end
+-- Local Git and agent facts for one worktree. Reads only: status runs without
+-- optional locks, so not even the index is refreshed.
+function Workflow:inspect(tree, base, refs, terminals)
+  local s = { tree = tree, activity = 0, changed = 0, unmerged = 0,
+    label = tree.branch ~= "" and tree.branch or "detached-" .. (tree.HEAD or ""):sub(1, 8) }
+  if not self:available(tree) then return s end
+  s.present = true
+  local raw = self:git(tree.path, "--no-optional-locks", "status", "--porcelain=v2", "--branch", "-z")
+  local paths, renamed, tracked = {}, false, false
+  for token in (raw .. "\0"):gmatch("([^%z]*)%z") do
+    if renamed then renamed = false -- a rename's original path
+    elseif token:sub(1, 2) == "# " then
+      local key, value = token:match("^# (%S+) ?(.*)$")
+      if key == "branch.upstream" then s.upstream = value
+      elseif key == "branch.ab" then
+        local ahead, behind = value:match("^%+(%d+) %-(%d+)$")
+        s.ahead, s.behind, tracked = tonumber(ahead), tonumber(behind), true
+      end
+    elseif token ~= "" then
+      local kind, xy, path = token:sub(1, 1), nil, nil
+      if kind == "1" then xy, path = token:match("^1 (%S%S) %S+ %S+ %S+ %S+ %S+ %S+ (.+)$")
+      elseif kind == "2" then xy, path = token:match("^2 (%S%S) %S+ %S+ %S+ %S+ %S+ %S+ %S+ (.+)$"); renamed = true
+      elseif kind == "u" then xy, path = token:match("^u (%S%S) %S+ %S+ %S+ %S+ %S+ %S+ %S+ %S+ (.+)$")
+        s.unmerged = s.unmerged + 1
+      elseif kind == "?" then xy, path = "??", token:sub(3) end
+      if path then
+        s.changed = s.changed + 1
+        if not xy:find("D", 1, true) and #paths < 200 then table.insert(paths, path) end
+      end
+    end
+  end
+  s.gone = s.upstream ~= nil and not tracked -- its upstream branch was deleted
+  s.gitdir = line(self:git(tree.path, "rev-parse", "--absolute-git-dir"))
+  for _, operation in ipairs(OPERATIONS) do
+    if not s.operation and readable(s.gitdir .. "/" .. operation[1]) then s.operation = operation[2] end
+  end
+  if tree.branch == "" and s.operation then
+    -- A rebase or bisect detaches HEAD; name the branch it returns to.
+    local head = first_line(s.gitdir .. "/rebase-merge/head-name")
+      or first_line(s.gitdir .. "/rebase-apply/head-name") or first_line(s.gitdir .. "/BISECT_START")
+    local branch = head and (head:gsub("^refs/heads/", ""))
+    if branch and refs[branch] then s.label, s.branch = branch, branch end
+  end
+  local ref = refs[s.branch or tree.branch]
+  if ref then
+    s.committed, s.subject = ref.date, ref.subject
+  else
+    local out = self:try_git(tree.path, "log", "-1", "--format=%ct%x09%s", "HEAD") or ""
+    local date, subject = out:match("^(%d+)\t([^\n]*)")
+    s.committed, s.subject = tonumber(date), subject
+  end
+  local agent, reported = self:agent(terminals)
+  local edited = self:mtimes(paths, tree.path)
+  local moved = reflog_time(s.gitdir .. "/logs/HEAD")
+  s.agent = agent
+  s.activity = math.max(moved or 0, s.committed or 0, reported or 0, edited or 0)
+  local mainline = tree.branch == BASE or tree.path == self.primary
+  if base and tree.branch ~= BASE and tree.branch ~= "" then
+    local counts = self:try_git(tree.path, "rev-list", "--left-right", "--count", base .. "...HEAD") or ""
+    local behind, ahead = counts:match("^(%d+)%s+(%d+)")
+    s.base_behind, s.base_ahead = tonumber(behind), tonumber(ahead)
+  end
+  -- PR merges here rewrite commits: landed means a deleted upstream, or every
+  -- commit already in the base by patch (git cherry), not ancestry alone.
+  local busy = agent and (agent.state == "working" or agent.state == "blocked")
+  if not mainline and base and s.changed == 0 and not s.operation and not busy and s.base_ahead then
+    if s.gone then s.landed = true
+    elseif s.base_ahead > 0 then
+      local cherry = self:try_git(tree.path, "cherry", base, "HEAD") or "+"
+      s.landed = not cherry:find("+", 1, true)
+    else
+      s.landed = s.upstream ~= nil and (s.ahead or 0) == 0
+    end
+  end
+  return s
+end
+-- Facts for one row, most urgent first; the first is the next step.
+function M.signals(s)
+  if not s.present then return { s.tree.prunable and "missing directory" or "unavailable" } end
+  local out, agent = {}, s.agent
+  local function add(text) table.insert(out, text) end
+  if s.operation then add("finish " .. s.operation) end
+  if agent and agent.state == "blocked" then add(agent.name .. " waiting") end
+  if agent and agent.state == "error" then add(agent.name .. " failed") end
+  if s.upstream and not s.gone and (s.ahead or 0) > 0 then add("push " .. s.ahead)
+  elseif s.tree.branch ~= BASE and not s.upstream and not s.landed and (s.base_ahead or 0) > 0 then
+    add("push " .. s.base_ahead) -- never published
+  end
+  if s.changed > 0 then add(s.changed .. " changed") end
+  if agent and agent.state == "done" then add(agent.name .. " done") end
+  if s.landed then add("ready to close")
+  elseif (s.base_behind or 0) > 0 then add("rebase " .. s.base_behind) end
+  if agent and agent.state == "working" then add(agent.name .. " working") end
+  if s.tree.locked then add("locked") end
+  return out
+end
+-- "origin fetched 3 hours ago", from the newest FETCH_HEAD of any worktree.
+function Workflow:fetched(gitdirs, now)
+  local remotes, names = self:git(self.primary, "remote"), {}
+  for name in remotes:gmatch("[^\n]+") do table.insert(names, name) end
+  if #names == 0 then return nil end
+  local files = {}
+  for _, gitdir in ipairs(gitdirs) do
+    if readable(gitdir .. "/FETCH_HEAD") then table.insert(files, gitdir .. "/FETCH_HEAD") end
+  end
+  local newest = self:mtimes(files)
+  if #names == 1 then
+    local who = visible(names[1])
+    return newest and (who .. " fetched " .. ago(now, newest)) or ("no " .. who .. " fetch recorded")
+  end
+  return newest and ("last fetched " .. ago(now, newest)) or "no fetch recorded"
+end
+-- Rows for Open: worktrees by newest activity, then local branches without one.
+function Workflow:status_rows(now)
+  self.trees = self:worktrees()
+  local paths = {}
+  for _, tree in ipairs(self.trees) do table.insert(paths, tree.path) end
+  self.scan = self:terminals()
+  local tabs = self:associate(paths, true)
+  local terminals = {}
+  for _, terminal in ipairs(self.scan) do
+    terminals[terminal.root] = terminals[terminal.root] or {}
+    table.insert(terminals[terminal.root], terminal)
+  end
+  self.scan = nil
+  local base = self:base()
+  local list, refs = self:branches()
+  local statuses, gitdirs, checked_out = {}, {}, {}
   for _, tree in ipairs(self.trees) do
-    local branch = tree.branch ~= "" and tree.branch or "detached-" .. (tree.HEAD or ""):sub(1, 8)
     checked_out[tree.branch] = true
-    local status = count(matches[tree.path]) > 0 and "tab open" or "tab closed"
-    if status == "tab closed" and self:available(tree) then closed = closed + 1 end
-    if tree.locked or tree.prunable then status = status .. "; locked/unavailable" end
-    table.insert(choices, { "[worktree; " .. status .. "] " .. branch .. "  " .. tree.path, { path = tree.path } })
+    local s = self:inspect(tree, base, refs, terminals[tree.path] or {})
+    if s.branch then checked_out[s.branch] = true end
+    s.open = count(tabs[tree.path]) > 0
+    if s.gitdir then table.insert(gitdirs, s.gitdir) end
+    table.insert(statuses, s)
   end
-  if closed > 1 then
-    table.insert(choices, { "[all worktrees] open " .. closed .. " closed tabs", { all = true } })
+  table.sort(statuses, function(a, b)
+    if a.activity ~= b.activity then return a.activity > b.activity end
+    return a.label < b.label
+  end)
+  local items, targets = {}, {}
+  for _, s in ipairs(statuses) do
+    local id = "worktree:" .. s.tree.path
+    local signals = M.signals(s)
+    targets[id] = { path = s.tree.path }
+    table.insert(items, {
+      id = id, title = visible(s.label), icon = s.open and "terminal" or "folder",
+      subtitle = s.present and (ago(now, s.activity) .. (s.subject and (" · " .. visible(s.subject)) or ""))
+        or visible(s.tree.path),
+      detail = signals[1] and table.concat(signals, " · ", 1, math.min(2, #signals)) or nil,
+    })
   end
-  local branches = self:git(self.primary, "for-each-ref", "--format=%(refname:strip=2)", "refs/heads")
-  for branch in branches:gmatch("[^\n]+") do
-    if not checked_out[branch] then table.insert(choices, { "[branch only; create worktree] " .. branch, { branch = branch } }) end
+  local branches = {}
+  for _, ref in ipairs(list) do if not checked_out[ref.name] then table.insert(branches, ref) end end
+  table.sort(branches, function(a, b)
+    if (a.date or 0) ~= (b.date or 0) then return (a.date or 0) > (b.date or 0) end
+    return a.name < b.name
+  end)
+  for _, ref in ipairs(branches) do
+    if #items >= 2000 then break end
+    local id = "branch:" .. ref.name
+    targets[id] = { branch = ref.name }
+    table.insert(items, { id = id, title = visible(ref.name), icon = "branch",
+      subtitle = ago(now, ref.date) .. (ref.subject ~= "" and (" · " .. visible(ref.subject)) or ""),
+      detail = ref.gone and "no worktree · upstream gone" or "no worktree" })
   end
-  local choice = self.menu:pick(basename(self.primary) .. ": worktrees and local branches", choices)
-  if choice.all then return self:open_all() end
-  if choice.path then return self:open_path(choice.path) end
-  return self:add_branch(choice.branch)
+  local title = visible(basename(self.primary)) .. " worktrees"
+  local fetched = self:fetched(gitdirs, now)
+  if fetched then title = title .. " · " .. fetched end
+  return items, targets, title
+end
+-- Enter focuses the worktree's tab, reopens a closed worktree with one shell,
+-- or creates the worktree for a branch. Cancel does nothing.
+function Workflow:open()
+  local items, targets, title = self:status_rows(os.time())
+  local choice = self.ui:pick{ title = title, items = items,
+    placeholder = "Filter worktrees and branches", confirm = "Open" }
+  if choice == nil then return nil end
+  local target = checked(targets[choice], "Unknown worktree choice")
+  if target.path then return self:open_path(target.path) end
+  return self:add_branch(target.branch)
 end
 function Workflow:clean_target()
   self.trees = self:worktrees()
@@ -518,15 +913,33 @@ end
 M.Workflow = Workflow
 M.cancelled = CANCEL
 
+-- New and Open, run inside init.lua's own actions. Nothing here may wrap a
+-- prompt in pcall, so cancelling returns instead of raising.
+function M.action(mode, args, r)
+  if mode ~= "new" and mode ~= "open" then fail("Invalid worktree action") end
+  for _, name in ipairs({ "source_session", "source_block", "directory" }) do
+    if type(args[name]) ~= "string" or args[name] == "" then
+      fail("Run this action from a terminal in the local Rex app")
+    end
+  end
+  local request = { mode = mode }
+  for key, value in pairs(args) do request[key] = value end
+  local workflow = Workflow.new(request, r, nil, Palette.new(r))
+  if not workflow then return nil end
+  if mode == "new" then workflow:new_branch() else workflow:open() end
+  return nil
+end
+
+-- Delete and Projects, run by `rex do` in their temporary menu session.
 function M.main(args, r, terminal)
   terminal = terminal or io
-  -- The project picker needs no terminal directory; the others act on one.
+  -- The project picker needs no terminal directory; deletion acts on one.
   local required = args.mode == "project" and { "source_session" } or { "source_session", "source_block", "directory" }
   for _, name in ipairs(required) do
     if type(args[name]) ~= "string" or args[name] == "" then fail("Launch using the Rex worktree keybindings") end
   end
   if not r.session_id or r.session_id == args.source_session then fail("Launch using the Rex worktree keybindings") end
-  local modes = { new = true, open = true, delete = true, project = true }
+  local modes = { delete = true, project = true }
   if not modes[args.mode] then fail("Invalid worktree action") end
   if args.mode == "project" and type(args.projects) ~= "table" then fail("Launch using the Rex worktree keybindings") end
   local is_menu = false
@@ -537,8 +950,7 @@ function M.main(args, r, terminal)
   local menu, destination, workflow = Menu.new(r), args.source_session, nil
   local ok, err = pcall(function()
     workflow = Workflow.new(args, r, menu)
-    if args.mode == "new" then destination = workflow:new_branch()
-    else destination = workflow[args.mode](workflow) end
+    destination = workflow[args.mode](workflow)
   end)
   if not ok and tostring(err) ~= CANCEL then
     -- Do not depend on fzf to display its own launch/render errors. Preserve

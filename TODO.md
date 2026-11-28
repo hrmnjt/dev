@@ -2,7 +2,7 @@
 
 ## Rex
 
-**Planned, not implemented.** Actions, shortcuts and safety rules stay as in
+Actions, shortcuts and safety rules stay as in
 [the Rex guide](rex/README.md#worktrees) unless an item says otherwise. Use
 Rex's built-in views (Go to Anything, Activity, tab and pane history, undo
 close) before building anything. Checked against Rex 0.1.0-preview.25 (control
@@ -10,57 +10,18 @@ API revision 24) on 2026-11-27.
 
 ### Goals
 
-- New (Cmd+Shift+N) and Open (Cmd+Shift+O), the two most used actions, work
-  entirely in Rex's command palette.
-- Open shows where each worktree stands, so you can get back to the one you
-  were last on and see what's left to finish or close it.
 - Deleting a worktree stays at least as safe as today.
 - After a Rex restart, tabs and panes come back by themselves, and Pi resumes
   its session; our own code no longer handles restart recovery.
 - Terminal preferences apply without quitting Rex.
 
-### Phase 1: New and Open
+### Next
 
-- [ ] **New (Cmd+Shift+N).** The palette asks for the branch name
-  (`rex.ui.input`); outside a Git checkout it first asks for the project
-  (`rex.ui.pick`). Branch rules stay: track an exact fetched remote branch,
-  otherwise branch from local `main`, with no fetch. Done when the worktree
-  opens as a focused tab in the project's session with no menu session or
-  `fzf`; a blank or cancelled prompt does nothing; an invalid name asks again
-  with the text kept and the reason shown; a branch that already exists offers
-  to open it instead; and it works with Remote Control turned off.
-- [ ] **Open (Cmd+Shift+O).** The palette lists this project's worktrees as
-  status rows, newest activity first, with local branches that have no worktree
-  below; outside a checkout it first asks for the project. Each row shows the
-  branch, its last activity and commit, and one next step from local Git and
-  the tab's agent state: finish an operation in progress, answer the waiting
-  agent, commit, push, close or rebase. Enter focuses the tab, reopens a closed
-  worktree with one shell, or creates the worktree for a branch. The old
-  `[all worktrees]` row goes, since Rex restores tabs after a restart. Done when
-  a project with about 15 worktrees lists within the 30-second limit, without
-  fetching or changing Git state; the list says when `origin` was last fetched;
-  it never opens a duplicate tab; and it works with Remote Control turned off.
-- [ ] **Tests and docs for New and Open.** Done when the fixture tests mock
-  `rex.ui` for both actions (each no-answer case, invalid and existing names,
-  choosing a project outside a checkout, status-list signals, duplicate
-  prevention); both shortcuts have been tried on disposable worktrees on the
-  Mac; and `rex/README.md` and the changelog describe them.
-
-Example status list:
-
-```text
-CoreDataEngineering worktrees · origin fetched 3 hours ago     (example rows)
-feat/app/example        2 hours ago · add cost tiles      push 2 · 3 changed
-docs/model/example      yesterday · fix join keys         Claude waiting
-chore/ingestion/example 4 days ago · drop old job         ready to close
-```
-
-New and Open run inside their own actions and load the worktree module from
-their own folder, so a branch trial never runs the deployed copy. Delete and
-Projects keep today's menu session until Phase 2.
-
-### Phase 2: the rest
-
+- [ ] **Mac trial of palette New and Open.** Branch
+  `feat/rex/palette-new-and-open`. Done when both shortcuts have been tried on
+  disposable worktrees on the Mac with Remote Control turned off (see
+  [Checks](rex/README.md#checks)), including a cancelled prompt, an invalid
+  name and an existing branch, and the branch is merged.
 - [ ] **Safe deletion (Cmd+Shift+Backspace).** Done when the native
   confirmation names the project, branch and path and lists any working or
   waiting programs in the tab; the tab closes for real before Git runs;
@@ -96,8 +57,8 @@ server.version`) and can't run under `pcall`, through `rex.invoke`, in event
 handlers or in functions bound directly to keys. Actions get 30 seconds, not
 counting prompt waits, and commands they start stop when they end. Prompts
 reach every connected app, including other devices. An `undoable` tab close
-keeps programs running for about a minute. PR merges here rewrite commits, so
-"landed" needs `git cherry` and `[gone]` upstreams, not ancestry alone.
+keeps programs running for about a minute. `worktrees.lua` lists the Lua quirks
+found while moving New and Open into actions.
 
 Restart behavior ([Session Restore](https://www.superlogical.com/rex/docs/features/session-restore),
 [Resume Rules](https://www.superlogical.com/rex/docs/customize/resume-rules),
