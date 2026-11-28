@@ -128,27 +128,36 @@ remotes stop the action instead of guessing or falling back to `main`. Fetch
 first if the branch is not known locally.
 
 A blank name does nothing. An invalid name, or one whose worktree directory
-already exists, asks again with your text kept and the reason in the title. A
-local branch that already exists offers **Open** (its existing tab, or a new
-worktree from the branch as it is; never reset) or **Choose another name**.
+already exists, asks again with your text kept and **Invalid name** or
+**Folder exists** as the title. A local branch that already exists offers
+**Open** (its existing tab, or a new worktree from the branch as it is; never
+reset) or **Choose another name**.
+
+Rex shows a prompt's title inside its text field, so titles stay short; the
+project's name is in the placeholder and on the **Create in …** row. The
+prompt's width is set by the Rex app; actions can't change it.
 
 ### Open
 
-Open lists every worktree of the project, then local branches without one.
-Each row shows the branch, its last activity and its most urgent next step:
+Open, titled **Worktrees**, lists every worktree of the project, then local
+branches without one. Each row shows the branch, what kind of row it is, its
+last activity, and its most urgent next step:
 
 ```text
-dev worktrees · origin fetched 3 hours ago
-feat/app/example                    push 2
-  2 hours ago
-docs/model/example          Claude waiting
-  yesterday
-chore/ingestion/example     ready to close
-  4 days ago
-local-only                     no worktree
-  5 days ago
+Worktrees
+feat/app/example                     push 2
+  tab open · 2 hours ago
+main                   fetched 3 hours ago
+  tab open · yesterday
+chore/ingestion/example      ready to close
+  no tab · 4 days ago
+local-only                  create worktree
+  branch only · 5 days ago
 ```
 
+- **Kind:** `tab open` (a worktree with a tab), `no tab` (a worktree without
+  one), or `branch only` (no worktree yet; Delete keeps branches, so they
+  linger here after their worktree is gone).
 - **Activity** is the newest of the worktree's checkouts and commits (its `HEAD`
   reflog), edits to its uncommitted files, and program reports from its tabs.
 - **Next step**, most urgent first: `finish rebase` (or merge, cherry-pick,
@@ -160,15 +169,14 @@ local-only                     no worktree
 - **Ready to close** means clean, with its upstream deleted or every commit
   already in `main` by patch (`git cherry`), so squash merges count. Branches
   compare with `main`'s upstream when it has one, else local `main`.
-- Icons: a terminal for an open tab, a folder for a closed worktree, a branch
-  for a branch without one. The title shows the newest `git fetch` from any
-  worktree.
+- The primary checkout shows when the project was last fetched (the newest
+  `git fetch` from any worktree) when nothing is more urgent.
 
 Open only reads: it never fetches, and `git status` runs without optional
 locks, so not even the index is refreshed. Its Git reads run in parallel, a
-few rounds in all rather than one command after another. Return focuses the worktree's tab,
-reopens a closed worktree as one shell tab, or creates the worktree for a
-branch. Open checks the tabs again after you choose, so a tab opened meanwhile
+few rounds in all rather than one command after another. Return focuses the
+worktree's tab, reopens a closed worktree as one shell tab, or creates the
+worktree for a branch. Open checks the tabs again after you choose, so a tab opened meanwhile
 is focused rather than duplicated.
 
 ### Projects

@@ -499,11 +499,9 @@ function Workflow:pick_project()
   for _, group in ipairs(groups) do
     for _, item in ipairs(group) do table.insert(items, item) end
   end
-  local id = self.ui:pick{
-    title = (self.args.mode == "new" and "New worktree" or "Open worktree")
-      .. ": this terminal isn't in a Git checkout; choose a project",
-    placeholder = "Filter projects", items = items, confirm = "Choose project",
-  }
+  -- Rex shows the title inside the filter field: keep every title short.
+  local id = self.ui:pick{ title = "Project", items = items,
+    placeholder = "Not in a Git checkout; filter projects", confirm = "Choose project" }
   return id ~= nil and checked(by_id[id], "Unknown project choice") or nil
 end
 function Workflow:focus(session, window)
@@ -653,36 +651,39 @@ function Workflow:local_branch(branch)
   return self:try_git(self.primary, "show-ref", "--verify", "--quiet", "refs/heads/" .. branch) ~= nil
 end
 -- New asks for a branch name until it can create one. An invalid name or an
--- occupied directory asks again with the text kept and the reason in the
--- title; an existing branch offers Open. Blank or cancelled does nothing.
+-- occupied directory asks again with the text kept and the reason as the
+-- (short) title; an existing branch offers Open. Blank or cancelled does
+-- nothing. The project name sits in the placeholder and the confirm row,
+-- because Rex shows the title inside the text field.
 function Workflow:new_branch()
   local project = visible(basename(self.primary))
-  local question = "New worktree in " .. project
+  local question = "New worktree"
   local typed
   while true do
     local answer = self.ui:input{ title = question, value = typed,
-      placeholder = "type/scope/short-description", confirm = "Create worktree" }
+      placeholder = "Branch for " .. project .. ", like type/scope/description",
+      confirm = "Create in " .. project }
     if answer == nil or trim(answer) == "" then return nil end
     typed = answer
     local branch = trim(answer)
     if not self:valid_branch(branch) then
-      question = "'" .. visible(branch) .. "' isn't a valid branch name. New worktree in " .. project
+      question = "Invalid name"
     elseif self:local_branch(branch) then
       self.trees = self:worktrees()
       local subtitle = "Create its worktree from the branch as it is"
       for _, tree in ipairs(self.trees) do
         if tree.branch == branch then subtitle = "Focus its worktree tab, or reopen it" end
       end
-      local choice = self.ui:pick{ title = "Branch " .. visible(branch) .. " already exists in " .. project,
+      local choice = self.ui:pick{ title = "Branch exists",
         items = {
           { id = "open", title = "Open " .. visible(branch), subtitle = subtitle, icon = "branch" },
           { id = "rename", title = "Choose another name", subtitle = "Edit the branch name" },
         }, confirm = "Choose" }
       if choice == nil then return nil end
       if choice == "open" then return self:add_branch(branch) end
-      question = "New worktree in " .. project
+      question = "New worktree"
     elseif self:exists(self:worktree_path(branch)) then
-      question = visible(self:worktree_path(branch)) .. " already exists. New worktree in " .. project
+      question = "Folder exists"
     else
       return self:add_branch(branch, true)
     end
@@ -929,19 +930,16 @@ function M.signals(s)
   if s.tree.locked then add("locked") end
   return out
 end
--- "origin fetched 3 hours ago", from the newest FETCH_HEAD of any worktree.
+-- "fetched 3 hours ago", from the newest FETCH_HEAD of any worktree; nil
+-- without remotes.
 local function fetched(remotes, newest, now)
-  local names = {}
-  for name in remotes:gmatch("[^\n]+") do table.insert(names, name) end
-  if #names == 0 then return nil end
-  if #names == 1 then
-    local who = visible(names[1])
-    return newest and (who .. " fetched " .. ago(now, newest)) or ("no " .. who .. " fetch recorded")
-  end
-  return newest and ("last fetched " .. ago(now, newest)) or "no fetch recorded"
+  if not remotes:find("%S") then return nil end
+  return newest and ("fetched " .. ago(now, newest)) or "fetch time unknown"
 end
 -- Rows for Open: worktrees by newest activity, then local branches without
--- one. Each row shows its last activity and its most urgent fact.
+-- one. The second line says which kind of row it is and when it was last
+-- active; the right side shows the most urgent fact. The primary checkout
+-- shows when the project was last fetched if nothing is more urgent.
 function Workflow:status_rows(now)
   local prefetch = self.prefetch or {}
   local list, refs = self:branches(prefetch.refs)
@@ -959,8 +957,12 @@ function Workflow:status_rows(now)
   for _, s in ipairs(statuses) do
     local id = "worktree:" .. s.tree.path
     targets[id] = { path = s.tree.path }
+    local detail = M.signals(s)[1]
+    if not detail and s.tree.path == self.primary then detail = fetched(remotes, fetch_time, now) end
     table.insert(items, { id = id, title = visible(s.label), icon = s.open and "terminal" or "folder",
-      subtitle = s.present and ago(now, s.activity) or visible(s.tree.path), detail = M.signals(s)[1] })
+      subtitle = s.present and ((s.open and "tab open · " or "no tab · ") .. ago(now, s.activity))
+        or visible(s.tree.path),
+      detail = detail })
   end
   local branches = {}
   for _, ref in ipairs(list) do if not checked_out[ref.name] then table.insert(branches, ref) end end
@@ -973,12 +975,10 @@ function Workflow:status_rows(now)
     local id = "branch:" .. ref.name
     targets[id] = { branch = ref.name }
     table.insert(items, { id = id, title = visible(ref.name), icon = "branch",
-      subtitle = ago(now, ref.date), detail = "no worktree" })
+      subtitle = "branch only · " .. ago(now, ref.date), detail = "create worktree" })
   end
-  local title = visible(basename(self.primary)) .. " worktrees"
-  local fetch = fetched(remotes, fetch_time, now)
-  if fetch then title = title .. " · " .. fetch end
-  return items, targets, title
+  -- Rex shows the title inside the filter field: keep it short.
+  return items, targets, "Worktrees"
 end
 -- Enter focuses the worktree's tab, reopens a closed worktree with one shell,
 -- or creates the worktree for a branch. Cancel does nothing.

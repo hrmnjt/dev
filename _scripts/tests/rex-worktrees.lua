@@ -271,6 +271,8 @@ local function palette(f, answers)
   local ui = { asked = {} }
   local function respond(kind, spec)
     assert(type(spec.title) == "string" and spec.title ~= "", "prompts need a title")
+    -- Rex shows the title inside the text field, where a long one hides what you type.
+    assert(#spec.title <= 13, "prompt title too long for the field: " .. spec.title)
     table.insert(ui.asked, { kind = kind, spec = spec })
     assert(#answers > 0, "unexpected " .. kind .. " prompt: " .. spec.title)
     local answer = table.remove(answers, 1)
@@ -424,7 +426,7 @@ test("an existing branch offers Open and is never reset", function(f)
   local ui = palette(f, { "feature-a", false })
   assert(f:action("new") == nil)
   local offer = ui:last("pick")
-  contains(offer.title, "feature-a already exists")
+  assert(offer.title == "Branch exists", offer.title)
   assert(ui:item("Open feature-a") and ui:item("Choose another name"))
   assert(f:trees() == 1 and #f.server.created == 0)
   palette(f, { "feature-a", "Open feature-a" })
@@ -446,7 +448,7 @@ end)
 test("choosing another name asks again with the text kept", function(f)
   git(f.primary, "branch", "taken")
   local ui = palette(f, { "taken", "Choose another name", function(spec)
-    assert(spec.value == "taken" and spec.title == "New worktree in repo with spaces")
+    assert(spec.value == "taken" and spec.title == "New worktree")
     return "feature-b"
   end })
   f:action("new")
@@ -463,7 +465,7 @@ test("invalid names ask again with the text kept and the reason shown", function
   for _, branch in ipairs({"--force", "a..b", "trailing/", "a;touch bad", "@{-1}", "HEAD"}) do
     local ui = palette(f, { branch, function(spec)
       assert(spec.value == branch, "keep the typed text")
-      contains(spec.title, "isn't a valid branch name")
+      assert(spec.title == "Invalid name", spec.title)
       return nil, "cancelled"
     end })
     assert(f:action("new") == nil and #ui.asked == 2)
@@ -477,7 +479,7 @@ test("an occupied directory asks again without overwriting it", function(f)
   local occupied = f.root .. "/repo-with-spaces-feature-a"
   execute({ "/bin/mkdir", occupied }); write(occupied .. "/keep", "keep")
   local ui = palette(f, { "feature/a", function(spec)
-    assert(spec.value == "feature/a"); contains(spec.title, occupied .. " already exists")
+    assert(spec.value == "feature/a" and spec.title == "Folder exists", spec.title)
     return nil, "cancelled"
   end })
   assert(f:action("new") == nil and #ui.asked == 2)
@@ -539,10 +541,13 @@ test("Open rows: open and closed worktrees, then branches without one", function
   local ui = palette(f, { false })
   f:action("open")
   local spec = ui:last("pick")
-  assert(spec.title == "repo with spaces worktrees" and spec.confirm == "Open", spec.title)
+  assert(spec.title == "Worktrees" and spec.confirm == "Open", spec.title)
   assert(ui:item("main").icon == "terminal" and ui:item("feature-a").icon == "folder")
   local branch = ui:item("local-only")
-  assert(branch.icon == "branch" and branch.detail == "no worktree")
+  assert(branch.icon == "branch" and branch.detail == "create worktree")
+  assert(branch.subtitle:match("^branch only · ") and ui:item("feature-a").subtitle:match("^no tab · "))
+  assert(ui:item("main").subtitle:match("^tab open · "), ui:item("main").subtitle)
+  assert(ui:item("main").detail == nil, "no remotes: no fetch time")
   assert(spec.items[#spec.items].title == "local-only", "branch rows come after worktrees")
   assert(not ui:titles():find("[all worktrees]", 1, true), "the old open-all row is gone")
   for _, item in ipairs(spec.items) do assert(not item.title:find("[", 1, true)) end
@@ -612,19 +617,20 @@ test("Open status rows show activity, commit and one next step, newest first", f
   local ui = palette(f, { false })
   f:action("open")
   local spec = ui:last("pick")
-  assert(spec.title == "repo with spaces worktrees · origin fetched just now", spec.title)
+  assert(spec.title == "Worktrees", spec.title)
   local function row(title) return assert(ui:item(title), "missing row " .. title) end
   -- One fact per row, the most urgent: pushing comes before the 3 changed files.
   assert(row("feat/app/example").detail == "push 2", row("feat/app/example").detail)
-  assert(row("feat/app/example").subtitle == "just now", row("feat/app/example").subtitle)
+  assert(row("feat/app/example").subtitle == "no tab · just now", row("feat/app/example").subtitle)
   assert(row("docs/model/example").detail == "Claude waiting", row("docs/model/example").detail)
-  assert(row("docs/model/example").subtitle == "yesterday", row("docs/model/example").subtitle)
+  assert(row("docs/model/example").subtitle == "tab open · yesterday", row("docs/model/example").subtitle)
   assert(row("docs/model/example").icon == "terminal")
-  assert(row("feat/new/unpublished").detail == "push 1" and row("feat/new/unpublished").subtitle == "3 days ago")
+  assert(row("feat/new/unpublished").detail == "push 1" and row("feat/new/unpublished").subtitle == "no tab · 3 days ago")
   assert(row("chore/ingestion/example").detail == "ready to close", row("chore/ingestion/example").detail)
-  assert(row("chore/ingestion/example").subtitle == "4 days ago")
-  assert(row("main").detail == nil, tostring(row("main").detail))
-  assert(row("gone-branch").detail == "no worktree")
+  assert(row("chore/ingestion/example").subtitle == "no tab · 4 days ago")
+  -- The primary checkout shows the newest fetch when nothing is more urgent.
+  assert(row("main").detail == "fetched just now", tostring(row("main").detail))
+  assert(row("gone-branch").detail == "create worktree" and row("gone-branch").subtitle:match("^branch only · "))
   local order = {}
   for i, item in ipairs(spec.items) do order[item.title] = i end
   assert(order["feat/app/example"] < order["docs/model/example"] and order["docs/model/example"] < order["feat/new/unpublished"]
@@ -959,14 +965,14 @@ test("outside Git, Open picks a listed project, then its worktrees", function(f)
   local ui = palette(f, { "repo with spaces", "feature-a" })
   f:action("open", f.root, { projects = { other, f.primary, f.root .. "/missing" } })
   local projects = ui.asked[1].spec
-  contains(projects.title, "Open worktree")
+  assert(projects.title == "Project", projects.title)
   local rows = {}
   for _, item in ipairs(projects.items) do
     table.insert(rows, item.title .. "|" .. item.subtitle .. "|" .. item.detail .. "|" .. item.icon)
   end
   assert(table.concat(rows, "\n") == "other|" .. other .. "|session closed|folder\nrepo with spaces|"
     .. f.primary .. "|session closed|folder\nmissing|" .. f.root .. "/missing|missing|folder", table.concat(rows, "\n"))
-  assert(ui.asked[2].spec.title == "repo with spaces worktrees")
+  assert(ui.asked[2].spec.title == "Worktrees")
   local created = f.server.created[1]
   assert(#f.server.created == 1 and created.path:match("feature%-a$") and created.label == "repo-with-spaces")
 end)
@@ -974,8 +980,9 @@ test("outside Git, New branches from the chosen project's local main", function(
   local other = f:repo("host/owner/other"); f:source_at(f.root)
   local ui = palette(f, { "other", "feature-b" })
   f:action("new", f.root, { projects = { f.primary, other } })
-  contains(ui.asked[1].spec.title, "New worktree")
-  assert(ui.asked[2].spec.title == "New worktree in other")
+  assert(ui.asked[1].spec.title == "Project")
+  assert(ui.asked[2].spec.title == "New worktree" and ui.asked[2].spec.confirm == "Create in other")
+  contains(ui.asked[2].spec.placeholder, "other")
   local created = f.server.created[1]
   assert(created.label == "other" and created.tab_label == "feature-b" and created.path == f.root .. "/host/owner/other-feature-b")
   assert(git(created.path, "rev-parse", "HEAD") == git(other, "rev-parse", "main"))
