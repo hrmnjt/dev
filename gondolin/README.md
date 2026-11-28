@@ -16,7 +16,8 @@ installs, logs in, rebuilds, deploys, or changes GitHub settings automatically.
   prompts bypassed.
 - Amp is not supported for now. A VM trial worked except image upload
   (`EPROTO` TLS handshake failure), and its server refuses CLIs more than a few
-  days old, forcing frequent rebuilds; see the `TODO.md` notes before retrying.
+  days old, forcing frequent rebuilds. Before retrying, read the "Amp: deferred"
+  notes with `git show 75ab44a^:TODO.md`.
 - Every VM uses the explicit fingerprinted image, QEMU, 2 CPUs, a provisional
   **4 GiB** memory budget and a **16 GiB** root disk. Measure boot/RSS and parallel
   sessions on the Mac before accepting that budget; it is not a measured baseline.
