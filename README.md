@@ -217,9 +217,9 @@ just theme          # print the selected theme
 just theme nord     # or: just theme gruvbox
 ```
 
-Reload Ghostty with Cmd+Shift+, afterwards; open shells and new Neovim
-instances follow on their own. Rex and Pi switch in their own settings. See
-[Nord](NORD.md) for what each app does.
+Then reload Ghostty with Cmd+Shift+, and run **Apply Appearance Preferences**
+in Rex's command palette; open shells and new Neovim instances follow on their
+own, and Pi switches in its settings. See [Nord](NORD.md) for what each app does.
 
 #### Managing packages
 
@@ -267,8 +267,9 @@ test transcripts and intermediate fixes live in `git log`; entries through
   `~/.local/state/hrmnjt-dev/theme`. Zsh rereads it before each prompt for fzf,
   Glow, Lazygit and Starship, and Neovim reads it at start. The recipe links a
   Ghostty overlay and sets AeroSpace borders, the macOS accent and a generated
-  Nord wallpaper. Rex and Pi switch in their own settings. Zed and Claude Code
-  stay Gruvbox; Claude's Nord theme is ready but unused. See `NORD.md`.
+  Nord wallpaper. Rex's **Apply Appearance Preferences** imports the selected
+  theme, and Pi switches in its settings. Zed and Claude Code stay Gruvbox;
+  Claude's Nord theme is ready but unused. See `NORD.md`.
 - 20261128: Agent VMs now use Asia/Dubai local time instead of UTC, set by
   `timezone` in Gondolin's `config.json` and applied at each boot, so changing
   it needs no rebuild. Bumped the image pins: Claude Code 2.1.332, Playwright

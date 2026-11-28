@@ -115,8 +115,9 @@ apply() {
 
   cat <<EOF
 
-Next: reload Ghostty (Cmd+Shift+,). Open shells switch at their next prompt;
-Neovim switches when it next starts. Rex and Pi switch in their own settings.
+Next: reload Ghostty (Cmd+Shift+,) and run Apply Appearance Preferences in
+Rex's command palette. Open shells switch at their next prompt and Neovim when
+it next starts; pick the theme in Pi's settings.
 EOF
 }
 

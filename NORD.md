@@ -26,8 +26,9 @@ The choice is one line in `~/.local/state/hrmnjt-dev/theme`, or under
 
 It refuses to change anything if `~/.config/ghostty` is a folded Stow link or
 `theme.local` is a real file. Afterwards, reload Ghostty with Cmd+Shift+,.
-Open shells switch at their next prompt, and Neovim when it next starts. Rex,
-Pi and Brave switch by hand (below); Zed and Claude Code stay Gruvbox.
+Open shells switch at their next prompt, and Neovim when it next starts. In
+Rex, run **Apply Appearance Preferences** from the command palette. Pi and
+Brave switch by hand (below); Zed and Claude Code stay Gruvbox.
 
 ## Palette
 
@@ -61,7 +62,7 @@ Rex theme if it is too faint.
 | Surface | Source of theme | How it switches |
 |---|---|---|
 | Ghostty | `ghostty/.config/ghostty/nord.conf` | Built-in `Nord` with the accent cursor and nord2 selection. Linked as `theme.local`, which the main config includes last. |
-| Rex | `rex/.config/rex/themes/nord` | Ghostty's Nord palette with the same cursor and selection. Import it once next to Gruvbox, then pick it in Settings → Themes; see `rex/README.md`. |
+| Rex | `rex/.config/rex/themes/nord` | Ghostty's Nord palette with the same cursor and selection. **Apply Appearance Preferences** in `init.lua` reads the selection, then imports and selects that theme; see `rex/README.md`. |
 | Neovim | `nvim/.config/nvim/lua/plugins/theme.lua` | `gbprod/nord.nvim`, transparent like Gruvbox; reads the selection at start. LazyVim's Lazygit takes its colours from the colorscheme. |
 | Starship | `starship/.config/starship.toml` | `[palettes.nord]` uses Gruvbox's key names. Zsh points `STARSHIP_CONFIG` at a copy in the state directory whose palette line selects it. |
 | `fzf` | `zsh/.zshrc` | Nord `FZF_DEFAULT_OPTS`, set by the theme block. |
@@ -76,4 +77,5 @@ Rex theme if it is too faint.
 
 Zsh owns `FZF_DEFAULT_OPTS`, `GLOW_STYLE`, `LG_CONFIG_FILE` and
 `STARSHIP_CONFIG`, and uses each Nord file only once Stow has deployed it. The
-switch is checked by `./_scripts/tests/theme.sh`.
+switch is checked by `./_scripts/tests/theme.sh`, and Rex's action by
+`./_scripts/tests/rex-worktrees.sh`.

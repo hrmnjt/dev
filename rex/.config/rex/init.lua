@@ -112,16 +112,27 @@ local appearance = {
   { "client.setting.notifications.activity.system_notifications", { value = true } },
   { "client.setting.notifications.activity.sounds", { value = false } },
 }
+-- The theme file for `just theme`'s one-line selection (NORD.md): Nord when it
+-- says nord, otherwise Gruvbox.
+local function selected_theme()
+  local state = os.getenv("XDG_STATE_HOME")
+  if not state or state == "" then state = checked(os.getenv("HOME"), "HOME is not set") .. "/.local/state" end
+  local file = io.open(state .. "/hrmnjt-dev/theme", "r")
+  local theme = file and file:read("*l")
+  if file then file:close() end
+  return theme == "nord" and "nord" or "gruvbox-dark-hard"
+end
 -- Queued client actions run in the app that ran this action once it returns,
 -- so this needs no Remote Control.
 rex.action{
   name = "appearance_apply", title = "Apply Appearance Preferences", category = "Appearance",
   run = function()
-    local theme = here and (here .. "/themes/gruvbox-dark-hard")
+    local name = selected_theme()
+    local theme = here and (here .. "/themes/" .. name)
     local file = theme and io.open(theme, "r")
-    if not file then error("Deploy rex/themes/gruvbox-dark-hard with just stowall first", 0) end
+    if not file then error("Deploy rex/themes/" .. name .. " with just stowall first", 0) end
     file:close()
-    -- Dark appearance with the Gruvbox theme; importing a theme also selects it.
+    -- Dark appearance with the selected theme; importing a theme also selects it.
     rex.client.queue("client.appearance.switch_mode", { mode = "dark" })
     rex.client.queue("client.theme.import", { path = theme })
     for _, setting in ipairs(appearance) do rex.client.queue(setting[1], setting[2]) end
