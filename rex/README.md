@@ -18,54 +18,27 @@ rex config check
 rex --autostart=false config reload
 ```
 
-## Terminal preferences
+## Appearance
 
-Choose these values in Rex Settings, or **quit Rex with Cmd+Q** and run the
-commands below from another terminal. These native keys were checked in
-Beta 0.1.0 (1347); revisit them after upgrades.
+In the command palette (**Cmd+Shift+P**), run **Apply Appearance Preferences**.
+It applies these Rex settings at once, without quitting Rex or needing Remote
+Control:
 
-```bash
-# JetBrains Mono Nerd Font, 18 pt; the font cask is already in Brewfile.
-defaults write com.superlogical.rex Workspace.terminalFontName \
-  -string 'JetBrainsMono Nerd Font Mono'
-defaults write com.superlogical.rex Workspace.terminalFontPointSize -float 18
-defaults write com.superlogical.rex Workspace.terminalFontSmoothing -bool true
-defaults write com.superlogical.rex Workspace.terminalAllowsLigatures -bool true
+- Dark appearance with the Gruvbox theme from `themes/gruvbox-dark-hard`
+  (imported and selected), using the theme's selection colors.
+- JetBrainsMono Nerd Font Mono, Regular, 18 pt (the font cask is in
+  Brewfile), with smoothing and ligatures.
+- Improved text contrast, programs' own colors kept (no forced theme palette)
+  so Pi and Neovim look right, and sRGB rather than Display P3.
+- No copy on select, balanced splits, click to focus panes.
+- Terminal and program-activity notifications on, activity sounds off.
 
-# Improve contrast, preserve Pi/Neovim colors, and use sRGB rather than P3.
-defaults write com.superlogical.rex Workspace.terminalImproveTextContrast -bool true
-defaults write com.superlogical.rex Workspace.terminalUseThemePalette -bool false
-defaults write com.superlogical.rex Workspace.terminalUsesDisplayP3 -bool false
-
-# Keep the clipboard intact; balance splits; click to focus panes.
-defaults write com.superlogical.rex Workspace.terminalCopyOnSelect -bool false
-defaults write com.superlogical.rex Workspace.balancesSplitsOnCreation -bool true
-defaults write com.superlogical.rex Workspace.focusFollowsMouse -bool false
-
-# Allow notifications without Rex's extra program-activity sounds.
-defaults write com.superlogical.rex Workspace.allowsTerminalNotifications -bool true
-defaults write com.superlogical.rex Workspace.showsProgramActivityNotifications -bool true
-defaults write com.superlogical.rex Workspace.playsProgramActivitySounds -bool false
-```
-
-Reopen Rex. Choose the font's **Regular** face and reset any pane-specific zoom.
-These preferences are app-managed, not tracked here; undo individual choices in
-Settings rather than replacing the whole preference domain.
-
-## Theme
-
-With Rex open and its CLI on PATH:
-
-```bash
-rex --autostart=false do client.appearance.switch_mode mode=dark
-rex --autostart=false do client.theme.import \
-  "path=$HOME/.config/rex/themes/gruvbox-dark-hard"
-```
-
-Or import that file in **Settings → Themes** as a Ghostty theme. With multiple
-clients, use `rex client ls` and add `-C <client-label-or-id>` before `do`.
-If a selection override remains, set background `#3c3836`, foreground `#fbf1c7`.
-Repeat the import after changing the theme file; Rex stores a copy.
+The list lives in the `appearance` table in `init.lua`. Each entry is one of
+Rex for Mac's `client.setting.*` actions; list them with their arguments with
+`rex -C <app> actions` (`rex client ls` names the app). Run the action again
+after changing the table or the theme file, since Rex stores its own copy of
+an imported theme. Any choice can still be changed in Settings; reset a
+pane-specific zoom there by hand.
 
 ## Pi notifications
 

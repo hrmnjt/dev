@@ -1,5 +1,5 @@
--- Worktree and project actions, and which programs a restart resumes.
--- Appearance preferences remain manual: rex/README.md.
+-- Worktree and project actions, which programs a restart resumes, and an
+-- action that applies the Rex app's appearance preferences.
 
 -- Projects for Cmd+Shift+K, and for New/Open outside a Git checkout. List
 -- primary checkouts in the order you want them; `~/` is your home directory.
@@ -85,6 +85,48 @@ local function palette_action(mode, ctx)
     projects = mode ~= "delete" and expanded_projects(assert(os.getenv("HOME"), "HOME is not set")) or nil,
   }, rex)
 end
+
+-- The Rex app's own settings, applied by "Apply Appearance Preferences" in the
+-- command palette without quitting Rex. Each is a client.setting.* action of
+-- Rex for Mac (`rex -C <app> actions` lists their arguments).
+local appearance = {
+  -- JetBrains Mono Nerd Font, Regular, 18 pt; the font cask is in Brewfile.
+  { "client.setting.terminal.typography.font", { value = "JetBrainsMono Nerd Font Mono" } },
+  { "client.setting.terminal.typography.style", { value = "Regular" } },
+  { "client.setting.terminal.typography.size", { value = 18 } },
+  { "client.setting.terminal.advanced_fonts.smoothing", { value = true } },
+  { "client.setting.terminal.advanced_fonts.ligatures", { value = true } },
+  -- Improve contrast, keep Pi/Neovim colors, and use sRGB rather than P3.
+  { "client.setting.terminal.colors.contrast", { value = true } },
+  { "client.setting.terminal.colors.palette", { value = false } },
+  { "client.setting.terminal.colors.display_p3", { value = false } },
+  -- Keep the clipboard intact and the theme's selection colors.
+  { "client.setting.terminal.selection.copy_on_select", { value = false } },
+  { "client.setting.terminal.selection.background", { value = "theme" } },
+  { "client.setting.terminal.selection.foreground", { value = "theme" } },
+  -- Balance splits; click to focus panes.
+  { "client.setting.interface.splits_focus.autobalance", { value = true } },
+  { "client.setting.interface.splits_focus.focus_follows_mouse", { value = false } },
+  -- Allow notifications without Rex's extra program-activity sounds.
+  { "client.setting.notifications.macos.terminal_notifications", { value = true } },
+  { "client.setting.notifications.activity.system_notifications", { value = true } },
+  { "client.setting.notifications.activity.sounds", { value = false } },
+}
+-- Queued client actions run in the app that ran this action once it returns,
+-- so this needs no Remote Control.
+rex.action{
+  name = "appearance_apply", title = "Apply Appearance Preferences", category = "Appearance",
+  run = function()
+    local theme = here and (here .. "/themes/gruvbox-dark-hard")
+    local file = theme and io.open(theme, "r")
+    if not file then error("Deploy rex/themes/gruvbox-dark-hard with just stowall first", 0) end
+    file:close()
+    -- Dark appearance with the Gruvbox theme; importing a theme also selects it.
+    rex.client.queue("client.appearance.switch_mode", { mode = "dark" })
+    rex.client.queue("client.theme.import", { path = theme })
+    for _, setting in ipairs(appearance) do rex.client.queue(setting[1], setting[2]) end
+  end,
+}
 
 -- Cmd shortcuts never reach terminal programs, so every Ctrl key stays theirs.
 for _, item in ipairs({
