@@ -614,16 +614,17 @@ test("Open status rows show activity, commit and one next step, newest first", f
   local spec = ui:last("pick")
   assert(spec.title == "repo with spaces worktrees · origin fetched just now", spec.title)
   local function row(title) return assert(ui:item(title), "missing row " .. title) end
-  assert(row("feat/app/example").detail == "push 2 · 3 changed", row("feat/app/example").detail)
-  assert(row("feat/app/example").subtitle == "just now · add cost tiles", row("feat/app/example").subtitle)
+  -- One fact per row, the most urgent: pushing comes before the 3 changed files.
+  assert(row("feat/app/example").detail == "push 2", row("feat/app/example").detail)
+  assert(row("feat/app/example").subtitle == "just now", row("feat/app/example").subtitle)
   assert(row("docs/model/example").detail == "Claude waiting", row("docs/model/example").detail)
-  assert(row("docs/model/example").subtitle == "yesterday · fix join keys", row("docs/model/example").subtitle)
+  assert(row("docs/model/example").subtitle == "yesterday", row("docs/model/example").subtitle)
   assert(row("docs/model/example").icon == "terminal")
-  assert(row("feat/new/unpublished").detail == "push 1" and row("feat/new/unpublished").subtitle == "3 days ago · start idea")
+  assert(row("feat/new/unpublished").detail == "push 1" and row("feat/new/unpublished").subtitle == "3 days ago")
   assert(row("chore/ingestion/example").detail == "ready to close", row("chore/ingestion/example").detail)
-  assert(row("chore/ingestion/example").subtitle == "4 days ago · drop old job")
+  assert(row("chore/ingestion/example").subtitle == "4 days ago")
   assert(row("main").detail == nil, tostring(row("main").detail))
-  assert(row("gone-branch").detail == "no worktree · upstream gone")
+  assert(row("gone-branch").detail == "no worktree")
   local order = {}
   for i, item in ipairs(spec.items) do order[item.title] = i end
   assert(order["feat/app/example"] < order["docs/model/example"] and order["docs/model/example"] < order["feat/new/unpublished"]
@@ -643,10 +644,9 @@ test("Open shows operations in progress, needed rebases and patch-landed work", 
   assert(conflict and not conflict.ok, "fixture rebase should stop on a conflict")
   local ui = palette(f, { false })
   f:action("open")
-  assert(ui:item("busy").detail:match("^finish rebase"), ui:item("busy").detail)
+  assert(ui:item("busy").detail == "finish rebase", ui:item("busy").detail)
   local _, rows = ui:titles():gsub("busy", "")
   assert(rows == 1 and ui:item("busy").icon ~= "branch", "a rebasing worktree keeps its branch row")
-  assert(ui:item("busy").subtitle:match("· busy change$"), ui:item("busy").subtitle)
   assert(ui:item("behind").detail == "rebase 2", ui:item("behind").detail)
   assert(ui:item("landed").detail == "ready to close", ui:item("landed").detail)
   execute({ "/bin/rm", "-rf", behind })
@@ -680,7 +680,7 @@ test("about 15 worktrees list quickly without fetching or changing Git state", f
   local elapsed = os.time() - started
   assert(elapsed < 30, "listing took " .. elapsed .. "s")
   assert(#ui:last("pick").items == 15)
-  assert(runs.waited <= 7, runs.waited .. " commands ran one after another")
+  assert(runs.waited <= 2, runs.waited .. " commands ran one after another")
   assert(runs.started >= 45, runs.started .. " commands ran in parallel")
   local changed = execute({ "/usr/bin/find", f.primary .. "/.git", "-newer", marker })
   assert(changed == "", "Open changed Git state:\n" .. changed)
