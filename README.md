@@ -249,10 +249,11 @@ test transcripts and intermediate fixes live in `git log`; entries through
 - 20261128: Rex New (Cmd+Shift+N) and Open (Cmd+Shift+O) now ask in the
   command palette with no menu session, `fzf` or Remote Control. New asks again
   for invalid or occupied names and offers Open for existing branches. Open
-  lists worktrees by newest activity with one next step (finish an operation,
-  answer an agent, push, commit, close or rebase), running its Git reads in
-  parallel, and drops `[all worktrees]`. Delete and Projects keep the `fzf`
-  menu for now.
+  lists worktrees by newest activity, marked `tab open`, `no tab` or
+  `branch only`, with one next step (finish an operation, answer an agent,
+  push, commit, close or rebase). It runs its Git reads in parallel and drops
+  `[all worktrees]`. Prompt titles stay short because Rex shows them inside
+  the text field. Delete and Projects keep the `fzf` menu for now.
 - 20261125: Playwright's Chromium in agent VMs now trusts Gondolin's HTTPS
   interception CA, so external HTTPS works without `ignoreHTTPSErrors`. The
   image adds `libnss3-tools`, and each boot imports the CA into the guest
