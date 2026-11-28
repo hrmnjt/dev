@@ -1,5 +1,6 @@
 {
   "memory": "4G",
   "cpus": 2,
-  "disk": "16G"
+  "disk": "16G",
+  "timezone": "Asia/Dubai"
 }

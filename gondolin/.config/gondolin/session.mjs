@@ -28,16 +28,21 @@ export async function createSession(options, dependencies = {}) {
   if (!["pi","claude"].includes(agent)) throw new Error("Unknown agent.");
   // Verify the image before retrieving secrets or creating any mutable state.
   const {spec,directory} = (dependencies.requireImage ?? requireImage)();
+  const config = dependencies.config ?? readJson(path.join(CONFIG_DIR,"config.json"));
+  // An IANA name under the guest's /usr/share/zoneinfo; no dots, so no traversal.
+  const timezone = config.timezone ?? "UTC";
+  if (typeof timezone !== "string" || !/^[A-Za-z0-9_+-]+(\/[A-Za-z0-9_+-]+)*$/.test(timezone)) throw new Error(`Agent VM timezone must be an IANA zone name such as Asia/Dubai; fix "timezone" in ${path.join(CONFIG_DIR,"config.json")}.`);
   const sdk = dependencies.sdk ?? await loadGondolin(installationDirectory);
   const {VM, RealFSProvider, ReadonlyProvider, MemoryProvider, SandboxVfsProvider, createHttpHooks, makePlaceholderFunc} = sdk;
   const project = setupToken ? null : projectInfo(cwd);
   const definitions = setupToken ? {} : secretDefinitions(agent, dependencies.keychainValue);
   const secrets = Object.fromEntries(Object.entries(definitions).map(([name,{value,hosts,prefix}]) => [name,{value,hosts,placeholder:makePlaceholderFunc({prefix,length:48})}]));
   const {httpHooks,env:secretEnv} = createHttpHooks({secrets,blockInternalRanges:true});
-  const env = guestEnv(secretEnv);
+  // TZ reaches every agent process; boot also links /etc/localtime for root
+  // stages, sudo and `gondolin attach` shells, which don't get this environment.
+  const env = {...guestEnv(secretEnv), TZ:timezone};
   const mounts = {};
   let clipboard, vm;
-  const config = readJson(path.join(CONFIG_DIR,"config.json"));
   const stateRoot = dependencies.stateRoot ?? path.join(os.homedir(),".local/state/agent-vm");
   const roPaths = [CONFIG_DIR];
   const hidden = project ? [path.join(project.workspace,"_models")] : [];
@@ -133,6 +138,8 @@ export async function createSession(options, dependencies = {}) {
     // a busy guest behind, failing HTTPS to newly seen hosts and apt's date checks.
     const setClock = () => ["/bin/date","-u","-s","@"+(Date.now()/1000).toFixed(3)];
     await checked("guest clock sync",setClock());
+    // The image stays on UTC; local time comes from config.json, so changing it needs no rebuild.
+    await checked("guest timezone setup",["/bin/bash","-c",'zone=/usr/share/zoneinfo/$1; [ -f "$zone" ] || { echo "no zoneinfo for $1" >&2; exit 1; }; ln -sfn "$zone" /etc/localtime && printf "%s\\n" "$1" > /etc/timezone',"timezone",timezone]);
     if (project) {
       // Gondolin 0.14 sandboxfs is mounted root-only. bindfs re-exports the same
       // guarded providers to UID 1000; it grants no new host paths or permissions.

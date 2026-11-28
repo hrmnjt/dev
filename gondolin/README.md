@@ -187,6 +187,11 @@ lets the next boot recreate it. The launcher also synchronizes the guest
 clock at boot and every 30 seconds in Claude sessions to avoid certificate
 failures after Mac sleep.
 
+Guest local time follows `timezone` in `config.json` (`Asia/Dubai`; UTC when
+unset), so agents report Dubai time. Each boot links `/etc/localtime` and
+passes `TZ` to agent processes, so editing it needs no rebuild. A name outside
+the guest's zoneinfo stops launch.
+
 Public HTTP(S) internet access follows Gondolin's default policy. Internal/private
 IP destinations and Mac services are blocked, with only the images-only clipboard
 proxy mapped for Claude. No general project service mapping exists yet. The

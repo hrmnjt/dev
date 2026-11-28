@@ -120,6 +120,46 @@ test("guest clock follows the Mac from boot and, for Claude, through Mac sleep",
   }
 });
 
+test("guest local time follows config.json's timezone from boot, without a rebuild",async t => {
+  const zoneCall = f => f.calls.find(c => c.command?.[3] === "timezone");
+  for (const agent of ["claude","pi"]) {
+    const f = mock(t);
+    const session = await createSession({agent,cwd:path.join(f.root,"workspace")},f.deps);
+    const zone = zoneCall(f);
+    assert.deepEqual(zone.command.slice(3),["timezone","Asia/Dubai"]);assert.equal(zone.opts?.env,undefined,"root stage");
+    assert.equal(f.calls.indexOf(zone),1,"right after the clock, before any agent process");
+    assert.equal(f.specs[0].env.TZ,"Asia/Dubai");
+    await session.bash("date",session.project.cwd);assert.equal(f.calls.at(-1).opts.env.TZ,"Asia/Dubai");
+    await session.close();
+  }
+  // The stage's own script, against a temporary zoneinfo and /etc.
+  const f = mock(t);
+  await (await createSession({agent:"pi",cwd:path.join(f.root,"workspace")},f.deps)).close();
+  const {command} = zoneCall(f), zoneinfo = path.join(f.root,"zoneinfo"), etc = path.join(f.root,"etc");
+  fs.mkdirSync(path.join(zoneinfo,"Asia"),{recursive:true});fs.mkdirSync(etc);fs.writeFileSync(path.join(zoneinfo,"Asia/Dubai"),"TZif");
+  const script = command[2].replaceAll("/usr/share/zoneinfo",zoneinfo).replaceAll("/etc/",etc+"/");
+  const boot = name => spawnSync("bash",["-c",script,"timezone",name],{encoding:"utf8"});
+  const linked = boot("Asia/Dubai");assert.equal(linked.status,0,linked.stderr);
+  assert.equal(fs.readlinkSync(path.join(etc,"localtime")),path.join(zoneinfo,"Asia/Dubai"));
+  assert.equal(fs.readFileSync(path.join(etc,"timezone"),"utf8"),"Asia/Dubai\n");
+  const unknown = boot("Mars/Olympus");assert.equal(unknown.status,1);assert.match(unknown.stderr,/no zoneinfo for Mars\/Olympus/);
+  assert.equal(fs.readlinkSync(path.join(etc,"localtime")),path.join(zoneinfo,"Asia/Dubai"),"an unknown zone changes nothing");
+  // A zone missing from the image stops launch like every other stage.
+  const missing = mock(t,{guestResult:c => c[3] === "timezone" ? {exitCode:1,stderr:"no zoneinfo for Asia/Dubai\n"} : undefined});
+  await assert.rejects(createSession({agent:"claude",cwd:path.join(missing.root,"workspace")},missing.deps),
+    /Guest initialization failed during "guest timezone setup" \(exit 1; no host fallback\)\.\nstderr: "no zoneinfo for Asia\/Dubai/);
+  assert.equal(missing.closed,1);
+  // Unset keeps the image's UTC; anything but a plain IANA name stops before Keychain or a VM.
+  const utc = mock(t);utc.deps.config = {memory:"4G",cpus:2,disk:"16G"};
+  await (await createSession({agent:"pi",cwd:path.join(utc.root,"workspace")},utc.deps)).close();
+  assert.equal(utc.specs[0].env.TZ,"UTC");assert.deepEqual(zoneCall(utc).command.slice(3),["timezone","UTC"]);
+  for (const timezone of ["../../etc/passwd","/etc/localtime","Asia/Dubai\n","Asia/Dubai; reboot","",4]) {
+    const g = mock(t);let reads = 0;g.deps.keychainValue = () => {reads++;};g.deps.config = {timezone};
+    await assert.rejects(createSession({agent:"claude",cwd:path.join(g.root,"workspace")},g.deps),/Agent VM timezone must be an IANA zone name/);
+    assert.equal(reads,0);assert.equal(g.specs.length,0);
+  }
+});
+
 const CA = "/etc/gondolin/mitm/ca.crt";
 const trustCalls = f => f.calls.filter(c => c.command?.includes(CA));
 
