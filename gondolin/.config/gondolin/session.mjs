@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { randomBytes } from "node:crypto";
-import { CONFIG_DIR, HOME, readJson, projectInfo, inside, quote, globalGitConfig, guestEnv, providerGuard } from "./policy.mjs";
+import { CONFIG_DIR, HOME, readJson, projectInfo, inside, quote, globalGitConfig, guestEnv, providerGuard, selectedTheme } from "./policy.mjs";
 import { requireImage } from "./image.mjs";
 import { secretDefinitions } from "./credentials.mjs";
 import { startClipboard } from "./clipboard.mjs";
@@ -87,7 +87,11 @@ export async function createSession(options, dependencies = {}) {
       await put("/gitignore",ignore ? fs.readFileSync(ignore) : "");
       const source = fs.existsSync(path.join(checkout,"claude/.config/agent-vm/claude/settings.json")) ? path.join(checkout,"claude/.config/agent-vm/claude") : path.join(os.homedir(),".config/agent-vm/claude");
       roPaths.push(fs.realpathSync(source),path.join(checkout,"gondolin/.local/bin"));
-      await put("/claude/settings.json",fs.readFileSync(path.join(source,"settings.json")));
+      // Claude's theme follows `just theme` at each launch (NORD.md). The tracked
+      // file names Gruvbox; served as managed settings, /theme can't override it.
+      const settings = readJson(path.join(source,"settings.json"));
+      if (selectedTheme(dependencies.themeFile) === "nord" && fs.existsSync(path.join(source,"themes/nord.json"))) settings.theme = "custom:nord";
+      await put("/claude/settings.json",JSON.stringify(settings,null,2)+"\n");
       await put("/claude/CLAUDE.md",fs.readFileSync(path.join(source,"CLAUDE.md")));
       for (const theme of fs.readdirSync(path.join(source,"themes")).filter(f => f.endsWith(".json"))) await put("/claude/themes/"+theme,fs.readFileSync(path.join(source,"themes",theme)));
       mounts["/etc/agent-config"] = new ReadonlyProvider(memory);

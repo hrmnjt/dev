@@ -166,6 +166,7 @@ State is under `~/.local/state/agent-vm/<primary-hash>/<agent>/`:
 - Claude uses `home/claude-state/` for history/memory; tracked settings are served
   read-only through `/etc/agent-config`, including managed settings and personal
   instructions/themes. This separates mutable runtime state from `.claude` config.
+  Each launch sets the served theme from `just theme` ([Nord](../NORD.md)).
 - All other root-disk changes are discarded on exit. Parallel sessions have
   separate VMs but intentionally share their project's agent history/memory.
 

@@ -218,8 +218,9 @@ just theme nord     # or: just theme gruvbox
 ```
 
 Then reload Ghostty with Cmd+Shift+, and run **Apply Appearance Preferences**
-in Rex's command palette; open shells and new Neovim instances follow on their
-own, and Pi switches in its settings. See [Nord](NORD.md) for what each app does.
+in Rex's command palette; open shells and new Neovim and `claude` sessions
+follow on their own, and Pi switches in its settings. See [Nord](NORD.md) for
+what each app does.
 
 #### Managing packages
 
