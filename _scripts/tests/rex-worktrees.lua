@@ -3,8 +3,8 @@
 local real, real_open, real_dofile = rex, io.open, dofile
 local root = assert(real.args.root, "pass root=the-repository-path")
 local fixture_root = real.args.fixture
-local wiring = { actions = {}, bindings = {}, created = {}, queued = {}, native = {}, deployed = true,
-  host = "local", directory = "/repo with spaces" }
+local wiring = { actions = {}, bindings = {}, created = {}, queued = {}, native = {}, settings = {},
+  deployed = true, host = "local", directory = "/repo with spaces" }
 io.open = function()
   if wiring.deployed then return { close = function() end } end
 end
@@ -12,6 +12,8 @@ rex = {
   json = real.json,
   action = function(action) wiring.actions[action.name] = action end,
   bind = function(key, action, args) wiring.bindings[key] = { action = action, args = args } end,
+  set = function(key, value) wiring.settings[key] = value end,
+  match = { uuid = "<uuid>" },
   call = function(method, args)
     if method == "server.status" then return { host_id = "local" } end
     assert(method == "session.create", "unexpected operation: " .. method)
@@ -34,8 +36,8 @@ rex = {
     table.insert(wiring.queued, args)
   end },
 }
--- New and Open load worktrees.lua from init.lua's own folder and call it in
--- their action; capture that instead of running Git.
+-- Every action loads worktrees.lua from init.lua's own folder and calls it;
+-- capture that instead of running Git.
 dofile = function(path)
   if path:match("/worktrees%.lua$") then
     wiring.loaded = path
@@ -45,6 +47,16 @@ dofile = function(path)
 end
 real_dofile(root .. "/rex/.config/rex/init.lua")
 assert(#wiring.created == 0 and #wiring.queued == 0 and #wiring.native == 0, "config load must have no side effects")
+-- Resume rules: only Claude Code and Pi, only under ~/code; other agents off.
+assert(wiring.settings["resume.trust.claude.dir"] == "~/code")
+local pi = assert(wiring.settings["resume.trust.pi"], "Pi's rule is set in full")
+assert(pi.dir == "~/code" and pi.command[1] == "pi" and pi.command[2] == "--session" and pi.command[3] == "<uuid>")
+local settings = 0
+for _, agent in ipairs({ "codex", "opencode", "gemini", "copilot", "crush" }) do
+  assert(wiring.settings["resume.trust." .. agent] == false, agent .. " must not resume")
+end
+for _ in pairs(wiring.settings) do settings = settings + 1 end
+assert(settings == 7, "only the intended resume settings")
 local context = { session_id = "source", block_id = "block", client_id = "client" }
 local home = assert(os.getenv("HOME"))
 local function projects_expanded(list)
@@ -52,7 +64,7 @@ local function projects_expanded(list)
   for _, path in ipairs(list) do assert(path:sub(1, 1) == "/", "~/ must be expanded: " .. path) end
 end
 for _, pair in ipairs({ {"new", "cmd+shift+n", "worktree_new"}, {"open", "cmd+shift+o", "worktree_open"},
-  {"delete", "cmd+shift+backspace", "worktree_delete"} }) do
+  {"delete", "cmd+shift+backspace", "worktree_delete"}, {"project", "cmd+shift+k", "project_switch"} }) do
   assert(wiring.bindings[pair[2]].action == pair[3])
   wiring.actions[pair[3]].run(context)
   -- Palette actions: no menu session, fzf, `rex -C`, or Remote Control.
@@ -60,27 +72,13 @@ for _, pair in ipairs({ {"new", "cmd+shift+n", "worktree_new"}, {"open", "cmd+sh
   assert(wiring.loaded == root .. "/rex/.config/rex/worktrees.lua", "load the module beside init.lua: " .. tostring(wiring.loaded))
   local call = wiring.native[#wiring.native]
   assert(call.mode == pair[1] and call.r == rex)
-  assert(call.args.directory == wiring.directory and call.args.source_session == "source" and call.args.source_block == "block")
+  assert(call.args.source_session == "source" and call.args.source_block == "block")
+  -- Projects never reads the focused terminal's directory.
+  assert(call.args.directory == (pair[1] ~= "project" and wiring.directory or nil))
   if pair[1] == "delete" then assert(call.args.projects == nil, "delete never offers projects")
   else projects_expanded(call.args.projects) end
 end
-for _, pair in ipairs({ {"project", "cmd+shift+k", "project_switch"} }) do
-  local action = pair[3]
-  assert(wiring.bindings[pair[2]].action == action)
-  wiring.actions[action].run(context)
-  local menu = wiring.created[#wiring.created]
-  assert(menu.label == "rex-worktrees-" .. pair[1] and #menu.initial_windows == 1)
-  local options = menu.initial_windows[1].layout.block.options
-  local argv = options.command
-  assert(argv[1]:match("rex$") and argv[2] == "--autostart=false")
-  assert(argv[3] == "-C" and argv[4] == "client" and argv[5] == "do")
-  assert(argv[6]:match("/rex/worktrees.lua$") and argv[7] == "--args")
-  local args = assert(real.json.decode(argv[8]))
-  assert(args.mode == pair[1] and args.source_session == "source" and args.directory == nil)
-  projects_expanded(args.projects)
-  assert(options.cwd == home and options.exit.on_completion == false)
-end
-assert(#wiring.queued == 1 and #wiring.native == 3)
+assert(#wiring.native == 4)
 local bound = 0
 for key in pairs(wiring.bindings) do
   bound = bound + 1
@@ -99,15 +97,16 @@ end
 refused({})
 refused({}, "worktree_new")
 refused({ session_id = "source" }, "worktree_open") -- no terminal block
-refused({ session_id = "source", block_id = "block" }, "project_switch")
+refused({}, "project_switch")
 wiring.host = "remote"; refused(context); refused(context, "worktree_new"); refused(context, "worktree_open")
 wiring.host, wiring.directory = "local", nil; refused(context); refused(context, "worktree_open")
--- The project picker never reads the focused terminal's location.
-wiring.host = "remote"; wiring.actions.project_switch.run({ session_id = "source", client_id = "client" })
-assert(#wiring.created == 2)
+-- Projects works from any pane, even a remote one.
+wiring.host = "remote"; wiring.actions.project_switch.run({ session_id = "source" })
+assert(#wiring.native == 5 and wiring.native[5].mode == "project")
 wiring.host = "local"
 wiring.directory, wiring.deployed = "/repo with spaces", false
 refused(context); refused(context, "worktree_new"); refused(context, "worktree_open")
+refused(context, "project_switch")
 rex, io.open, dofile = real, real_open, real_dofile
 local core = dofile(root .. "/rex/.config/rex/worktrees.lua")
 if not fixture_root then return { ok = true, actions = 4, rejected_contexts = rejected.n, bindings = 4 } end
@@ -139,28 +138,6 @@ local function fails(fn, text)
   if text then contains(err, text) end
 end
 local function run(flow, fn) return fn(flow) end
-local function choose(choices, wanted)
-  if type(wanted) == "number" then return choices[wanted][2] end
-  for _, choice in ipairs(choices) do if choice[1]:find(wanted, 1, true) then return choice[2] end end
-  error("no row contains " .. wanted)
-end
--- fzf stand-in for Delete and Projects.
-local function menu(selection, confirm, hook)
-  local ui = { selection = selection or 1, confirm = confirm ~= false, hook = hook }
-  function ui:query() return assert(self.path, "unexpected path prompt") end
-  function ui:pick(title, choices)
-    if title:match("^Projects") then self.project_rows = choices; return choose(choices, self.project or 1) end
-    self.rows = choices
-    if self.hook then self.hook() end
-    return choose(choices, self.selection)
-  end
-  return ui
-end
-local function labels(rows)
-  local text = {}
-  for _, row in ipairs(rows) do table.insert(text, row[1]) end
-  return table.concat(text, "\n")
-end
 local function fake(primary)
   local f = { live = { source = "main", helper = "menu" }, paths = { source = {primary}, helper = {} },
     tabs = {}, created = {}, sessions_created = {}, closed = {}, killed = {}, focused = {}, targets = {},
@@ -325,10 +302,10 @@ local function fixture()
   git(f.primary, "add", "tracked"); git(f.primary, "commit", "-m", "fixture")
   f.base = git(f.primary, "rev-parse", "main"):gsub("\n$", "")
   f.server = fake(f.primary)
-  function f:flow(directory, ui, extra)
+  function f:flow(directory, extra)
     local args = { directory = directory or self.primary, source_session = "source", source_block = "1" }
     for key, value in pairs(extra or {}) do args[key] = value end
-    return core.Workflow.new(args, self.server.rex, ui or menu())
+    return core.Workflow.new(args, self.server.rex)
   end
   function f:action(mode, directory, extra)
     local args = { directory = directory or self.primary, source_session = "source", source_block = "1" }
@@ -721,7 +698,7 @@ test("palette action arguments are required", function(f)
     args[name] = nil
     fails(function() core.action("open", args, f.server.rex) end, "terminal in the local Rex app")
   end
-  fails(function() f:action("project") end, "Invalid worktree action")
+  fails(function() f:action("rename") end, "Invalid worktree action")
 end)
 test("renamed session is still found by its terminal directory", function(f)
   local path, id = f:linked()
@@ -870,29 +847,6 @@ test("nested repository not adopted as parent checkout", function(f)
   f.server.live.nested, f.server.paths.nested = "nested", {nested}
   run(f:flow(), function(flow) assert(not flow:associations()[path].nested) end)
 end)
-test("fzf row/query parsing and cancellation use only argv/stdin", function(f)
-  local responses = { {ok = true, code = 0, stdout = "/some/path\0Open path\0"},
-    {ok = true, code = 0, stdout = "2\tsecond\0"}, {ok = false, code = 130, stdout = ""} }
-  local calls = {}
-  local ui = core.Menu.new({ exec = function(argv, options)
-    table.insert(calls, {argv, options}); return table.remove(responses, 1)
-  end })
-  assert(ui:query("path", "Open path") == "/some/path")
-  assert(ui:pick("picker", {{"first", false}, {"second", true}}))
-  fails(function() ui:query("path", "Open path") end, core.cancelled)
-  assert(calls[1][2].env.FZF_DEFAULT_OPTS == "" and calls[1][2].stdin == "Open path\0")
-  assert(calls[2][2].stdin == "1\tfirst\0" .. "2\tsecond\0")
-end)
-test("native fzf emits the expected query and row delimiters", function(f)
-  local filter = "Open"
-  local ui = core.Menu.new({ exec = function(argv, options)
-    table.insert(argv, "--filter=" .. filter) -- exercise real fzf without opening a TTY
-    return real.exec(argv, options)
-  end })
-  assert(ui:query("native query", "Open path") == "Open")
-  filter = "second"
-  assert(ui:pick("native picker", {{"first", false}, {"second", true}}))
-end)
 test("relative times and program status timestamps", function(f)
   local now = 1795806167
   for seconds, text in pairs({ [0] = "just now", [59] = "just now", [60] = "1 minute ago", [7200] = "2 hours ago",
@@ -906,29 +860,6 @@ test("relative times and program status timestamps", function(f)
   assert(core.epoch("2026-11-28T00:32:47+05:30") == 1795806167)
   assert(core.epoch("2000-02-29T00:00:00Z") == 951782400 and core.epoch("1970-01-01T00:00:00Z") == 0)
   assert(core.epoch("yesterday") == nil and core.epoch("2026-11-27T19:02:47") == nil)
-end)
-test("manual invocation cannot close a working session", function(f)
-  fails(function() core.main({mode = "project"}, f.server.rex) end, "keybindings")
-  fails(function()
-    core.main({mode = "project", source_session = "source", projects = { f.primary }}, f.server.rex)
-  end, "temporary menu session")
-  -- New, Open and Delete run in the palette, never in a menu session.
-  for _, mode in ipairs({ "open", "delete" }) do
-    fails(function()
-      core.main({mode = mode, source_session = "source", source_block = "focused", directory = f.primary}, f.server.rex)
-    end, "Invalid worktree action")
-  end
-  assert(#f.server.killed == 0)
-end)
-test("cancelled main action returns to source and closes only its menu", function(f)
-  f.server.live.helper = "rex-worktrees-project"
-  f.server.rex.exec = setmetatable({}, { __call = function(_, argv, options)
-    if argv[1] == "fzf" then return {ok = false, code = 130, stdout = "", stderr = ""} end
-    return real.exec(argv, options)
-  end })
-  core.main({mode = "project", source_session = "source", projects = { f.primary }}, f.server.rex)
-  assert(#f.server.killed == 1 and f.server.killed[1] == "helper" and f.server.live.source)
-  assert(f.server.focused[1] == "source")
 end)
 test("native Git preserves tracked changes staged or modified during shutdown", function(f)
   local path = f:linked()
@@ -995,29 +926,6 @@ test("Delete runs as a palette action and cancelling does nothing", function(f)
   palette(f, {})
   fails(function() f:action("delete", f.root, { projects = { f.primary } }) end, "not a git repository")
 end)
-test("fzf launch errors are printed in full and acknowledged without invoking fzf again", function(f)
-  f.server.live.helper = "rex-worktrees-project"
-  local console = { calls = 0, waited = false, output = "" }
-  local message = "fzf launch failed\n" .. string.rep("long error text ", 100)
-  f.server.rex.exec = setmetatable({}, {__call = function(_, argv, options)
-    if argv[1] == "fzf" then console.calls = console.calls + 1; return nil, message end
-    return real.exec(argv, options)
-  end})
-  local terminal = {
-    write = function(text) console.output = console.output .. text end,
-    flush = function() end,
-    read = function(format)
-      assert(format == "*l" and #f.server.killed == 0 and f.server.live.helper)
-      console.waited = true
-      return ""
-    end,
-  }
-  core.main({mode = "project", source_session = "source", projects = { f.primary }}, f.server.rex, terminal)
-  assert(console.calls == 1 and console.waited)
-  contains(console.output, message)
-  contains(console.output, "Press Enter to close this menu.")
-  assert(#f.server.killed == 1 and f.server.killed[1] == "helper" and f.server.live.source)
-end)
 test("outside Git, Open picks a listed project, then its worktrees", function(f)
   local other = f:repo("host/owner/other"); f:repo("unlisted"); f:linked(); f:source_at(f.root)
   local ui = palette(f, { "repo with spaces", "feature-a" })
@@ -1063,7 +971,7 @@ test("missing projects and empty lists are refused without creating sessions", f
 end)
 test("delete outside Git fails without offering projects", function(f)
   local ui = palette(f, {})
-  fails(function() f:flow(f.root, menu(), { mode = "delete", projects = { f.primary } }) end, "not a git repository")
+  fails(function() f:flow(f.root, { mode = "delete", projects = { f.primary } }) end, "not a git repository")
   assert(#ui.asked == 0 and #f.server.killed == 0)
 end)
 test("outside Git, the project list shows open first and the current session last", function(f)
@@ -1078,58 +986,54 @@ test("outside Git, the project list shows open first and the current session las
     table.concat(details, "\n"))
   assert(#f.server.created == 0 and f.server.targets[1].session_id == "other")
 end)
-test("open all projects creates only missing sessions and leaves focus alone", function(f)
-  local other, zeta = f:repo("host/owner/other"), f:repo("host/owner/zeta")
-  execute({ "/bin/mkdir", other .. "/sub", zeta .. "/sub" })
-  f.server.live.other, f.server.paths.other = "renamed", {other .. "/sub"}
+test("Projects focuses a listed project's primary checkout, or opens it in its session", function(f)
+  local other = f:repo("host/owner/other"); f:linked()
+  local ui = palette(f, { "repo with spaces" })
+  assert(f:action("project", nil, { projects = { f.primary, other } }) == nil)
+  local spec = ui:last("pick")
+  assert(spec.title == "Project" and spec.allow_other == true, "typing a path is allowed")
+  assert(#f.server.created == 0 and f.server.targets[1].window_id == "source-tab")
+  -- A project without a session gets one, with its primary checkout's tab.
+  palette(f, { "other" })
+  f:action("project", nil, { projects = { f.primary, other } })
+  local created = f.server.created[1]
+  assert(#f.server.created == 1 and created.label == "other" and created.path == other)
+  assert(f.server.targets[2].session_id == created.id and f.server.targets[2].window_id == created.window)
+  palette(f, { "other" })
+  f:action("project", nil, { projects = { f.primary, other } })
+  assert(#f.server.created == 1, "never a second tab for the same checkout")
+end)
+test("Projects needs no terminal directory, and cancelling does nothing", function(f)
   f:source_at(f.root)
-  local args = { mode = "project", projects = { f.primary, zeta, zeta .. "/sub", other, f.root .. "/missing" } }
-  local ui = menu(); ui.project = "[all projects]"
-  fails(function() run(f:flow(nil, ui, args), function(flow) flow:project() end) end,
-    f.root .. "/missing: directory is missing")
-  contains(labels(ui.project_rows), "[path]")
-  local created = {}
-  for _, session in ipairs(f.server.created) do created[session.path] = session.label end
-  assert(#f.server.created == 2 and created[f.primary] == "repo-with-spaces" and created[zeta] == "zeta")
-  args.projects[5] = nil
-  run(f:flow(nil, menu(), args), function(flow) assert(flow:project() == "source") end)
-  assert(#f.server.created == 2 and #f.server.focused == 0)
+  local ui = palette(f, { false })
+  assert(core.action("project", { source_session = "source", projects = { f.primary } }, f.server.rex) == nil)
+  assert(#ui.asked == 1 and #f.server.created == 0 and #f.server.focused == 0)
+  fails(function() core.action("project", { projects = { f.primary } }, f.server.rex) end, "terminal in the local Rex app")
 end)
 test("a typed path opens its checkout once and is never listed", function(f)
   local other = f:repo("host/owner/other"); execute({ "/bin/mkdir", other .. "/sub" })
-  local args = { mode = "project", projects = { f.primary } }
+  local projects = { f.primary }
   for _ = 1, 2 do
-    local ui = menu(); ui.project, ui.path = "[path]", other .. "/sub"
-    run(f:flow(nil, ui, args), function(flow) flow:project() end)
+    palette(f, { { { text = "  " .. other .. "/sub " } } })
+    f:action("project", nil, { projects = projects })
   end
   local created = f.server.created[1]
   assert(#f.server.created == 1 and created.label == "other" and created.path == other)
   assert(#f.server.focused == 2 and f.server.focused[1] == created.id and f.server.focused[2] == created.id)
-  assert(#args.projects == 1)
+  assert(#projects == 1)
   for typed, text in pairs({ ["relative/path"] = "absolute or ~/", [f.root .. "/missing"] = "Directory not found",
     ["~/.rex-worktrees-fixture-missing"] = home .. "/.rex-worktrees-fixture-missing", [f.root] = "Not a Git checkout" }) do
-    local ui = menu(); ui.project, ui.path = "[path]", typed
-    fails(function() run(f:flow(nil, ui, args), function(flow) flow:project() end) end, text)
+    palette(f, { { { text = typed } } })
+    fails(function() f:action("project", nil, { projects = projects }) end, text)
   end
+  palette(f, { { { text = "   " } } })
+  assert(f:action("project", nil, { projects = projects }) == nil)
   assert(#f.server.created == 1)
 end)
-test("project main action needs no terminal directory and closes only its menu", function(f)
-  f.server.live.helper = "rex-worktrees-project"; f:source_at(f.root)
-  -- Open all projects, then type the same checkout's path.
-  local responses = { "1\t\0", "2\t\0", f.primary .. "\0Open path\0" }
-  f.server.rex.exec = setmetatable({}, { __call = function(_, argv, options)
-    if argv[1] == "fzf" then return { ok = true, code = 0, stdout = table.remove(responses, 1), stderr = "" } end
-    return real.exec(argv, options)
-  end })
-  core.main({ mode = "project", source_session = "source", projects = { f.primary } }, f.server.rex)
-  local created = f.server.created[1]
-  assert(#f.server.created == 1 and created.path == f.primary and created.label == "repo-with-spaces")
-  assert(#f.server.killed == 1 and f.server.killed[1] == "helper" and f.server.live.source)
-  assert(f.server.focused[#f.server.focused] == "source")
-  f.server.live.helper = "rex-worktrees-project"
-  core.main({ mode = "project", source_session = "source", projects = { f.primary } }, f.server.rex)
-  assert(#f.server.created == 1 and #responses == 0 and f.server.focused[#f.server.focused] == created.id)
-  fails(function() core.main({ mode = "project", source_session = "source" }, f.server.rex) end, "keybindings")
+test("Projects refuses a missing listed project", function(f)
+  palette(f, { "missing" })
+  fails(function() f:action("project", nil, { projects = { f.primary, f.root .. "/missing" } }) end, "Project directory is missing")
+  assert(#f.server.created == 0)
 end)
 test("one project keeps primary and two worktrees in distinct tabs of one session", function(f)
   local a, b = f:linked("feature-a"), f:linked("feature-b")
@@ -1159,14 +1063,13 @@ test("legacy project sessions are not merged, destroyed, or added to arbitrarily
   fails(function() flow:open_path(b) end, "Several Rex sessions use this project")
   assert(#f.server.created == 0 and #f.server.killed == 0 and #f.server.closed == 0)
 end)
-test("project picker and all projects recognize a project with only a worktree tab", function(f)
+test("the project picker recognizes a project with only a worktree tab", function(f)
   local path = f:linked(); f:source_at(path)
   local ui = palette(f, { "repo with spaces" })
-  local flow = f:flow(f.root, menu(), { mode = "open", projects = { f.primary } })
+  f:action("project", nil, { projects = { f.primary } })
   assert(ui:item("repo with spaces").detail == "current session")
-  flow.args.mode = "project"
-  assert(flow:open_projects() == "source")
-  assert(#f.server.created == 0 and #f.server.sessions_created == 0)
+  -- Its primary checkout gets a tab in that same session, not a new session.
+  assert(#f.server.sessions_created == 0 and f.server.created[1].id == "source" and f.server.created[1].path == f.primary)
 end)
 test("delete preserves sibling tabs and their programs, including unreadable ones", function(f)
   local path, sibling = f:linked(), f:linked("feature-b")
