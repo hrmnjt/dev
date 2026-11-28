@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import {execFileSync} from "node:child_process";
 import {test} from "node:test";
-import {projectInfo,globalGitConfig,guestEnv,providerGuard,agentCommand,parsePreview} from "../../gondolin/.config/gondolin/policy.mjs";
+import {projectInfo,globalGitConfig,guestEnv,providerGuard,agentCommand,parsePreview,themeFile,selectedTheme} from "../../gondolin/.config/gondolin/policy.mjs";
 import {secretDefinitions,credentialStatus} from "../../gondolin/.config/gondolin/credentials.mjs";
 import {createHttpHooks,RealFSProvider,SandboxVfsProvider} from "../../gondolin/.config/gondolin/node_modules/@earendil-works/gondolin/dist/src/index.js";
 
@@ -112,4 +112,15 @@ test("launch flags and renewal diagnostics stay explicit without credentials in 
   const messages = credentialStatus(Date.parse("2026-11-01"),name => name === "claude-expires" ? "2026-11-20":"private-fixture-token");
   assert.ok(messages.some(s => s.level === "warn" && s.message.includes("19 days")));
   assert.ok(!JSON.stringify(messages).includes("private-fixture-token"));
+});
+
+test("the theme comes from `just theme`'s first line, like Zsh and Neovim, defaulting to Gruvbox",t => {
+  assert.equal(themeFile({XDG_STATE_HOME:"/state"},"/home/user"),"/state/hrmnjt-dev/theme");
+  for (const env of [{},{XDG_STATE_HOME:""}]) assert.equal(themeFile(env,"/home/user"),"/home/user/.local/state/hrmnjt-dev/theme");
+  const dir = fixture(t), file = path.join(dir,"theme");
+  assert.equal(selectedTheme(file),"gruvbox","no selection yet");
+  for (const [content,theme] of [["nord\n","nord"],["nord","nord"],["nord \n","nord"],["gruvbox\n","gruvbox"],["solarized\n","gruvbox"],["gruvbox\nnord\n","gruvbox"],["","gruvbox"]]) {
+    fs.writeFileSync(file,content);assert.equal(selectedTheme(file),theme,JSON.stringify(content));
+  }
+  assert.equal(selectedTheme(dir),"gruvbox","an unreadable selection is the default");
 });

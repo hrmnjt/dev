@@ -12,6 +12,14 @@ export const inside = (root, file) => file === root || file.startsWith(root.ends
 export const quote = value => "'" + String(value).replaceAll("'", "'\\''") + "'";
 export const readJson = file => JSON.parse(fs.readFileSync(file, "utf8"));
 export const pins = readJson(path.join(CONFIG_DIR, "pins.json"));
+// `just theme` records one line, gruvbox or nord, in the Mac's state directory
+// (NORD.md). As in Zsh and Neovim, anything else or no file means Gruvbox.
+export const themeFile = (env = process.env, home = os.homedir()) =>
+  path.join(env.XDG_STATE_HOME || path.join(home, ".local/state"), "hrmnjt-dev/theme");
+export function selectedTheme(file = themeFile()) {
+  try { return fs.readFileSync(file, "utf8").split("\n")[0].trim() === "nord" ? "nord" : "gruvbox"; }
+  catch { return "gruvbox"; }
+}
 const gitEnv = () => ({ PATH: process.env.PATH, HOME: os.homedir(), LANG: "C", GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: "/dev/null" });
 function git(cwd, args) {
   return execFileSync("git", ["-C", cwd, "-c", "core.fsmonitor=false", ...args], {env: gitEnv(), encoding:"utf8", stdio:["ignore","pipe","pipe"]}).trim();

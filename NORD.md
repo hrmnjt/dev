@@ -26,9 +26,10 @@ The choice is one line in `~/.local/state/hrmnjt-dev/theme`, or under
 
 It refuses to change anything if `~/.config/ghostty` is a folded Stow link or
 `theme.local` is a real file. Afterwards, reload Ghostty with Cmd+Shift+,.
-Open shells switch at their next prompt, and Neovim when it next starts. In
-Rex, run **Apply Appearance Preferences** from the command palette. Pi and
-Brave switch by hand (below); Zed and Claude Code stay Gruvbox.
+Open shells switch at their next prompt, and Neovim and `claude` when they
+next start. In Rex, run **Apply Appearance Preferences** from the command
+palette. Pi and Brave switch by hand (below); Zed and the Mac Claude CLI stay
+Gruvbox.
 
 ## Palette
 
@@ -71,11 +72,12 @@ Rex theme if it is too faint.
 | AeroSpace borders | `aerospace/.config/aerospace/aerospace.toml`, `_scripts/theme.sh` | Frost active, translucent nord3 inactive. Startup reads the selection and the script updates running borders; keep both colour pairs in sync. |
 | macOS and wallpaper | `_scripts/theme.sh`, `wallpapers/` | Dark mode, blue accent and a generated Nord aurora wallpaper. |
 | Pi | `pi/.pi/agent/themes/nord.json` | Pick `nord` in Pi's settings; Pi's `settings.json` is host-local. |
-| Claude Code | `claude/.config/agent-vm/claude/themes/nord.json`, copied in `claude/.claude/themes/` | Ready but not switched. VM managed settings fix the theme, and `/theme` on the Mac would write through the Stow link into tracked settings. |
+| Claude Code | `claude/.config/agent-vm/claude/themes/nord.json` | The VM launcher reads the selection at each `claude` start and serves `custom:nord` as the managed theme; restart open sessions. The Mac CLI stays Gruvbox, since its theme is a key in the tracked `settings.json`. |
 | Zed | None | Stays Gruvbox: Zed has no built-in Nord, and its theme lives in tracked settings. |
 | Brave | Manual | Any Nord browser theme; not managed by this repository. |
 
 Zsh owns `FZF_DEFAULT_OPTS`, `GLOW_STYLE`, `LG_CONFIG_FILE` and
 `STARSHIP_CONFIG`, and uses each Nord file only once Stow has deployed it. The
-switch is checked by `./_scripts/tests/theme.sh`, and Rex's action by
-`./_scripts/tests/rex-worktrees.sh`.
+switch is checked by `./_scripts/tests/theme.sh`, Rex's action by
+`./_scripts/tests/rex-worktrees.sh`, and Claude's launch theme by
+`_tests/gondolin/session.test.mjs`.

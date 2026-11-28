@@ -30,6 +30,8 @@ function mock(t,{failCreate = false,failProbe = false,startupOutput,guestResult}
     requireImage:() => ({spec:{fingerprint:"fixture"},directory:"/explicit/pinned/image"}),
     keychainValue:name => ({github:"github_pat_fake-real",claude:"sk-ant-oat01-fake-real"}[name]),
     stateRoot:path.join(root,"state"),
+    // Never the Mac's real `just theme` selection.
+    themeFile:path.join(root,"theme"),
     startClipboard:async () => ({port:9876,route:"/image-fixture",close:async () => {clipboardClosed++;}}),
     sdk:{...sdk,VM:{create:async options => {specs.push(options);if (failCreate) throw new Error("untrusted upstream failure");return vm;}}},
   }};
@@ -99,6 +101,23 @@ test("bindfs tolerates Gondolin's binds, Git excludes are read-only and Claude s
   fs.rmSync(claudeState,{recursive:true});fs.symlinkSync(f.root,claudeState);
   await assert.rejects(createSession({agent:"claude",cwd},f.deps),/must not be a symlink/);
   assert.equal(fs.existsSync(path.join(f.root,".claude.json")),false);
+});
+
+test("Claude's served settings follow `just theme` at launch; the tracked file stays Gruvbox",async t => {
+  const source = "claude/.config/agent-vm/claude", tracked = JSON.parse(fs.readFileSync(path.join(source,"settings.json"),"utf8"));
+  assert.equal(tracked.theme,"custom:gruvbox-dark-hard");
+  const served = async (selection,deps = {}) => {
+    const f = mock(t);if (selection !== undefined) fs.writeFileSync(path.join(f.root,"theme"),selection);
+    await (await createSession({agent:"claude",cwd:path.join(f.root,"workspace")},{...f.deps,...deps})).close();
+    const config = f.specs[0].vfs.mounts["/etc/agent-config"];
+    const read = async file => {const handle = await config.open(file,"r");try {return Buffer.from(await handle.readFile()).toString("utf8");} finally {await handle.close();}};
+    return {settings:JSON.parse(await read("/claude/settings.json")),read};
+  };
+  for (const selection of [undefined,"gruvbox\n","solarized\n","\nnord\n"]) assert.deepEqual((await served(selection)).settings,tracked,JSON.stringify(selection));
+  const nord = await served("nord\n");
+  assert.deepEqual(nord.settings,{...tracked,theme:"custom:nord"},"only the theme changes");
+  assert.equal(await nord.read("/claude/themes/nord.json"),fs.readFileSync(path.join(source,"themes/nord.json"),"utf8"));
+  assert.equal(JSON.parse(fs.readFileSync(path.join(source,"settings.json"),"utf8")).theme,"custom:gruvbox-dark-hard","tracked file untouched");
 });
 
 test("guest clock follows the Mac from boot and, for Claude, through Mac sleep",async t => {

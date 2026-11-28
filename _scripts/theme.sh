@@ -3,7 +3,8 @@
 # Show or switch the setup's theme: gruvbox (the default) or nord.
 #
 # The choice is one line in $XDG_STATE_HOME/hrmnjt-dev/theme. Zsh rereads it
-# at each prompt (fzf, Glow, Lazygit, Starship) and Neovim reads it at start.
+# at each prompt (fzf, Glow, Lazygit, Starship); Neovim and the Claude VM
+# launcher read it at start.
 # Switching also links Ghostty's overlay and, on macOS, sets dark mode, the
 # accent colour, the wallpaper and live AeroSpace borders. See NORD.md.
 
@@ -116,8 +117,8 @@ apply() {
   cat <<EOF
 
 Next: reload Ghostty (Cmd+Shift+,) and run Apply Appearance Preferences in
-Rex's command palette. Open shells switch at their next prompt and Neovim when
-it next starts; pick the theme in Pi's settings.
+Rex's command palette. Open shells switch at their next prompt, and Neovim
+and claude when they next start; pick the theme in Pi's settings.
 EOF
 }
 
