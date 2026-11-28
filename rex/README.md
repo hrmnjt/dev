@@ -134,25 +134,29 @@ worktree from the branch as it is; never reset) or **Choose another name**.
 
 ### Open
 
-Open lists every worktree of the project, then local branches without one:
+Open lists every worktree of the project, then local branches without one.
+Each row shows the branch, its last activity and its most urgent next step:
 
 ```text
 dev worktrees · origin fetched 3 hours ago
-feat/app/example        2 hours ago · add cost tiles      push 2 · 3 changed
-docs/model/example      yesterday · fix join keys         Claude waiting
-chore/ingestion/example 4 days ago · drop old job         ready to close
-local-only              5 days ago · try an idea          no worktree
+feat/app/example                    push 2
+  2 hours ago
+docs/model/example          Claude waiting
+  yesterday
+chore/ingestion/example     ready to close
+  4 days ago
+local-only                     no worktree
+  5 days ago
 ```
 
 - **Activity** is the newest of the worktree's checkouts and commits (its `HEAD`
   reflog), edits to its uncommitted files, and program reports from its tabs.
-  The commit is the branch's latest subject.
-- **Next step** shows up to two facts, the first being what to do next:
-  `finish rebase` (or merge, cherry-pick, revert, bisect, am), `Claude waiting`
-  or `Pi failed` (a program in the worktree's tab reported blocked or error),
-  `push N` (ahead of its upstream, or never published), `N changed`
-  (uncommitted files), `Pi done`, `ready to close`, `rebase N` (`main` has N
-  commits the branch lacks), `Claude working`, `locked`, or `missing directory`.
+- **Next step**, most urgent first: `finish rebase` (or merge, cherry-pick,
+  revert, bisect, am), `Claude waiting` or `Pi failed` (a program in the
+  worktree's tab reported blocked or error), `push N` (ahead of its upstream,
+  or never published), `N changed` (uncommitted files), `Pi done`,
+  `ready to close`, `rebase N` (`main` has N commits the branch lacks),
+  `Claude working`, `locked`, or `missing directory`.
 - **Ready to close** means clean, with its upstream deleted or every commit
   already in `main` by patch (`git cherry`), so squash merges count. Branches
   compare with `main`'s upstream when it has one, else local `main`.
@@ -161,7 +165,8 @@ local-only              5 days ago · try an idea          no worktree
   worktree.
 
 Open only reads: it never fetches, and `git status` runs without optional
-locks, so not even the index is refreshed. Return focuses the worktree's tab,
+locks, so not even the index is refreshed. Its Git reads run in parallel, a
+few rounds in all rather than one command after another. Return focuses the worktree's tab,
 reopens a closed worktree as one shell tab, or creates the worktree for a
 branch. Open checks the tabs again after you choose, so a tab opened meanwhile
 is focused rather than duplicated.

@@ -196,13 +196,14 @@ local function git_command(directory, ...)
   return { git_argv(directory, ...), { timeout = 120, env = GIT_ENV } }
 end
 local function stdout(result) return result and result.ok and result.stdout or nil end
--- Runs { argv, options } commands a dozen at a time; results keep their order.
+-- Runs { argv, options } commands together (up to 64 at once), so a round
+-- takes as long as its slowest command; results keep their order.
 function Workflow:exec_all(commands)
   local ok, start = pcall(function() return self.rex.exec.start end)
   if not ok then start = nil end
   local results = {}
-  for first = 1, #commands, 12 do
-    local last, handles = math.min(first + 11, #commands), {}
+  for first = 1, #commands, 64 do
+    local last, handles = math.min(first + 63, #commands), {}
     for i = first, last do
       if start then handles[i] = start(commands[i][1], commands[i][2]) end
     end
@@ -216,15 +217,20 @@ function Workflow:exec_all(commands)
 end
 -- One shell for many directories, using only builtins; prints each answer
 -- followed by NUL. CDPATH is cleared so `cd` prints nothing itself.
-function Workflow:shell_all(script, paths)
-  local found = {}
-  if #paths == 0 then return found end
+local function shell_command(script, paths)
   local argv = { "/bin/sh", "-c", script, "sh" }
   for _, path in ipairs(paths) do table.insert(argv, path) end
-  local output = execute(self.rex, argv, { timeout = 20, env = { CDPATH = false } })
-  local i = 0
-  for value in output:gmatch("([^%z]*)%z") do i = i + 1; found[i] = value ~= "" and value or false end
+  return { argv, { timeout = 20, env = { CDPATH = false } } }
+end
+local function shell_values(output)
+  local found, i = {}, 0
+  for value in (output or ""):gmatch("([^%z]*)%z") do i = i + 1; found[i] = value ~= "" and value or false end
   return found
+end
+function Workflow:shell_all(script, paths)
+  if #paths == 0 then return {} end
+  local command = shell_command(script, paths)
+  return shell_values(execute(self.rex, command[1], command[2]))
 end
 -- Physical paths, or false for a missing or unreadable directory.
 local PHYSICAL = [[for d do
@@ -244,6 +250,7 @@ fi
 printf '%s\0' "$r"
 done]]
 function Workflow:roots_all(paths) return self:shell_all(ROOTS, paths) end
+local REF_FORMAT = "--format=%(refname:strip=2)%00%(committerdate:unix)%00%(upstream)%00%(upstream:track)"
 local function parse_worktrees(raw)
   local records, record = {}, {}
   for token in (raw .. "\0"):gmatch("([^%z]*)%z") do
@@ -284,7 +291,21 @@ function Workflow.new(args, r, menu, ui)
   self.helper = r.session_id
   -- The project menu chooses its checkouts after the user picks an action.
   if args.mode == "project" then return self end
-  local top, err = self:try_git(args.directory, "rev-parse", "--show-toplevel")
+  local top, err
+  if args.mode == "open" then
+    -- Open's first reads work from any directory in the checkout: run them together.
+    local first = self:exec_all({
+      git_command(args.directory, "rev-parse", "--show-toplevel"),
+      git_command(args.directory, "worktree", "list", "--porcelain", "-z"),
+      git_command(args.directory, "for-each-ref", REF_FORMAT, "refs/heads"),
+      git_command(args.directory, "remote"),
+    })
+    top = stdout(first[1])
+    if top then self.prefetch = { list = stdout(first[2]), refs = stdout(first[3]), remotes = stdout(first[4]) }
+    else err = "git failed: " .. trim(first[1] and (first[1].stderr or "") or "could not run git") end
+  else
+    top, err = self:try_git(args.directory, "rev-parse", "--show-toplevel")
+  end
   if not top then
     -- Deletion only ever targets the source terminal's own checkout.
     if not args.projects or args.mode == "delete" then fail(err) end
@@ -296,8 +317,21 @@ function Workflow.new(args, r, menu, ui)
   return self:load(top)
 end
 function Workflow:load(top)
-  self.checkout = self:physical(line(top))
-  self.trees = self:worktrees()
+  top = line(top)
+  local raw = self.prefetch and self.prefetch.list
+  if self.prefetch then self.prefetch.list = nil end
+  local records = parse_worktrees(raw or self:git(top, "worktree", "list", "--porcelain", "-z"))
+  -- One shell resolves this checkout and every worktree's directory.
+  local paths = { top }
+  for _, record in ipairs(records) do table.insert(paths, record.worktree) end
+  local physical = self:physical_all(paths)
+  if not physical[1] then fail("Cannot read this checkout's directory: " .. visible(top)) end
+  self.checkout = physical[1]
+  for i, record in ipairs(records) do
+    record.present = physical[i + 1] and true or false
+    record.path = physical[i + 1] or record.worktree
+  end
+  self.trees = records
   if not self.trees[1] or self.trees[1].bare then fail("A non-bare primary checkout is required") end
   self.primary = self.trees[1].path
   local registered = false
@@ -355,10 +389,8 @@ function Workflow:windows(session)
   end
   return windows
 end
--- Every local terminal whose directory is in a checkout, with that checkout's
--- root. A listing reuses one scan (self.scan); everything else rescans.
-function Workflow:terminals()
-  if self.scan then return self.scan end
+-- Every local terminal with a known directory, and those directories once each.
+function Workflow:collect_terminals()
   local found, directories, seen = {}, {}, {}
   local live = self:sessions()
   for session in pairs(live) do
@@ -376,13 +408,21 @@ function Workflow:terminals()
       end
     end
   end
-  local roots, root_of, scan = self:roots_all(directories), {}, {}
+  return found, directories
+end
+-- Keeps the terminals whose directory is in a checkout, with its root.
+local function resolve_terminals(found, directories, roots)
+  local root_of, scan = {}, {}
   for i, directory in ipairs(directories) do root_of[directory] = roots[i] end
   for _, terminal in ipairs(found) do
     terminal.root = root_of[terminal.directory]
     if terminal.root then table.insert(scan, terminal) end
   end
   return scan
+end
+function Workflow:terminals()
+  local found, directories = self:collect_terminals()
+  return resolve_terminals(found, directories, self:roots_all(directories))
 end
 function Workflow:associate(paths, tabs)
   local matches = {}
@@ -664,15 +704,14 @@ local function agent_name(app)
   if lower == "codex" then return "Codex" end
   return visible(app)
 end
-function Workflow:branches()
-  local raw = self:git(self.primary, "for-each-ref",
-    "--format=%(refname:strip=2)%00%(committerdate:unix)%00%(upstream)%00%(upstream:track)%00%(subject)",
-    "refs/heads")
+-- Local branches with commit time, upstream and tracking, from one Git call.
+function Workflow:branches(raw)
+  raw = raw or self:git(self.primary, "for-each-ref", REF_FORMAT, "refs/heads")
   local list, by_name = {}, {}
   for row in raw:gmatch("[^\n]+") do
-    local name, date, upstream, track, subject = row:match("^([^%z]*)%z([^%z]*)%z([^%z]*)%z([^%z]*)%z(.*)$")
+    local name, date, upstream, track = row:match("^([^%z]*)%z([^%z]*)%z([^%z]*)%z(.*)$")
     if name then
-      local ref = { name = name, date = tonumber(date), upstream = upstream, gone = track == "[gone]", subject = subject }
+      local ref = { name = name, date = tonumber(date), upstream = upstream, gone = track == "[gone]" }
       table.insert(list, ref)
       by_name[name] = ref
     end
@@ -685,6 +724,18 @@ local function base_ref(refs)
   if not main then return nil end
   if main.upstream ~= "" and not main.gone then return main.upstream end
   return "refs/heads/" .. BASE
+end
+-- A worktree's Git directory from its .git file, without starting Git; nil
+-- when that can't be read.
+local function git_dir(path)
+  local file = io.open(path .. "/.git", "r")
+  if not file then return nil end
+  local first = file:read("*l")
+  file:close()
+  if not first then return path .. "/.git" end -- a directory reads as nothing
+  local dir = first:match("^gitdir: (.+)$")
+  if dir and dir:sub(1, 1) ~= "/" then dir = path .. "/" .. dir end
+  return dir
 end
 -- The worst program status in the worktree's terminals, and its newest report.
 function Workflow:agent(terminals)
@@ -752,39 +803,52 @@ local function stat_command(set, flavor)
   for _, path in ipairs(set.paths) do table.insert(argv, path) end
   return { argv, { cwd = set.cwd, timeout = 10 } }
 end
--- Local Git and agent facts for every worktree. Reads only: status runs
--- without optional locks, so not even the index is refreshed. Git runs in
--- two parallel rounds rather than once per question.
-function Workflow:inspect_all(trees, base, refs, terminals)
+-- Local Git and agent facts for every worktree, in two parallel rounds: every
+-- worktree's Git reads plus the open terminals' checkout roots, then edited
+-- file times and patch checks. Reads only: status runs without optional
+-- locks, so not even the index is refreshed.
+function Workflow:inspect_all(base, refs, remotes)
+  local found, directories = self:collect_terminals()
   local statuses, commands, slots = {}, {}, {}
   local function queue(owner, key, command)
     table.insert(commands, command); table.insert(slots, { owner = owner, key = key })
   end
-  for _, tree in ipairs(trees) do
+  local shared = { out = {} }
+  if #directories > 0 then queue(shared, "roots", shell_command(ROOTS, directories)) end
+  if not remotes then queue(shared, "remotes", git_command(self.primary, "remote")) end
+  for _, tree in ipairs(self.trees) do
     local s = { tree = tree, activity = 0, changed = 0, unmerged = 0, paths = {}, out = {},
       label = tree.branch ~= "" and tree.branch or "detached-" .. (tree.HEAD or ""):sub(1, 8) }
     table.insert(statuses, s)
     if self:available(tree) then
       s.present = true
       queue(s, "status", git_command(tree.path, "--no-optional-locks", "status", "--porcelain=v2", "--branch", "-z"))
-      queue(s, "gitdir", git_command(tree.path, "rev-parse", "--absolute-git-dir"))
+      s.gitdir = git_dir(tree.path)
+      if not s.gitdir then queue(s, "gitdir", git_command(tree.path, "rev-parse", "--absolute-git-dir")) end
       if base and tree.branch ~= BASE and tree.branch ~= "" then
         queue(s, "counts", git_command(tree.path, "rev-list", "--left-right", "--count", base .. "...HEAD"))
       end
-      if not refs[tree.branch] then queue(s, "log", git_command(tree.path, "log", "-1", "--format=%ct%x09%s", "HEAD")) end
+      if not refs[tree.branch] then queue(s, "log", git_command(tree.path, "log", "-1", "--format=%ct", "HEAD")) end
     end
   end
-  local shared = { out = {} }
-  queue(shared, "remotes", git_command(self.primary, "remote"))
   local results = self:exec_all(commands)
   for i, slot in ipairs(slots) do slot.owner.out[slot.key] = results[i] end
+  remotes = remotes or stdout(shared.out.remotes) or ""
 
+  local terminals, open = {}, {}
+  local scan = resolve_terminals(found, directories, shell_values(stdout(shared.out.roots)))
+  for _, terminal in ipairs(scan) do
+    open[terminal.root] = true
+    terminals[terminal.root] = terminals[terminal.root] or {}
+    table.insert(terminals[terminal.root], terminal)
+  end
   local sets, cherries, fetches = {}, {}, {}
   for _, s in ipairs(statuses) do
+    local tree = s.tree
+    s.open = open[tree.path] or false
     if s.present then
-      local tree = s.tree
       read_status(s, required(s.out.status, "git status in " .. visible(tree.path)))
-      s.gitdir = line(required(s.out.gitdir, "git rev-parse in " .. visible(tree.path)))
+      s.gitdir = s.gitdir or line(required(s.out.gitdir, "git rev-parse in " .. visible(tree.path)))
       for _, operation in ipairs(OPERATIONS) do
         if not s.operation and readable(s.gitdir .. "/" .. operation[1]) then s.operation = operation[2] end
       end
@@ -796,12 +860,7 @@ function Workflow:inspect_all(trees, base, refs, terminals)
         if branch and refs[branch] then s.label, s.branch = branch, branch end
       end
       local ref = refs[s.branch or tree.branch]
-      if ref then
-        s.committed, s.subject = ref.date, ref.subject
-      else
-        local date, subject = (stdout(s.out.log) or ""):match("^(%d+)\t([^\n]*)")
-        s.committed, s.subject = tonumber(date), subject
-      end
+      s.committed = ref and ref.date or tonumber((stdout(s.out.log) or ""):match("^(%d+)"))
       local behind, ahead = (stdout(s.out.counts) or ""):match("^(%d+)%s+(%d+)")
       s.base_behind, s.base_ahead = tonumber(behind), tonumber(ahead)
       s.agent, s.reported = self:agent(terminals[tree.path] or {})
@@ -848,9 +907,9 @@ function Workflow:inspect_all(trees, base, refs, terminals)
   for _, s in ipairs(statuses) do
     s.activity = math.max(s.moved or 0, s.committed or 0, s.reported or 0, s.edited or 0)
   end
-  return statuses, stdout(shared.out.remotes) or "", fetch and fetch.newest
+  return statuses, remotes, fetch and fetch.newest
 end
--- Facts for one row, most urgent first; the first is the next step.
+-- A row's facts, most urgent first; Open shows the first as the next step.
 function M.signals(s)
   if not s.present then return { s.tree.prunable and "missing directory" or "unavailable" } end
   local out, agent = {}, s.agent
@@ -881,26 +940,16 @@ local function fetched(remotes, newest, now)
   end
   return newest and ("last fetched " .. ago(now, newest)) or "no fetch recorded"
 end
--- Rows for Open: worktrees by newest activity, then local branches without one.
--- self.trees was just loaded by Workflow.new.
+-- Rows for Open: worktrees by newest activity, then local branches without
+-- one. Each row shows its last activity and its most urgent fact.
 function Workflow:status_rows(now)
-  local paths = {}
-  for _, tree in ipairs(self.trees) do table.insert(paths, tree.path) end
-  self.scan = self:terminals()
-  local tabs = self:associate(paths, true)
-  local terminals = {}
-  for _, terminal in ipairs(self.scan) do
-    terminals[terminal.root] = terminals[terminal.root] or {}
-    table.insert(terminals[terminal.root], terminal)
-  end
-  self.scan = nil
-  local list, refs = self:branches()
-  local statuses, remotes, fetch_time = self:inspect_all(self.trees, base_ref(refs), refs, terminals)
+  local prefetch = self.prefetch or {}
+  local list, refs = self:branches(prefetch.refs)
+  local statuses, remotes, fetch_time = self:inspect_all(base_ref(refs), refs, prefetch.remotes)
   local checked_out = {}
   for _, s in ipairs(statuses) do
     checked_out[s.tree.branch] = true
     if s.branch then checked_out[s.branch] = true end
-    s.open = count(tabs[s.tree.path]) > 0
   end
   table.sort(statuses, function(a, b)
     if a.activity ~= b.activity then return a.activity > b.activity end
@@ -909,14 +958,9 @@ function Workflow:status_rows(now)
   local items, targets = {}, {}
   for _, s in ipairs(statuses) do
     local id = "worktree:" .. s.tree.path
-    local signals = M.signals(s)
     targets[id] = { path = s.tree.path }
-    table.insert(items, {
-      id = id, title = visible(s.label), icon = s.open and "terminal" or "folder",
-      subtitle = s.present and (ago(now, s.activity) .. (s.subject and (" · " .. visible(s.subject)) or ""))
-        or visible(s.tree.path),
-      detail = signals[1] and table.concat(signals, " · ", 1, math.min(2, #signals)) or nil,
-    })
+    table.insert(items, { id = id, title = visible(s.label), icon = s.open and "terminal" or "folder",
+      subtitle = s.present and ago(now, s.activity) or visible(s.tree.path), detail = M.signals(s)[1] })
   end
   local branches = {}
   for _, ref in ipairs(list) do if not checked_out[ref.name] then table.insert(branches, ref) end end
@@ -929,8 +973,7 @@ function Workflow:status_rows(now)
     local id = "branch:" .. ref.name
     targets[id] = { branch = ref.name }
     table.insert(items, { id = id, title = visible(ref.name), icon = "branch",
-      subtitle = ago(now, ref.date) .. (ref.subject ~= "" and (" · " .. visible(ref.subject)) or ""),
-      detail = ref.gone and "no worktree · upstream gone" or "no worktree" })
+      subtitle = ago(now, ref.date), detail = "no worktree" })
   end
   local title = visible(basename(self.primary)) .. " worktrees"
   local fetch = fetched(remotes, fetch_time, now)
