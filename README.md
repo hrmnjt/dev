@@ -246,6 +246,11 @@ test transcripts and intermediate fixes live in `git log`; entries through
 
 ### 202611
 
+- 20261128: Rex appearance now applies from the command palette with
+  **Apply Appearance Preferences**: dark Gruvbox theme, font, colors, splits
+  and notifications as Rex for Mac `client.setting.*` actions, listed in
+  `init.lua`. It replaces the `defaults write` block that needed Rex quit, and
+  the CLI theme import that needed Remote Control.
 - 20261128: Rex Projects (Cmd+Shift+K) now asks in the command palette:
   choose a listed project or type a checkout path; `[all projects]`, the menu
   session and `fzf` prompts are gone, so no Rex action needs Remote Control.

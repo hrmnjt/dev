@@ -31,10 +31,7 @@ rex = {
     return { foreground = { cwd = wiring.directory } }
   end },
   layout = { block = function(layout) return { block = layout } end },
-  client = { queue = function(action, args)
-    assert(action == "session.select" and args.session_id == "menu")
-    table.insert(wiring.queued, args)
-  end },
+  client = { queue = function(action, args) table.insert(wiring.queued, { action = action, args = args }) end },
 }
 -- Every action loads worktrees.lua from init.lua's own folder and calls it;
 -- capture that instead of running Git.
@@ -79,6 +76,24 @@ for _, pair in ipairs({ {"new", "cmd+shift+n", "worktree_new"}, {"open", "cmd+sh
   else projects_expanded(call.args.projects) end
 end
 assert(#wiring.native == 4)
+-- Appearance: dark mode, the Gruvbox theme beside init.lua, then the app's
+-- settings, all queued to the app that ran the action (no Remote Control).
+assert(wiring.actions.appearance_apply.category == "Appearance")
+wiring.actions.appearance_apply.run({})
+local queued = wiring.queued
+assert(queued[1].action == "client.appearance.switch_mode" and queued[1].args.mode == "dark")
+assert(queued[2].action == "client.theme.import"
+  and queued[2].args.path == root .. "/rex/.config/rex/themes/gruvbox-dark-hard", tostring(queued[2].args.path))
+local set = {}
+for i = 3, #queued do
+  assert(queued[i].action:match("^client%.setting%.") and queued[i].args.value ~= nil, queued[i].action)
+  set[queued[i].action:gsub("^client%.setting%.", "")] = queued[i].args.value
+end
+assert(#queued == 18 and set["terminal.typography.font"] == "JetBrainsMono Nerd Font Mono")
+assert(set["terminal.typography.size"] == 18 and set["terminal.typography.style"] == "Regular")
+assert(set["terminal.selection.copy_on_select"] == false and set["notifications.activity.sounds"] == false)
+assert(set["terminal.colors.palette"] == false and set["interface.splits_focus.autobalance"] == true)
+wiring.queued = {}
 local bound = 0
 for key in pairs(wiring.bindings) do
   bound = bound + 1
@@ -107,9 +122,11 @@ wiring.host = "local"
 wiring.directory, wiring.deployed = "/repo with spaces", false
 refused(context); refused(context, "worktree_new"); refused(context, "worktree_open")
 refused(context, "project_switch")
+assert(not pcall(wiring.actions.appearance_apply.run, {}), "the theme file must be deployed")
+assert(#wiring.queued == 0)
 rex, io.open, dofile = real, real_open, real_dofile
 local core = dofile(root .. "/rex/.config/rex/worktrees.lua")
-if not fixture_root then return { ok = true, actions = 4, rejected_contexts = rejected.n, bindings = 4 } end
+if not fixture_root then return { ok = true, actions = 5, rejected_contexts = rejected.n, bindings = 4 } end
 
 local function execute(argv, options)
   local result = assert(real.exec(argv, options))
@@ -1102,4 +1119,4 @@ for _, item in ipairs(tests) do
   passed = passed + 1
   print("PASS " .. item[1])
 end
-return { ok = true, lifecycle_tests = passed, actions = 4, bindings = 4, rejected_contexts = rejected.n }
+return { ok = true, lifecycle_tests = passed, actions = 5, bindings = 4, rejected_contexts = rejected.n }
