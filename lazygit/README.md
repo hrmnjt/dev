@@ -10,7 +10,13 @@ The tracked Zsh environment sets `XDG_CONFIG_HOME=~/.config`, so Stow deploys:
 
 ```text
 lazygit/.config/lazygit/config.yml -> ~/.config/lazygit/config.yml
+lazygit/.config/lazygit/nord.yml -> ~/.config/lazygit/nord.yml
 ```
+
+`nord.yml` holds only Nord theme colors. With `just theme nord`, Zsh sets
+`LG_CONFIG_FILE` to `config.yml,nord.yml`, so Lazygit merges them in that
+order. Inside Neovim, LazyVim adds its own theme file from the colorscheme on
+top. See [Nord](../NORD.md).
 
 ## Install
 

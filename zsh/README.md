@@ -100,6 +100,9 @@ shell function: it resolves through PATH to the installer-managed command.
 Pi discovers Gondolin as a global extension; see [Pi deployment](../pi/README.md#deploy)
 for the startup check. `!`/`!!` inside Pi remain deliberate host commands.
 
-`GLOW_STYLE` points Glow to the Stow-deployed Gruvbox Markdown stylesheet using
-`$HOME`; see [the Glow package](../glow/README.md). Homebrew is initialized once
+A theme block sets `FZF_DEFAULT_OPTS`, `GLOW_STYLE`, `LG_CONFIG_FILE` and
+`STARSHIP_CONFIG` for Gruvbox, or for Nord after `just theme nord`. It rereads
+the one-line selection before each prompt, so open shells follow a switch, and
+uses each Nord file only once Stow has deployed it; see [Nord](../NORD.md) and
+[the Glow package](../glow/README.md). Homebrew is initialized once
 in `.zprofile`; `.zshrc` does not repeat it.

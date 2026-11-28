@@ -4,6 +4,7 @@ This package configures Ghostty as the primary terminal.
 
 ```text
 ghostty/.config/ghostty/config -> ~/.config/ghostty/config
+ghostty/.config/ghostty/nord.conf -> ~/.config/ghostty/nord.conf
 ```
 
 The configuration uses JetBrains Mono Nerd Font, the classic Gruvbox Dark Hard
@@ -11,6 +12,11 @@ theme, 12-pixel padding, a `0.9`-opacity blurred background, an 18-point font,
 and a cursor movement shader. Yellow cursor and dark selection colors are set
 explicitly from [the palette](../GRUVBOX.md). Window maximization is left to
 AeroSpace rather than forced by Ghostty.
+
+The config ends with `config-file = ?theme.local`. `just theme nord` links
+`~/.config/ghostty/theme.local` to `nord.conf`, Ghostty's built-in Nord with
+matching cursor and selection colors; `just theme gruvbox` removes the link.
+Reload with Cmd+Shift+, after switching. See [Nord](../NORD.md).
 
 ## Cursor animation
 

@@ -72,17 +72,69 @@ histedit() {
 # not depend on the source file's executable mode.
 alias llm='/bin/sh "$HOME/.local/bin/llm"'
 
-# Glow needs an absolute path for custom styles; using $HOME here avoids a
-# machine-specific path in its config file.
-export GLOW_STYLE="$HOME/.config/glow/themes/gruvbox-dark-hard.json"
+# Theme for fzf, Glow, Lazygit and Starship: Gruvbox Dark Hard unless
+# `just theme nord` selected Nord. This block owns the four variables below.
+# Rereading the one-line selection before each prompt lets open shells follow
+# a switch; see NORD.md.
+_theme_file="${XDG_STATE_HOME:-$HOME/.local/state}/hrmnjt-dev/theme"
+_theme_apply() {
+  local theme=gruvbox
+  [[ -r $_theme_file ]] && read -r theme < "$_theme_file"
+  [[ $theme == nord ]] || theme=gruvbox
+  [[ $theme == ${_theme_current-} ]] && return
+  _theme_current=$theme
 
-# fzf theme: Gruvbox Dark Hard, matching Ghostty and Starship.
-export FZF_DEFAULT_OPTS=" \
+  if [[ $theme == nord ]]; then
+    export FZF_DEFAULT_OPTS=" \
+--color=bg:#2e3440,bg+:#3b4252,fg:#d8dee9,fg+:#eceff4 \
+--color=hl:#88c0d0,hl+:#8fbcbb,header:#a3be8c,info:#81a1c1 \
+--color=prompt:#ebcb8b,pointer:#88c0d0,marker:#a3be8c,spinner:#8fbcbb \
+--color=border:#4c566a,label:#d8dee9,separator:#434c5e \
+--color=selected-bg:#434c5e"
+  else
+    export FZF_DEFAULT_OPTS=" \
 --color=bg:#1d2021,bg+:#282828,fg:#ebdbb2,fg+:#fbf1c7 \
 --color=hl:#d65d0e,hl+:#fe8019,header:#98971a,info:#458588 \
 --color=prompt:#d79921,pointer:#d65d0e,marker:#689d6a,spinner:#689d6a \
 --color=border:#665c54,label:#ebdbb2,separator:#504945 \
 --color=selected-bg:#3c3836"
+  fi
+
+  # Glow needs an absolute style path; $HOME keeps it out of glow.yml. Each
+  # Nord file is used only once Stow has deployed it.
+  local glow="$HOME/.config/glow/themes"
+  if [[ $theme == nord && -r $glow/nord.json ]]; then
+    export GLOW_STYLE="$glow/nord.json"
+  else
+    export GLOW_STYLE="$glow/gruvbox-dark-hard.json"
+  fi
+
+  # Lazygit merges listed files in order and stops if one is missing.
+  local lazygit="${XDG_CONFIG_HOME:-$HOME/.config}/lazygit"
+  if [[ $theme == nord && -r $lazygit/nord.yml ]]; then
+    export LG_CONFIG_FILE="$lazygit/config.yml,$lazygit/nord.yml"
+  else
+    unset LG_CONFIG_FILE
+  fi
+
+  # Starship has no include or palette variable, so Nord uses a copy of the
+  # tracked config with its palette line switched, refreshed when it changes.
+  local starship="${XDG_CONFIG_HOME:-$HOME/.config}/starship.toml"
+  local starship_nord="${_theme_file:h}/starship-nord.toml"
+  if [[ $theme == nord && -r $starship ]] &&
+    [[ ! -f $starship_nord || $starship -nt $starship_nord ]]; then
+    sed "s/^palette = .*/palette = 'nord'/" "$starship" > "$starship_nord.$$" &&
+      mv -f "$starship_nord.$$" "$starship_nord" || rm -f "$starship_nord.$$"
+  fi
+  if [[ $theme == nord && -f $starship_nord ]]; then
+    export STARSHIP_CONFIG=$starship_nord
+  else
+    unset STARSHIP_CONFIG
+  fi
+}
+_theme_apply
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd _theme_apply
 
 # fzf's official Zsh integration provides Ctrl-R history search, Ctrl-T file
 # search, Alt-C directory navigation, and completion. Keep startup usable when

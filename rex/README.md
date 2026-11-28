@@ -9,9 +9,9 @@ repository, deploy the configuration:
 just stowall
 ```
 
-This links `init.lua`, `worktrees.lua`, and `themes/gruvbox-dark-hard` into
-`~/.config/rex/`. Review/merge any existing `init.lua` before deploying.
-Then check and reload from a Rex terminal:
+This links `init.lua`, `worktrees.lua`, `themes/gruvbox-dark-hard` and
+`themes/nord` into `~/.config/rex/`. Review/merge any existing `init.lua`
+before deploying. Then check and reload from a Rex terminal:
 
 ```bash
 rex config check
@@ -39,6 +39,10 @@ Rex for Mac's `client.setting.*` actions; list them with their arguments with
 after changing the table or the theme file, since Rex stores its own copy of
 an imported theme. Any choice can still be changed in Settings; reset a
 pane-specific zoom there by hand.
+
+`themes/nord` is the Nord counterpart for `just theme nord`; the action still
+imports Gruvbox, so after switching, import `themes/nord` in **Settings →
+Themes** as a Ghostty theme. See [Nord](../NORD.md).
 
 ## Pi notifications
 
@@ -271,4 +275,4 @@ preferences or re-import themes.
 
 [Configuration guide](https://www.superlogical.com/rex/docs/customize/config) ·
 [Lua API](https://www.superlogical.com/rex/docs/reference/lua) ·
-[Shared palette](../GRUVBOX.md)
+[Shared palette](../GRUVBOX.md) · [Nord](../NORD.md)

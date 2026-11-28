@@ -1,17 +1,19 @@
 # Glow Markdown renderer
 
-This package deploys a classic Gruvbox Dark Hard Glamour stylesheet and an
-intentional Glow configuration:
+This package deploys classic Gruvbox Dark Hard and Nord Glamour stylesheets
+and an intentional Glow configuration:
 
 ```text
 glow/.config/glow/glow.yml -> ~/.config/glow/glow.yml
 glow/.config/glow/themes/gruvbox-dark-hard.json -> ~/.config/glow/themes/gruvbox-dark-hard.json
+glow/.config/glow/themes/nord.json -> ~/.config/glow/themes/nord.json
 ```
 
 The palette comes from [the repository reference](../GRUVBOX.md) and is based
-on the earlier tracked Glow style. `zsh/.zshrc` sets `GLOW_STYLE` to the
-installed stylesheet using `$HOME`, so both `glow README.md` and Glow's TUI
-pick it up in new Zsh sessions. Glow needs an absolute style path at render
+on the earlier tracked Glow style; `nord.json` keeps its structure with
+[Nord](../NORD.md) colors. `zsh/.zshrc` sets `GLOW_STYLE` to the installed
+stylesheet for the selected theme using `$HOME`, so both `glow README.md` and
+Glow's TUI pick it up; open shells follow `just theme` at their next prompt. Glow needs an absolute style path at render
 time; putting `~` or `$HOME` literally in `glow.yml` does not work reliably.
 The tracked `glow.yml` keeps Glow's current CLI and TUI defaults and uses
 `style: auto` when launched outside Zsh; `GLOW_STYLE` overrides this fallback

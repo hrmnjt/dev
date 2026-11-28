@@ -20,7 +20,10 @@ sessions or configuration directory are mounted.
 - Permission mode `bypassPermissions`; nested Claude Bash sandboxing is off
   because Gondolin is the boundary.
 - Opus and the saved `claude-opus-5-5/xhigh` preference are retained.
-- Gruvbox Dark Hard and no Claude Git attribution. Remote Control and its push
+- Gruvbox Dark Hard, even after `just theme nord`: the managed settings fix
+  the theme, and the tracked Nord theme is ready for a launcher change that
+  follows the switch ([Nord](../NORD.md)).
+- No Claude Git attribution. Remote Control and its push
   notifications need a full-scope `/login` token; `setup-token` tokens are
   inference-only, so they are not configured. Use Claude Code on the web instead.
 - Per-project state is seeded past first-run onboarding, and
@@ -89,7 +92,9 @@ VM never reads it. Typed `claude` goes to the VM, so start the Mac CLI by path:
 - Opus, with saved `xhigh` effort for `claude-opus-5-5`.
 - Auto permission mode by default (`permissions.defaultMode: "auto"`), using
   Claude Code's classifier for approval decisions rather than bypassing checks.
-- Native Gruvbox Dark Hard; Ghostty owns the terminal background.
+- Native Gruvbox Dark Hard; Ghostty owns the terminal background. The Nord
+  theme is listed in `/theme`, but choosing it writes through the Stow link
+  into the tracked `settings.json`.
 - Host personal/work Git identity with `user.useConfigOnly`, no attribution,
   Remote Control mobile notifications and Rex's `SessionStart` hook.
 - Outside-read blocking and mandatory Bash sandboxing, without exclusions or

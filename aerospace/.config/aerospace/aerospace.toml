@@ -36,8 +36,12 @@ after-login-command = []
 # existing process, so restarting AeroSpace does not create duplicate
 # instances. The workspace indicator is AeroSpace's own menu bar item; style
 # it via the tray menu under "Experimental UI Settings".
+#
+# Border colours follow `just theme` (NORD.md): Nord frost when Nord is
+# selected, otherwise Gruvbox yellow. _scripts/theme.sh updates running
+# borders with the same colours. exec-and-forget runs the line with bash -c.
 after-startup-command = [
-    'exec-and-forget borders style=round width=3.0 hidpi=on active_color=0xfffabd2f inactive_color=0x80665c54',
+    'exec-and-forget if [ "$(cat "$HOME/.local/state/hrmnjt-dev/theme" 2>/dev/null)" = nord ]; then borders style=round width=3.0 hidpi=on active_color=0xff88c0d0 inactive_color=0x804c566a; else borders style=round width=3.0 hidpi=on active_color=0xfffabd2f inactive_color=0x80665c54; fi',
 ]
 
 # Keep AeroSpace's tree structure tidy by removing unnecessary nested containers.

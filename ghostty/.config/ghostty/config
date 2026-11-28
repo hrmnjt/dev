@@ -34,3 +34,8 @@ custom-shader = shaders/cursor_warp.glsl
 macos-icon = "blueprint"
 # cosmetic: hiding mouse when editing
 mouse-hide-while-typing = true
+
+# Theme switch: `just theme nord` links theme.local -> nord.conf here, and
+# `just theme gruvbox` removes it. Included files load last, so the overlay
+# replaces the Gruvbox theme, cursor and selection above. See NORD.md.
+config-file = ?theme.local

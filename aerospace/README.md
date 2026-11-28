@@ -32,6 +32,9 @@ and marks the focused window at a glance. The tracked baseline:
 
 - 3-point rounded border, Gruvbox bright yellow (`#fabd2f`) for focus
 - translucent Gruvbox gray (`#665c54`) for inactive windows
+- Nord frost (`#88c0d0`) and translucent nord3 (`#4c566a`) instead when
+  `just theme nord` is selected; the startup command reads the selection and
+  `_scripts/theme.sh` updates running borders (see [Nord](../NORD.md))
 - launched by `after-startup-command` rather than a separate Homebrew service,
   keeping its lifecycle tied to AeroSpace
 
